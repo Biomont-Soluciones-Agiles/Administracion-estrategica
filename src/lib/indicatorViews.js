@@ -12,7 +12,7 @@ export function measurementSeries(reports) {
 }
 
 export function measurementTicks(data, target) {
-  const values = [Number(target), ...data.flatMap(row => [row.resultado, row.meta])].filter(value => value !== null && Number.isFinite(value));
+  const values = [Number(target), ...data.flatMap(row => Object.values(row).filter(value => typeof value === 'number'))].filter(value => value !== null && Number.isFinite(value));
   const low = Math.min(0, ...values);
   const high = Math.max(1, ...values);
   const rawStep = (high - low) / 5;

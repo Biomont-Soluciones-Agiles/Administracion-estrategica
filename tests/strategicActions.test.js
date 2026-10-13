@@ -19,6 +19,14 @@ test('action deletion requires confirmation and targets only the selected record
   assert.ok(app.includes(".delete().eq('id', action.id).select('id').single()"));
   assert.ok(app.includes('items.filter(item => item.id !== action.id)'));
 });
+
+test('solo las acciones en progreso se muestran fuera del historial', () => {
+  const cards = readFileSync(new URL('../src/StrategicActions.jsx', import.meta.url), 'utf8');
+  assert.ok(cards.includes("const inProgressActions = actions.filter(isInProgress)"));
+  assert.ok(cards.includes('inProgressActions.map'));
+  assert.ok(cards.includes('Historial de acciones estratégicas'));
+  assert.ok(cards.includes('Fecha de término de la actividad'));
+});
 test('GCG can open objective projects, create actions, edit actions and link projects', () => {
   assert.ok(app.includes("label: 'Proyectos', icon: FolderKanban, visible: isResponsibleManager || isGcg"));
   assert.ok(app.includes("navigateTo('link-project', 'Vincular proyecto'"));
@@ -31,8 +39,8 @@ test('personal indicator status name is consistent in navigation and heading', (
   const portfolio = readFileSync(new URL('../src/IndicatorPortfolio.jsx', import.meta.url), 'utf8');
   assert.equal(app.includes('Estatus IND'), false);
   assert.equal(portfolio.includes('Estatus IND'), false);
-  assert.ok(app.includes('Estatus de mis indicadores'));
-  assert.ok(portfolio.includes('Estatus de mis indicadores'));
+  assert.ok(app.includes('Mis indicadores'));
+  assert.ok(portfolio.includes('Mis indicadores'));
 });
 test('Aurio is registered in directory and role assignment, preserving existing authentication', () => {
   const migration = readFileSync(new URL('../supabase/migrations/016_aurio_responsible_manager.sql', import.meta.url), 'utf8');

@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   LayoutDashboard, Target, FolderKanban, Settings, User, Plus, 
-  ChevronRight, AlertCircle, CheckCircle2, Clock, ArrowRight, ArrowLeft, BarChart3, Calendar, Users, Activity, LogOut, FilePenLine, History
+  ChevronRight, ChevronDown, AlertCircle, CheckCircle2, Clock, ArrowRight, ArrowLeft, BarChart3, Calendar, Users, Activity, LogOut, FilePenLine, History
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, BarChart, Bar, PieChart, Pie, Cell, Legend } from 'recharts';
 import biomontLogo from './assets/biomont-logo.png';
@@ -18,6 +18,7 @@ import { activeObjectives, objectiveActivityStatus } from './lib/objectiveViews'
 import ObjectiveStatusControl from './ObjectiveStatusControl';
 import BioIndicatorsView, { IndicatorFilterMenu, IndicatorYearFilter } from './BioIndicatorsView';
 import ObjectiveProgressList from './ObjectiveProgressList';
+import StrategicMap from './StrategicMap';
 import StrategicActions from './StrategicActions';
 import useCorrectiveWorkflow from './useCorrectiveWorkflow';
 import { AnalysisHistoryButton, ActionsHistoryButton } from './CorrectiveWorkflow';
@@ -167,6 +168,8 @@ const ProgressBar = ({ progress, status }) => {
 
 export default function App() {
   const [currentView, setCurrentView] = useState('dashboard');
+  const [bscVisible, setBscVisible] = useState(true);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [navHistory, setNavHistory] = useState([{ id: 'dashboard', name: 'Monitor' }]);
   
   const [objectives, setObjectives] = useState(INITIAL_OBJECTIVES);
@@ -1151,8 +1154,12 @@ export default function App() {
             {isGcg && <button onClick={() => navigateTo('gcg-review', 'Solicitudes')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${currentView === 'gcg-review' ? 'bg-[#1e293b] text-white' : 'hover:bg-slate-800 hover:text-white'}`}><CheckCircle2 className="w-5 h-5" /> Solicitudes</button>}
           </nav>
         </div>
-        <div className="p-4 border-t border-slate-800">
-          <div className="flex items-center gap-3 px-3 py-2"><div className="w-9 h-9 shrink-0 rounded-full bg-slate-700 flex items-center justify-center text-sm font-medium text-white">{(session?.user?.user_metadata?.full_name || session?.user?.email || 'U').split(' ').map(part => part[0]).join('').slice(0, 2).toUpperCase()}</div><div className="flex-1 overflow-hidden"><p className="text-sm font-medium text-white truncate">{session?.user?.user_metadata?.full_name || session?.user?.email}</p><p className="text-xs text-slate-500 truncate">{selectedRole.name}</p></div><button onClick={() => navigateTo('settings', 'Configuración')} aria-label="Abrir configuración" className="p-1 rounded hover:bg-slate-700"><Settings className="w-4 h-4 text-slate-400 hover:text-white" /></button></div>
+        <div className="relative p-4 border-t border-slate-800">
+          {profileMenuOpen && <div className="absolute bottom-full right-3 z-[70] mb-2 w-52 rounded-xl border border-slate-200 bg-white p-1.5 text-slate-800 shadow-xl">
+            <button onClick={() => { setProfileMenuOpen(false); setBscVisible(false); navigateTo('settings', 'Configuración'); }} className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium hover:bg-slate-100"><Settings className="h-4 w-4 text-slate-500" />Configuración</button>
+            <button onClick={() => { setProfileMenuOpen(false); setBscVisible(true); navigateTo('dashboard', 'Monitor estratégico'); }} className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium hover:bg-slate-100"><BarChart3 className="h-4 w-4 text-blue-600" />Gráfica BSC</button>
+          </div>}
+          <div className="flex items-center gap-3 px-3 py-2"><div className="w-9 h-9 shrink-0 rounded-full bg-slate-700 flex items-center justify-center text-sm font-medium text-white">{(session?.user?.user_metadata?.full_name || session?.user?.email || 'U').split(' ').map(part => part[0]).join('').slice(0, 2).toUpperCase()}</div><div className="flex-1 overflow-hidden"><p className="text-sm font-medium text-white truncate">{session?.user?.user_metadata?.full_name || session?.user?.email}</p><p className="text-xs text-slate-500 truncate">{selectedRole.name}</p></div><button onClick={() => setProfileMenuOpen(open => !open)} aria-label="Abrir menú de perfil" aria-expanded={profileMenuOpen} className="p-1 rounded hover:bg-slate-700"><ChevronDown className={`w-4 h-4 text-slate-400 hover:text-white transition-transform ${profileMenuOpen ? 'rotate-180' : ''}`} /></button></div>
         </div>
       </aside>
       <main className="app-main min-w-0 flex-1 flex flex-col min-h-screen">
@@ -1163,7 +1170,7 @@ export default function App() {
         </header>
         <div className="app-content p-4 md:p-6 flex-1 relative z-0">
           {dataError && <div className="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-center justify-between gap-3"><span>{dataError}</span><button onClick={() => setDataError('')} className="font-semibold shrink-0">Cerrar</button></div>}
-          {currentView === 'dashboard' && <><MonitorView />{isGcg && <ComparisonCharts indicators={indicators} reports={reports} />}</>}
+          {currentView === 'dashboard' && (bscVisible ? <StrategicMap objectives={scopedObjectives} indicators={scopedIndicators} reports={scopedReports} onClose={() => setBscVisible(false)} onSelectIndicator={indicator => { setBscVisible(false); navigateTo('indicator-detail', indicator.name, { indicatorId: indicator.id }); }} /> : <><MonitorView />{isGcg && <ComparisonCharts indicators={indicators} reports={reports} />}</>)}
           {currentView === 'bio-indicators' && <BioIndicatorsView workflow={corrective} objectives={objectives} indicators={indicators} reports={reports} users={availableUsers} filters={indicatorFilters} onChange={changeIndicatorFilters} year={bioIndicatorYear} isGcg={isGcg} session={session} onReload={loadOperationalData} onError={setDataError} onNotify={notify} />}
           {currentView === 'change-requests' && <ChangeRequests isGcg={isGcg} indicators={indicators} users={organizationPeople} onReload={loadOperationalData} onError={setDataError} />}
           {currentView === 'indicator-request-history' && <ChangeRequests isGcg={isGcg} indicators={indicators} users={organizationPeople} reports={reports} onReload={loadOperationalData} onError={setDataError} indicatorId={selectedIndicatorId} initialHistory onBack={goBack} />}

@@ -10,7 +10,7 @@ import biomontLogo from './assets/biomont-logo.png';
 import { supabase } from './lib/supabase';
 import { observeAuthentication } from './lib/authLifecycle';
 import { accountIdentities, indicatorAccess } from './lib/responsibility';
-import { ComparisonCharts, IndicatorControls, AssignedIndicators } from './Governance';
+import { IndicatorControls, AssignedIndicators } from './Governance';
 import ChangeRequests, { IndicatorRequestFlyout } from './ChangeRequestsView';
 import MeasurementChart from './MeasurementChart';
 import { reportedProgress, weightedMeasurementValue } from './lib/indicatorViews';
@@ -1163,7 +1163,7 @@ export default function App() {
         </header>
         <div className="app-content p-4 md:p-6 flex-1 relative z-0">
           {dataError && <div className="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-center justify-between gap-3"><span>{dataError}</span><button onClick={() => setDataError('')} className="font-semibold shrink-0">Cerrar</button></div>}
-          {currentView === 'dashboard' && (bscVisible ? <StrategicMap objectives={scopedObjectives} indicators={scopedIndicators} reports={scopedReports} users={availableUsers} onClose={() => setBscVisible(false)} onSelectIndicator={indicator => { setBscVisible(false); navigateTo('indicator-detail', indicator.name, { indicatorId: indicator.id }); }} /> : <><MonitorView />{isGcg && <ComparisonCharts indicators={indicators} reports={reports} />}</>)}
+          {currentView === 'dashboard' && (bscVisible ? <StrategicMap objectives={scopedObjectives} indicators={scopedIndicators} reports={scopedReports} users={availableUsers} onClose={() => setBscVisible(false)} onSelectIndicator={indicator => { setBscVisible(false); navigateTo('indicator-detail', indicator.name, { indicatorId: indicator.id }); }} /> : <MonitorView />)}
           {currentView === 'bio-indicators' && <BioIndicatorsView workflow={corrective} objectives={objectives} indicators={indicators} reports={reports} users={availableUsers} filters={indicatorFilters} onChange={changeIndicatorFilters} year={bioIndicatorYear} isGcg={isGcg} session={session} onReload={loadOperationalData} onError={setDataError} onNotify={notify} />}
           {currentView === 'change-requests' && <ChangeRequests isGcg={isGcg} indicators={indicators} users={organizationPeople} onReload={loadOperationalData} onError={setDataError} />}
           {currentView === 'indicator-request-history' && <ChangeRequests isGcg={isGcg} indicators={indicators} users={organizationPeople} reports={reports} onReload={loadOperationalData} onError={setDataError} indicatorId={selectedIndicatorId} initialHistory onBack={goBack} />}

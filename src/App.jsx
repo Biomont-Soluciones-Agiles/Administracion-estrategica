@@ -612,7 +612,7 @@ export default function App() {
   };
 
   const ObjectiveFormView = () => {
-    const [formData, setFormData] = useState({ name: '', description: '', focus: '', ownerId: '', validityStartYear: '', validityEndYear: '', stakeholders: [] });
+    const [formData, setFormData] = useState({ name: '', description: '', focus: '', ownerId: '', validityStartYear: '', validityEndYear: '' });
 
     const handleSubmit = async (e) => {
       e.preventDefault();
@@ -624,7 +624,6 @@ export default function App() {
         target_date: `${formData.validityEndYear}-12-31`,
         validity_start_year: Number(formData.validityStartYear),
         validity_end_year: Number(formData.validityEndYear),
-        stakeholders: formData.stakeholders,
         created_by: session.user.id,
       }).select().single();
       if (error) {
@@ -655,7 +654,6 @@ export default function App() {
                <Input label="Inicio de vigencia *" type="number" min="2020" max="2100" placeholder="2026" required value={formData.validityStartYear} onChange={e => setFormData({...formData, validityStartYear: e.target.value})} />
                <Input label="Fin de vigencia *" type="number" min="2020" max="2100" placeholder="2027" required value={formData.validityEndYear} onChange={e => setFormData({...formData, validityEndYear: e.target.value})} />
             </div>
-            <SearchablePeopleSelect label="Personas interesadas" multiple options={availableUsers} value={formData.stakeholders} onChange={stakeholders => setFormData({ ...formData, stakeholders })} />
             <div className="pt-6 border-t border-slate-100 flex justify-end gap-3">
             <Button type="button" variant="ghost" onClick={() => navigateTo(isGeneralManager ? 'dashboard' : 'objectives', isGeneralManager ? 'Monitor' : 'Objetivos')}>Cancelar</Button>
               <Button type="submit">Crear objetivo</Button>
@@ -700,7 +698,6 @@ export default function App() {
               <div><p className="text-xs text-slate-400 mb-1">Proyectos activos</p><p className="text-sm font-medium text-slate-900">{objProjects.length}</p></div>
               <div><p className="text-xs text-slate-400 mb-1">Indicadores medidos</p><p className="text-sm font-medium text-slate-900">{reportedProgress(objIndicators, reports).reported}</p></div>
             </div>
-            <div className="pt-4 border-t border-slate-100"><p className="text-xs text-slate-400 mb-2">Personas interesadas</p>{obj.stakeholders?.length ? <div className="flex flex-wrap gap-2">{obj.stakeholders.map(personId => { const person = availableUsers.find(user => user.id === personId); return <span key={personId} className="px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700">{person?.name || 'Persona registrada'}</span> })}</div> : <p className="text-sm text-slate-500">Aún no se han agregado personas interesadas.</p>}</div>
           </div>
         </div>
 

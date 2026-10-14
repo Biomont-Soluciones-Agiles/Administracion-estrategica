@@ -179,6 +179,7 @@ export default function App() {
   const [reports, setReports] = useState(INITIAL_REPORTS);
   const [profiles, setProfiles] = useState([]);
   const [organizationPeople, setOrganizationPeople] = useState([]);
+  const [dashboardMessages, setDashboardMessages] = useState([]);
   
   const [selectedObjectiveId, setSelectedObjectiveId] = useState(null);
   const [selectedObjectiveTab, setSelectedObjectiveTab] = useState('summary');
@@ -225,6 +226,8 @@ export default function App() {
   ];
   const MOCK_USERS = availableUsers;
   const currentAccountIds = accountIdentities(session?.user?.email, organizationPeople);
+  const personalizedMessage = dashboardMessages.find(message => String(message.recipient_email || '').trim().toLowerCase() === String(session?.user?.email || '').trim().toLowerCase())?.message?.trim();
+  const dashboardIntroduction = personalizedMessage || 'Aquí está el resumen estratégico de tu organización.';
   const accountOwns = value => currentAccountIds.some(id => String(id).trim().toLowerCase() === String(value ?? '').trim().toLowerCase());
   const isManagerScoped = isResponsibleManager && !isSuperAdmin;
   const scopedObjectives = isManagerScoped ? objectives.filter(objective => accountOwns(objective.ownerId)) : objectives;
@@ -243,7 +246,7 @@ export default function App() {
 
   const loadOperationalData = async () => {
     if (!supabase) return;
-    const [profilesResult, peopleResult, objectivesResult, projectsResult, actionsResult, indicatorsResult, reportsResult] = await Promise.all([
+    const [profilesResult, peopleResult, objectivesResult, projectsResult, actionsResult, indicatorsResult, reportsResult, messagesResult] = await Promise.all([
       supabase.from('profiles').select('email, role').order('email'),
       supabase.from('organization_people').select('id, full_name, email, role').eq('active', true).order('full_name'),
       supabase.from('objectives').select('*').order('created_at', { ascending: false }),
@@ -251,6 +254,7 @@ export default function App() {
       supabase.from('strategic_actions').select('*').order('created_at', { ascending: false }),
       supabase.from('indicators').select('*').order('created_at', { ascending: false }),
       supabase.from('indicator_reports').select('*').order('registered_date', { ascending: true }),
+      supabase.from('dashboard_messages').select('recipient_email, message, updated_at').order('updated_at', { ascending: false }),
     ]);
     const firstError = [profilesResult, peopleResult, objectivesResult, projectsResult, actionsResult, indicatorsResult, reportsResult].find(result => result.error)?.error;
     if (firstError) {
@@ -264,6 +268,7 @@ export default function App() {
     setTasks((actionsResult.data || []).map(toAction));
     setIndicators((indicatorsResult.data || []).map(toIndicator));
     setReports((reportsResult.data || []).map(toReport));
+    setDashboardMessages(messagesResult.data || []);
     setDataError('');
     await corrective.reload();
   };
@@ -482,7 +487,7 @@ export default function App() {
         <div className="flex flex-wrap justify-between items-end gap-4">
           <div>
             <h1 className="text-2xl font-bold text-[#0F172A] tracking-tight">Buenos días, {session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || 'usuario'}</h1>
-            <p className="text-slate-500 mt-1">Aquí está el resumen estratégico de tu organización.</p>
+            <p className="mt-1 whitespace-pre-line text-slate-500">{dashboardIntroduction}</p>
           </div>
           <div className="flex flex-wrap items-end gap-3"><label className="text-xs font-medium text-slate-500">Estatus de objetivos<select aria-label="Filtrar objetivos por estatus" value={objectiveStatusFilter} onChange={event => setObjectiveStatusFilter(event.target.value)} className="mt-1 block rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"><option value="">Todos los objetivos</option><option value="Activo">Activos</option><option value="No activo">No activos</option></select></label>
           {isGcg && <Button onClick={() => navigateTo('new-objective', 'Nuevo Objetivo')}>
@@ -1112,7 +1117,52 @@ export default function App() {
     )
   }
 
-  const SettingsView = () => <div className="max-w-3xl fade-in space-y-6"><div><h1 className="text-2xl font-bold text-slate-900">Configuración</h1><p className="text-slate-500 mt-1">Administra las preferencias generales de Bionexora.</p></div><Card className="p-6"><h2 className="font-semibold text-slate-900">Preferencias de visualización</h2><div className="mt-5 space-y-4"><label className="flex items-center justify-between gap-4 py-3 border-b border-slate-100"><span><span className="block text-sm font-medium text-slate-800">Alertas estratégicas</span><span className="block text-xs text-slate-500 mt-1">Muestra objetivos retrasados en el Monitor.</span></span><input type="checkbox" defaultChecked className="w-4 h-4 accent-[#D71920]" /></label><label className="flex items-center justify-between gap-4 py-3"><span><span className="block text-sm font-medium text-slate-800">Vista compacta</span><span className="block text-xs text-slate-500 mt-1">Reduce el espacio entre elementos del dashboard.</span></span><input type="checkbox" className="w-4 h-4 accent-[#D71920]" /></label></div></Card><Card className="p-6"><h2 className="font-semibold text-slate-900">Sesión</h2><p className="text-sm text-slate-500 mt-2">Correo: {session?.user?.email}</p><p className="text-sm text-slate-500 mt-1">Rol actual: {selectedRole?.name || ROLE_LABELS[assignedRole]}</p><div className="mt-4 flex flex-wrap gap-3">{isSuperAdmin && <Button variant="secondary" onClick={() => { setSelectedRole(null); setCurrentView('dashboard'); }}>Cambiar rol</Button>}<Button variant="secondary" onClick={signOut}><LogOut className="w-4 h-4" />Cerrar sesión</Button></div></Card><Card className="p-6"><h2 className="font-semibold text-slate-900">Información de la plataforma</h2><p className="text-sm text-slate-500 mt-2">Bionexora · Plataforma estratégica de Biomont</p></Card></div>;
+  const SettingsView = () => {
+    const [recipientEmail, setRecipientEmail] = useState('');
+    const [message, setMessage] = useState('');
+    const [busy, setBusy] = useState(false);
+    const recipient = availableUsers.find(user => String(user.email || '').toLowerCase() === recipientEmail);
+    const existingMessage = dashboardMessages.find(item => String(item.recipient_email || '').toLowerCase() === recipientEmail);
+
+    useEffect(() => {
+      setMessage(existingMessage?.message || '');
+    }, [recipientEmail, existingMessage?.message]);
+
+    const saveMessage = async event => {
+      event.preventDefault();
+      if (!recipientEmail || !message.trim() || busy) return;
+      setBusy(true);
+      const { error } = await supabase.from('dashboard_messages').upsert({
+        recipient_email: recipientEmail,
+        message: message.trim(),
+        updated_by: session.user.id,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'recipient_email' });
+      setBusy(false);
+      if (error) {
+        setDataError(`No se pudo guardar el mensaje: ${error.message}`);
+        return;
+      }
+      await loadOperationalData();
+      notify(`Mensaje actualizado para ${recipient?.name || recipientEmail}.`);
+    };
+
+    const clearMessage = async () => {
+      if (!recipientEmail || !existingMessage || busy || !window.confirm(`¿Quitar el mensaje personalizado para ${recipient?.name || recipientEmail}?`)) return;
+      setBusy(true);
+      const { error } = await supabase.from('dashboard_messages').delete().eq('recipient_email', recipientEmail);
+      setBusy(false);
+      if (error) {
+        setDataError(`No se pudo quitar el mensaje: ${error.message}`);
+        return;
+      }
+      setMessage('');
+      await loadOperationalData();
+      notify('Mensaje personalizado eliminado.');
+    };
+
+    return <div className="max-w-3xl fade-in space-y-6"><div><h1 className="text-2xl font-bold text-slate-900">Configuración</h1><p className="text-slate-500 mt-1">Administra las preferencias generales de Bionexora.</p></div><Card className="p-6"><h2 className="font-semibold text-slate-900">Preferencias de visualización</h2><div className="mt-5 space-y-4"><label className="flex items-center justify-between gap-4 py-3 border-b border-slate-100"><span><span className="block text-sm font-medium text-slate-800">Alertas estratégicas</span><span className="block text-xs text-slate-500 mt-1">Muestra objetivos retrasados en el Monitor.</span></span><input type="checkbox" defaultChecked className="w-4 h-4 accent-[#D71920]" /></label><label className="flex items-center justify-between gap-4 py-3"><span><span className="block text-sm font-medium text-slate-800">Vista compacta</span><span className="block text-xs text-slate-500 mt-1">Reduce el espacio entre elementos del dashboard.</span></span><input type="checkbox" className="w-4 h-4 accent-[#D71920]" /></label></div></Card>{isGcg && <Card className="p-6"><div><h2 className="font-semibold text-slate-900">Mensaje personalizado del monitor</h2><p className="mt-1 text-sm text-slate-500">Selecciona una persona y escribe el texto que verá debajo de su saludo en Objetivos.</p></div><form onSubmit={saveMessage} className="mt-5 space-y-4"><Select label="Persona destinataria *" required options={availableUsers.filter(user => user.email).map(user => ({ value: String(user.email).toLowerCase(), label: user.name }))} value={recipientEmail} onChange={event => setRecipientEmail(event.target.value)} /><div className="flex flex-col gap-1.5"><label className="text-sm font-medium text-slate-700">Texto personalizado *</label><textarea required maxLength={600} rows={4} value={message} onChange={event => setMessage(event.target.value)} placeholder="Ej.: Recuerda registrar la medición de este mes antes del cierre." className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#3B82F6]" /><p className="text-right text-xs text-slate-400">{message.length}/600</p></div><div className="flex flex-wrap justify-end gap-3"><Button type="button" variant="secondary" disabled={!existingMessage || busy} onClick={clearMessage}>Quitar mensaje</Button><Button type="submit" disabled={!recipientEmail || !message.trim() || busy}>{busy ? 'Guardando…' : existingMessage ? 'Actualizar mensaje' : 'Guardar mensaje'}</Button></div></form></Card>}<Card className="p-6"><h2 className="font-semibold text-slate-900">Sesión</h2><p className="text-sm text-slate-500 mt-2">Correo: {session?.user?.email}</p><p className="text-sm text-slate-500 mt-1">Rol actual: {selectedRole?.name || ROLE_LABELS[assignedRole]}</p><div className="mt-4 flex flex-wrap gap-3">{isSuperAdmin && <Button variant="secondary" onClick={() => { setSelectedRole(null); setCurrentView('dashboard'); }}>Cambiar rol</Button>}<Button variant="secondary" onClick={signOut}><LogOut className="w-4 h-4" />Cerrar sesión</Button></div></Card><Card className="p-6"><h2 className="font-semibold text-slate-900">Información de la plataforma</h2><p className="text-sm text-slate-500 mt-2">Bionexora · Plataforma estratégica de Biomont</p></Card></div>;
+  };
 
   const AuthShell = ({ children }) => <main className="min-h-screen bg-[#F7F8FA] flex items-center justify-center p-5 relative overflow-hidden"><div className="absolute -top-32 -right-28 w-96 h-96 rounded-full bg-red-100/60 blur-3xl" /><div className="w-full max-w-5xl relative">{children}</div></main>;
 

@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   LayoutDashboard, Target, FolderKanban, Settings, User, Plus, 
-  ChevronRight, ChevronDown, AlertCircle, CheckCircle2, Clock, ArrowRight, ArrowLeft, BarChart3, Calendar, Users, Activity, LogOut, FilePenLine, History
+  ChevronRight, AlertCircle, CheckCircle2, Clock, ArrowRight, ArrowLeft, BarChart3, Calendar, Users, Activity, LogOut, FilePenLine, History
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, BarChart, Bar, PieChart, Pie, Cell, Legend } from 'recharts';
 import biomontLogo from './assets/biomont-logo.png';
@@ -169,7 +169,6 @@ const ProgressBar = ({ progress, status }) => {
 export default function App() {
   const [currentView, setCurrentView] = useState('dashboard');
   const [bscVisible, setBscVisible] = useState(true);
-  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [navHistory, setNavHistory] = useState([{ id: 'dashboard', name: 'Monitor' }]);
   
   const [objectives, setObjectives] = useState(INITIAL_OBJECTIVES);
@@ -1146,7 +1145,8 @@ export default function App() {
         <div className="flex-1 overflow-y-auto py-4">
           <nav className="px-3 space-y-1">
             <div className="pt-2 pb-1"><p className="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Reportería</p></div>
-            <button onClick={() => navigateTo('dashboard', 'Monitor estratégico')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${currentView === 'dashboard' ? 'bg-[#1e293b] text-white' : 'hover:bg-slate-800 hover:text-white'}`}><LayoutDashboard className="w-5 h-5" /> Monitor estratégico</button>
+            <button onClick={() => { setBscVisible(true); navigateTo('dashboard', 'Monitor estratégico'); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${currentView === 'dashboard' && bscVisible ? 'bg-[#1e293b] text-white' : 'hover:bg-slate-800 hover:text-white'}`}><BarChart3 className="w-5 h-5" /> Gráfica BSC</button>
+            <button onClick={() => { setBscVisible(false); navigateTo('dashboard', 'Monitor estratégico'); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${currentView === 'dashboard' && !bscVisible ? 'bg-[#1e293b] text-white' : 'hover:bg-slate-800 hover:text-white'}`}><LayoutDashboard className="w-5 h-5" /> Monitor estratégico</button>
             <button onClick={() => navigateTo('bio-indicators', 'Indicadores general')} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium ${currentView === 'bio-indicators' ? 'bg-slate-800 text-white' : 'hover:bg-slate-800 hover:text-white'}`}><BarChart3 className="w-5 h-5" />Indicadores general</button>{!isGcg && <button onClick={() => navigateTo('change-requests', 'Solicitudes')} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium ${currentView === 'change-requests' ? 'bg-slate-800 text-white' : 'hover:bg-slate-800 hover:text-white'}`}><FilePenLine className="w-5 h-5" />Solicitudes</button>}
             <div className="pt-4 pb-1"><p className="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Gestión Estratégica</p></div>
             <button onClick={() => navigateTo(isGeneralManager ? 'new-objective' : 'objectives', isGeneralManager ? 'Crear objetivo' : 'Objetivos')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${(currentView.includes('objective') && currentView !== 'dashboard') ? 'bg-[#1e293b] text-white' : 'hover:bg-slate-800 hover:text-white'}`}><Target className="w-5 h-5" /> {isGeneralManager ? 'Crear objetivo' : 'Objetivos'}</button>
@@ -1154,12 +1154,8 @@ export default function App() {
             {isGcg && <button onClick={() => navigateTo('gcg-review', 'Solicitudes')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${currentView === 'gcg-review' ? 'bg-[#1e293b] text-white' : 'hover:bg-slate-800 hover:text-white'}`}><CheckCircle2 className="w-5 h-5" /> Solicitudes</button>}
           </nav>
         </div>
-        <div className="relative p-4 border-t border-slate-800">
-          {profileMenuOpen && <div className="absolute bottom-full right-3 z-[70] mb-2 w-52 rounded-xl border border-slate-200 bg-white p-1.5 text-slate-800 shadow-xl">
-            <button onClick={() => { setProfileMenuOpen(false); setBscVisible(false); navigateTo('settings', 'Configuración'); }} className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium hover:bg-slate-100"><Settings className="h-4 w-4 text-slate-500" />Configuración</button>
-            <button onClick={() => { setProfileMenuOpen(false); setBscVisible(true); navigateTo('dashboard', 'Monitor estratégico'); }} className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium hover:bg-slate-100"><BarChart3 className="h-4 w-4 text-blue-600" />Gráfica BSC</button>
-          </div>}
-          <div className="flex items-center gap-3 px-3 py-2"><div className="w-9 h-9 shrink-0 rounded-full bg-slate-700 flex items-center justify-center text-sm font-medium text-white">{(session?.user?.user_metadata?.full_name || session?.user?.email || 'U').split(' ').map(part => part[0]).join('').slice(0, 2).toUpperCase()}</div><div className="flex-1 overflow-hidden"><p className="text-sm font-medium text-white truncate">{session?.user?.user_metadata?.full_name || session?.user?.email}</p><p className="text-xs text-slate-500 truncate">{selectedRole.name}</p></div><button onClick={() => setProfileMenuOpen(open => !open)} aria-label="Abrir menú de perfil" aria-expanded={profileMenuOpen} className="p-1 rounded hover:bg-slate-700"><ChevronDown className={`w-4 h-4 text-slate-400 hover:text-white transition-transform ${profileMenuOpen ? 'rotate-180' : ''}`} /></button></div>
+        <div className="p-4 border-t border-slate-800">
+          <div className="flex items-center gap-3 px-3 py-2"><div className="w-9 h-9 shrink-0 rounded-full bg-slate-700 flex items-center justify-center text-sm font-medium text-white">{(session?.user?.user_metadata?.full_name || session?.user?.email || 'U').split(' ').map(part => part[0]).join('').slice(0, 2).toUpperCase()}</div><div className="flex-1 overflow-hidden"><p className="text-sm font-medium text-white truncate">{session?.user?.user_metadata?.full_name || session?.user?.email}</p><p className="text-xs text-slate-500 truncate">{selectedRole.name}</p></div><button onClick={() => navigateTo('settings', 'Configuración')} aria-label="Abrir configuración" className="p-1 rounded hover:bg-slate-700"><Settings className="w-4 h-4 text-slate-400 hover:text-white" /></button></div>
         </div>
       </aside>
       <main className="app-main min-w-0 flex-1 flex flex-col min-h-screen">

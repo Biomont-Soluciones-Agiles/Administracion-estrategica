@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { CircleDollarSign, GraduationCap, Users, X, Cog, Target, ChevronRight } from 'lucide-react';
 import { displayUnit } from './lib/units';
 
@@ -13,7 +14,7 @@ function ObjectiveDetail({ objective, indicators, reports, close, openIndicator 
   if (!objective) return null;
   const rows = indicators.filter(i => String(i.objectiveId) === String(objective.id));
   const measured = rows.filter(i => reports.some(r => String(r.indicatorId) === String(i.id))).length;
-  return <div role="dialog" aria-modal="true" aria-label={`Detalle de ${objective.name}`} onMouseDown={e => { if (e.target === e.currentTarget) close(); }} className="fixed inset-0 z-[80] flex justify-end bg-slate-950/35 backdrop-blur-[1px]">
+  return createPortal(<div role="dialog" aria-modal="true" aria-label={`Detalle de ${objective.name}`} onMouseDown={e => { if (e.target === e.currentTarget) close(); }} className="fixed inset-0 z-[100] flex justify-end bg-slate-950/35 backdrop-blur-[1px]">
     <section className="flex h-full w-full max-w-2xl flex-col overflow-y-auto bg-white shadow-2xl">
       <header className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b bg-white px-6 py-5"><div><p className="text-xs font-semibold uppercase text-blue-700">{objective.code || 'Objetivo'}</p><h2 className="mt-1 text-xl font-bold text-slate-900">{objective.name}</h2></div><button onClick={close} aria-label="Cerrar detalle" className="rounded-full p-2 text-slate-500 hover:bg-slate-100"><X className="h-5 w-5" /></button></header>
       <div className="flex-1 space-y-5 p-6">
@@ -27,7 +28,7 @@ function ObjectiveDetail({ objective, indicators, reports, close, openIndicator 
       </div>
       <footer className="sticky bottom-0 border-t bg-white p-4"><button onClick={close} className="w-full rounded-xl bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-800 hover:bg-blue-100">Volver al mapa BSC</button></footer>
     </section>
-  </div>;
+  </div>, document.body);
 }
 
 export default function StrategicMap({ objectives = [], indicators = [], reports = [], onClose, onSelectIndicator }) {

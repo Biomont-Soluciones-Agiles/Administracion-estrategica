@@ -186,9 +186,9 @@ export default function App() {
   const [indicatorRequestFlyout, setIndicatorRequestFlyout] = useState(null);
   const [indicatorRequestForm, setIndicatorRequestForm] = useState(false);
   const [indicatorFilters, setIndicatorFilters] = useState({ search: '', objectiveId: '', responsibleId: '', indicatorId: '' });
-  const [bioIndicatorYear, setBioIndicatorYear] = useState('');
+  const [bioIndicatorYear, setBioIndicatorYear] = useState(String(new Date().getFullYear()));
   const changeIndicatorFilters = next => {
-    if (next.indicatorId !== indicatorFilters.indicatorId) setBioIndicatorYear('');
+    if (next.indicatorId !== indicatorFilters.indicatorId) setBioIndicatorYear(String(new Date().getFullYear()));
     setIndicatorFilters(next);
   };
   const [selectedActionId, setSelectedActionId] = useState(null);
@@ -1026,12 +1026,8 @@ export default function App() {
           </div>
         </div>
         <Card className="p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="font-semibold text-slate-900">Tendencia Histórica</h3>
-            {isResponsibleManager && canReport && <Button disabled={!isApproved} onClick={() => navigateTo('report-indicator', 'Registrar Resultado', { indicatorId: ind.id })} variant="secondary">Registrar resultado</Button>}
-          </div>
           {!isApproved && <div className="mb-5 p-3 rounded-lg bg-amber-50 border border-amber-200 text-sm text-amber-800">Este indicador está <strong>{ind.approvalStatus || 'pendiente de aprobación GCG'}</strong>. La gerencia responsable podrá reportar resultados cuando GCG lo apruebe.</div>}
-          <MeasurementChart indicator={ind} reports={indReports} />
+          <MeasurementChart indicator={ind} reports={indReports} headerAction={isResponsibleManager && canReport ? <Button disabled={!isApproved} onClick={() => navigateTo('report-indicator', 'Registrar Resultado', { indicatorId: ind.id })} variant="secondary">Registrar resultado</Button> : null} />
         </Card>
         <Card className="overflow-hidden">
           <div className="p-5 border-b border-slate-200"><h3 className="font-semibold text-slate-900">Historial de Mediciones</h3></div>

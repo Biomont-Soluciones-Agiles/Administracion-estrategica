@@ -696,33 +696,16 @@ export default function App() {
     const objIndicators = indicators.filter(i => i.objectiveId === obj.id);
 
     return (
-      <div className="fade-in space-y-6">
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-[#f0f9ff] rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none opacity-60"></div>
-          <div className="relative z-10">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-              <div>
-                <p className="text-xs font-semibold text-blue-700 mb-2">{obj.code}</p><h1 className="text-2xl font-bold text-[#0F172A]">{obj.name}</h1>
-                <p className="text-slate-500 mt-1 max-w-3xl">{obj.description}</p>
-              </div>
-              <div className="text-right shrink-0">
-                <div className="text-3xl font-bold text-[#1D4ED8]">{obj.progress}%</div>
-                <p className="text-sm text-slate-500 font-medium">Avance general</p>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-4 border-t border-slate-100">
-              <div><p className="text-xs text-slate-400 mb-1">Responsable</p><div className="flex items-center gap-2"><div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-xs text-slate-600">{owner?.avatar}</div><span className="text-sm font-medium text-slate-900">{owner?.name}</span></div></div>
-              <div><p className="text-xs text-slate-400 mb-1">Foco estratégico</p><p className="text-sm font-medium text-slate-900">{obj.focus || 'Sin foco definido'}</p></div>
-              <div><p className="text-xs text-slate-400 mb-1">Periodo de vigencia</p><p className="text-sm font-medium text-slate-900 flex items-center gap-1"><Calendar className="w-4 h-4 text-slate-400" /> {obj.validityStartYear} - {obj.validityEndYear}</p></div>
-              <div><p className="text-xs text-slate-400 mb-1">Proyectos activos</p><p className="text-sm font-medium text-slate-900">{objProjects.length}</p></div>
-              <div><p className="text-xs text-slate-400 mb-1">Indicadores medidos</p><p className="text-sm font-medium text-slate-900">{reportedProgress(objIndicators, reports).reported}</p></div>
-            </div>
-          </div>
-        </div>
+      <div className="fade-in space-y-4">
+        <header className="px-1 pt-1">
+          <div className="flex flex-wrap items-center gap-2"><p className="text-xs font-semibold text-blue-700">{obj.code}</p><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${objectiveActivityStatus(obj) === 'Activo' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>{objectiveActivityStatus(obj)}</span></div>
+          <h1 className="mt-2 text-2xl font-bold text-[#0F172A]">{obj.name}</h1>
+          {obj.description && <p className="mt-1 text-sm text-slate-500">{obj.description}</p>}
+        </header>
 
         <div className="border-b border-slate-200">
           <div className="flex gap-6 overflow-x-auto whitespace-nowrap pr-2">
-            {[ { id: 'summary', label: 'Resumen', icon: Activity, visible: true }, { id: 'projects', label: 'Proyectos', icon: FolderKanban, visible: isResponsibleManager || isGcg }, { id: 'indicators', label: 'Indicadores', icon: BarChart3, visible: isResponsibleManager || isGcg }].filter(tab => tab.visible).map(tab => (
+            {[ { id: 'summary', label: 'Información', icon: Activity, visible: true }, { id: 'indicators', label: 'Indicadores', icon: BarChart3, visible: isResponsibleManager || isGcg }, { id: 'projects', label: 'Proyectos y acciones', icon: FolderKanban, visible: isResponsibleManager || isGcg }].filter(tab => tab.visible).map(tab => (
               <button key={tab.id} onClick={() => { setActiveTab(tab.id); setSelectedObjectiveTab(tab.id); setNavHistory(history => history.map((entry, index) => index === history.length - 1 && entry.id === 'objective-detail' ? { ...entry, objectiveTab: tab.id } : entry)); }} className={`pb-3 flex items-center gap-2 text-sm font-medium border-b-2 transition-colors ${activeTab === tab.id ? 'border-[#1D4ED8] text-[#1D4ED8]' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}>
                 <tab.icon className="w-4 h-4" /> {tab.label}
               </button>
@@ -768,9 +751,9 @@ export default function App() {
           {activeTab === 'projects' && (
             <div className="space-y-4">
               <PmoProjects objective={obj} projects={objProjects} canManage={isGcg || (isResponsibleManager && accountOwns(obj.ownerId))} onReload={loadOperationalData} onNotify={notify} />
-              <div className="flex flex-wrap items-center justify-between gap-3"><h3 className="text-lg font-bold text-slate-900">Acciones estratégicas</h3>{(isResponsibleManager || isGcg) && <Button onClick={() => navigateTo('new-project', 'Añadir acción stratégique', { objectiveId: obj.id, objectiveTab: 'projects' })}><Plus className="h-4 w-4" />Añadir acción estratégica</Button>}</div>
+              <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm"><header className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3"><h3 className="text-base font-bold text-slate-900">Acciones estratégicas</h3>{(isResponsibleManager || isGcg) && <Button onClick={() => navigateTo('new-project', 'Añadir acción stratégique', { objectiveId: obj.id, objectiveTab: 'projects' })}><Plus className="h-4 w-4" />Añadir acción estratégica</Button>}</header>
               <StrategicActions actions={objActions} users={availableUsers} onDelete={async action => { if (!(isResponsibleManager || isGcg)) throw new Error('No puedes eliminar esta acción.'); const { error } = await supabase.from('strategic_actions').delete().eq('id', action.id).select('id').single(); if (error) throw new Error('No se pudo eliminar la acción. Inténtalo nuevamente.'); setTasks(items => items.filter(item => item.id !== action.id)); notify('Acción estratégica eliminada.'); }} onStatusChange={async (action, status) => { if (!(isResponsibleManager || isGcg) || !['Cerrado', 'En progreso'].includes(status)) throw new Error('No se puede cambiar el estatus.'); const now = new Date().toISOString(); const { data, error } = await supabase.from('strategic_actions').update({ status, completed_at: status === 'Cerrado' ? now : null, updated_at: now }).eq('id', action.id).select().single(); if (error) throw new Error('No se pudo guardar el estatus.'); setTasks(items => items.map(item => item.id === action.id ? toAction(data) : item)); notify(status === 'Cerrado' ? 'Acción cerrada; se registró la fecha de término real.' : 'Acción reabierta.'); }} canEdit={isResponsibleManager || isGcg} onEdit={action => navigateTo('edit-action', 'Editar acción estratégica', { objectiveId: obj.id, actionId: action.id, objectiveTab: 'projects' })} />
-            </div>
+            </section></div>
           )}
 
           {activeTab === 'indicators' && (

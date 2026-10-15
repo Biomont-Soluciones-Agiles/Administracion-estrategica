@@ -2,6 +2,22 @@ export function rankedObjectives(objectives) {
   return objectives.map(objective => ({ ...objective, progress: Number.isFinite(Number(objective.progress)) ? Math.min(100, Math.max(0, Number(objective.progress))) : 0 })).sort((a, b) => b.progress - a.progress);
 }
 
+export function linkedProjectProgress(projects = []) {
+  if (!projects.length) return 0;
+  const total = projects.reduce((sum, project) => {
+    const progress = Number(project.progress);
+    return sum + (Number.isFinite(progress) ? Math.min(100, Math.max(0, progress)) : 0);
+  }, 0);
+  return Math.round(total / projects.length);
+}
+
+export function withLinkedProjectProgress(objectives = [], projects = []) {
+  return objectives.map(objective => ({
+    ...objective,
+    progress: linkedProjectProgress(projects.filter(project => String(project.objectiveId ?? project.objective_id) === String(objective.id))),
+  }));
+}
+
 export function objectiveActivityStatus(objective, now = new Date()) {
   if (['Activo', 'No activo'].includes(objective.status)) return objective.status;
   const year = Number(new Intl.DateTimeFormat('en', { timeZone: 'America/Lima', year: 'numeric' }).format(now));

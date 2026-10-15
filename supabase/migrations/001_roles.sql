@@ -1,4 +1,4 @@
--- Bionexora: asignación de roles por correo corporativo.
+-- BIOMET: asignación de roles por correo corporativo.
 -- Ejecutar este archivo una vez desde Supabase > SQL Editor.
 
 create table if not exists public.role_assignments (
@@ -42,7 +42,7 @@ begin
   where email = lower(new.email);
 
   if assigned_role is null then
-    raise exception 'El correo % no tiene un rol asignado en Bionexora', new.email;
+    raise exception 'El correo % no tiene un rol asignado en BIOMET', new.email;
   end if;
 
   insert into public.profiles (id, email, role)

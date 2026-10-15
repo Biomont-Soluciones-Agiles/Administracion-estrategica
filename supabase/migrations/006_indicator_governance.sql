@@ -150,7 +150,7 @@ create trigger refresh_measurement_status after insert or update on public.indic
 create or replace function public.assign_indicator_reporter(indicator bigint, reporter text) returns void language plpgsql security definer set search_path = public as $$
 begin
  if not can_manage_reporting(indicator) and not is_gcg() then raise exception 'Solo el gerente asignado puede delegar el reporte'; end if;
- if reporter is not null and not exists(select 1 from organization_people where id::text = reporter and email is not null and active) and not exists(select 1 from profiles where email = reporter) then raise exception 'El responsable debe tener correo y acceso a Bionexora'; end if;
+ if reporter is not null and not exists(select 1 from organization_people where id::text = reporter and email is not null and active) and not exists(select 1 from profiles where email = reporter) then raise exception 'El responsable debe tener correo y acceso a BIOMET'; end if;
  update indicators set reporter_email = reporter where id = indicator;
 end; $$;
 

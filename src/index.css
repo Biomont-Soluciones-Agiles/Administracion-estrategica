@@ -19,7 +19,7 @@ body {
 }
 
 /* Shared shell dimensions keep the content aligned with the navigation. */
-.bionexora-app {
+.biomet-app {
   --sidebar-width: 224px;
   font-size: 0.875rem;
   line-height: 1.375rem;

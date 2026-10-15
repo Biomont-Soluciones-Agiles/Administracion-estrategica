@@ -1,4 +1,4 @@
--- Bionexora: responsables, vigencia anual y gobierno de indicadores.
+-- BIOMET: responsables, vigencia anual y gobierno de indicadores.
 -- Ejecutar después de 001_roles.sql y 002_operational_data.sql.
 
 alter table public.objectives alter column category drop not null;

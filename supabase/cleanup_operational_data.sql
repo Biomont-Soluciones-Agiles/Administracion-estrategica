@@ -1,4 +1,4 @@
--- LIMPIEZA PARA ENTREGA DE BIONEXORA.
+-- LIMPIEZA PARA ENTREGA DE BIOMET.
 -- Ejecutar manualmente en SQL Editor del proyecto de Supabase de esta app.
 -- Exportar antes los datos si se desea poder recuperarlos.
 -- Borra TODOS los datos operativos. Conserva usuarios, perfiles, roles,

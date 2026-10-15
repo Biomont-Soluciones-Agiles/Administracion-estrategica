@@ -1,4 +1,4 @@
--- Directorio y roles autorizados para el acceso a Bionexora.
+-- Directorio y roles autorizados para el acceso a BIOMET.
 -- Los correos externos requieren ser invitados B2B en Microsoft Entra ID de Biomont.
 begin;
 

@@ -1,4 +1,4 @@
--- Bionexora: datos operativos persistentes.
+-- BIOMET: datos operativos persistentes.
 -- Ejecutar una sola vez en Supabase > SQL Editor, después de 001_roles.sql.
 
 create table if not exists public.objectives (
@@ -78,7 +78,7 @@ create index if not exists indicators_objective_id_idx on public.indicators(obje
 create index if not exists indicator_reports_indicator_id_idx on public.indicator_reports(indicator_id);
 
 -- Usuarios autenticados trabajan sobre el mismo portafolio institucional.
--- Las pantallas de Bionexora limitan las acciones disponibles según el rol.
+-- Las pantallas de BIOMET limitan las acciones disponibles según el rol.
 do $$
 declare
   table_name text;

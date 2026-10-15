@@ -7,7 +7,7 @@ const field = 'rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm';
 const date = value => value ? new Date(value + 'T12:00:00').toLocaleDateString('es-PE') : 'Sin fecha';
 const stamp = value => value ? new Date(value).toLocaleString('es-PE', { timeZone: 'America/Lima' }) : 'Sin actualización';
 function Progress({ value }) {
-  return <div><div className="mb-2 flex justify-between text-xs text-slate-500"><span>Avance del proyecto</span><strong className="text-lg text-blue-700">{value ?? 0}%</strong></div><div className="h-2 overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full bg-blue-600" style={{ width: `${Math.max(0, Math.min(100, value || 0))}%` }} /></div></div>;
+  return <div><div className="mb-2 flex justify-between text-xs text-slate-500"><span>Avance</span><strong className="text-lg text-blue-700">{value ?? 0}%</strong></div><div className="h-2 overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full bg-blue-600" style={{ width: `${Math.max(0, Math.min(100, value || 0))}%` }} /></div></div>;
 }
 
 export default function PmoProjects({ objective, projects, canManage, onReload, onNotify }) {

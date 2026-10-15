@@ -17,7 +17,7 @@ function InfoRow({ label, value }) {
   </div>;
 }
 
-function ObjectiveDetail({ objective, indicators, reports, users = [], close, openIndicator }) {
+function ObjectiveDetail({ objective, indicators, reports, users = [], close, openIndicator, canSelectIndicator }) {
   if (!objective) return null;
   const rows = indicators.filter(i => String(i.objectiveId) === String(objective.id));
   const measured = rows.filter(i => reports.some(r => String(r.indicatorId) === String(i.id))).length;
@@ -38,7 +38,7 @@ function ObjectiveDetail({ objective, indicators, reports, users = [], close, op
           </dl>
         </section>
         <section><h3 className="mb-1 font-bold">Indicadores del objetivo <span className="text-xs font-normal text-slate-500">{rows.length}</span></h3><div className="divide-y divide-slate-200">
-          {rows.map(i => { const latest = reports.filter(r => String(r.indicatorId) === String(i.id)).at(-1); return <article key={i.id} className="py-3"><h4 className="font-semibold text-slate-900">{i.name}</h4><dl className="mt-1"><InfoRow label="Medición" value={latest?.result == null ? 'Sin medición' : `${latest.result} ${displayUnit(i.unit)}`} /><InfoRow label="Meta" value={`${i.comparator || ''} ${i.target ?? ''} ${displayUnit(i.unit)}`.trim()} /></dl><button onClick={() => openIndicator(i)} className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-blue-700 hover:text-blue-900">Ver indicador <ChevronRight className="h-4 w-4" /></button></article>; })}
+          {rows.map(i => { const latest = reports.filter(r => String(r.indicatorId) === String(i.id)).at(-1); return <article key={i.id} className="py-3"><h4 className="font-semibold text-slate-900">{i.name}</h4><dl className="mt-1"><InfoRow label="Medición" value={latest?.result == null ? 'Sin medición' : `${latest.result} ${displayUnit(i.unit)}`} /><InfoRow label="Meta" value={`${i.comparator || ''} ${i.target ?? ''} ${displayUnit(i.unit)}`.trim()} /></dl>{canSelectIndicator(i) && <button onClick={() => openIndicator(i)} className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-blue-700 hover:text-blue-900">Ver indicador <ChevronRight className="h-4 w-4" /></button>}</article>; })}
           {!rows.length && <p className="rounded-xl border border-dashed p-5 text-center text-sm text-slate-500">Este objetivo aun no tiene indicadores.</p>}
         </div></section>
       </div>
@@ -47,11 +47,11 @@ function ObjectiveDetail({ objective, indicators, reports, users = [], close, op
   </div>, document.body);
 }
 
-export default function StrategicMap({ objectives = [], indicators = [], reports = [], users = [], onClose, onSelectIndicator }) {
+export default function StrategicMap({ objectives = [], indicators = [], reports = [], users = [], onClose, onSelectIndicator, canSelectIndicator = () => true }) {
   const [selected, setSelected] = React.useState(null);
   return <section className="flex min-h-[calc(100vh-7rem)] flex-col" aria-label="Mapa estrategico BSC">
     <header className="mb-4 flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#D71920]">BIOMET</p><h1 className="mt-1 text-2xl font-bold md:text-3xl">Mapa estratégico BSC</h1><p className="mt-1 text-sm text-slate-500">Objetivos organizados por foco estratégico</p></div><div className="flex items-center gap-3"><p className="hidden rounded-lg border bg-white px-3 py-2 text-xs text-slate-500 lg:block">Selecciona un objetivo para ver sus indicadores</p><button onClick={onClose} aria-label="Cerrar gráfica BSC" className="rounded-lg border bg-white p-2.5 text-slate-500 shadow-sm hover:border-red-200 hover:bg-red-50 hover:text-[#D71920]"><X className="h-5 w-5" /></button></div></header>
     <div className="grid flex-1 grid-rows-4 gap-3 pb-3 max-md:grid-rows-none">{FOCI.map(({ key, label, Icon, colors }) => { const rows = objectives.filter(o => o.focus === key); return <section key={key} aria-label={`Foco ${label}`} className={`flex min-h-32 gap-3 rounded-2xl border p-2.5 md:p-3 ${colors[0]} max-md:min-h-28`}><div className={`flex w-28 shrink-0 flex-col items-center justify-center gap-2 rounded-xl px-2 py-3 text-center md:w-36 ${colors[1]}`}><Icon className="h-5 w-5" /><h2 className="text-xs font-bold md:text-sm">{label}</h2></div><div className="grid min-w-0 flex-1 grid-cols-1 items-stretch gap-2 sm:grid-cols-2 xl:grid-cols-3">{rows.map(o => <button key={o.id} onClick={() => setSelected(o)} className={`group flex min-h-16 items-center justify-center gap-2 rounded-xl border bg-white/90 px-3 py-3 text-center shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 ${colors[2]}`}><span><span className="block text-[10px] font-bold text-slate-500">{o.code || 'OBJ'}</span><span className="mt-1 block text-xs font-semibold leading-4 md:text-sm">{o.name}</span></span><ChevronRight className="h-4 w-4 shrink-0 text-slate-300 group-hover:text-slate-600" /></button>)}</div></section>; })}</div>
-    <ObjectiveDetail objective={selected} indicators={indicators} reports={reports} users={users} close={() => setSelected(null)} openIndicator={onSelectIndicator} />
+    <ObjectiveDetail objective={selected} indicators={indicators} reports={reports} users={users} close={() => setSelected(null)} openIndicator={onSelectIndicator} canSelectIndicator={canSelectIndicator} />
   </section>;
 }

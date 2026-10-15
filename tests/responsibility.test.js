@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { accountIdentities, indicatorAccess } from '../src/lib/responsibility.js';
+import { accountIdentities, indicatorAccess, supportIndicators } from '../src/lib/responsibility.js';
 
 test('matches directory IDs and normalized account emails', () => {
   const ids = accountIdentities(' Manager@Example.com ', [{ id: 'person-1', email: 'manager@example.com' }]);
@@ -25,4 +25,17 @@ test('superadministrator sees all indicators; missing emails never match unlinke
   assert.equal(indicatorAccess({}, null, [], true).canReport, true);
   assert.deepEqual(accountIdentities(undefined, [{ id: 'unlinked' }]), []);
   assert.equal(indicatorAccess({}, {}, []).canReport, false);
+});
+
+test('support portfolio includes only explicit delegations, never objective or indicator ownership', () => {
+  const indicators = [
+    { id: 1, ownerId: 'support@example.com' },
+    { id: 2, reporter_email: ' SUPPORT@example.com ' },
+    { id: 3, reporter_email: 'directory-id' },
+    { id: 4, reporter_email: 'someone-else@example.com' },
+    { id: 5, reporter_email: '' },
+  ];
+  assert.deepEqual(supportIndicators(indicators, ['support@example.com', 'directory-id']).map(row => row.id), [2, 3]);
+  assert.deepEqual(supportIndicators(indicators, []), []);
+  assert.deepEqual(supportIndicators([{ id: 6 }], ['']), []);
 });

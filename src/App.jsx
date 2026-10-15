@@ -22,12 +22,14 @@ import StrategicMap from './StrategicMap';
 import StrategicActions from './StrategicActions';
 import PmoProjects from './PmoProjects';
 import MicrosoftDirectory, { loadMicrosoftDirectory } from './MicrosoftDirectory';
+import UserWorkspace from './UserWorkspace';
 import useCorrectiveWorkflow from './useCorrectiveWorkflow';
 import { AnalysisHistoryButton, ActionsHistoryButton } from './CorrectiveWorkflow';
 import { attentionIndicators } from './lib/correctiveWorkflow';
 import { personName } from './lib/personNames';
 
 const ROLE_LABELS = {
+  usuario: 'Usuario',
   gerente_responsable: 'Gerente responsable',
   gcg: 'GCG',
   super_admin: 'Super admin',
@@ -325,7 +327,7 @@ export default function App() {
       setSession(activeSession);
       if (error) {
         setAuthError('No se pudo verificar tu rol. Reintenta sin cerrar la sesión.');
-      } else if (!data?.role) {
+      } else if (!data?.role || !['gcg', 'gerente_responsable', 'super_admin', 'usuario', 'gerente_general'].includes(data.role)) {
         setAssignedRole(null);
         setSelectedRole(null);
         setAuthError('Tu correo corporativo no tiene un rol asignado en BIOMET. Contacta al administrador.');
@@ -1123,7 +1125,11 @@ export default function App() {
 
   if (!session) return <AuthShell><div className="max-w-md mx-auto bg-white border border-slate-200 rounded-2xl p-8 text-center shadow-sm"><img src={biomontLogo} alt="Biomont" className="h-16 w-auto object-contain mx-auto mb-6" /><p className="text-sm font-bold text-[#D71920] uppercase tracking-[0.2em]">Plataforma estratégica</p><h1 className="text-3xl font-bold text-slate-900 mt-3">Bienvenido a BIOMET</h1><p className="text-slate-500 mt-3">Ingresa con tu cuenta corporativa de Microsoft. Tu rol será asignado según tu correo.</p>{authError && <p className="mt-5 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{authError}</p>}<Button className="mt-7 w-full" onClick={signInWithMicrosoft}>Iniciar sesión con Microsoft <ArrowRight className="w-4 h-4" /></Button><p className="text-center text-xs text-slate-400 mt-6">Biomont · BIOMET</p></div></AuthShell>;
 
-  if (!selectedRole) {
+  if (!assignedRole || authError) return <AuthShell><div className="mx-auto max-w-md rounded-2xl border bg-white p-8 text-center"><h1 className="text-xl font-bold">Acceso no autorizado</h1><p className="mt-3 text-sm text-slate-600">{authError || 'Tu cuenta no tiene un rol asignado en BIOMET. Contacta al administrador.'}</p><Button className="mt-5 w-full" variant="secondary" onClick={signOut}>Cerrar sesión</Button></div></AuthShell>;
+
+  if (selectedRole?.key === 'usuario') return <UserWorkspace session={session} objectives={objectives} indicators={indicators} reports={reports} users={availableUsers} organizationPeople={organizationPeople} onReload={loadOperationalData} onSignOut={signOut} />;
+
+  if (!selectedRole && assignedRole === 'super_admin') {
     const roles = [
       { key: 'gerente_responsable', name: 'Gerente responsable', description: 'Reporta indicadores asignados y delega responsables de reporte.', icon: Target, color: 'bg-blue-50 text-blue-600 border-blue-100' },
       { key: 'gcg', name: 'GCG', description: 'Crea objetivos e indicadores y aprueba solicitudes de modificación.', icon: CheckCircle2, color: 'bg-emerald-50 text-emerald-600 border-emerald-100' }

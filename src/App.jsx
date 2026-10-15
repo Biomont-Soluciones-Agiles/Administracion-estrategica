@@ -20,6 +20,7 @@ import BioIndicatorsView, { IndicatorFilterMenu, IndicatorYearFilter } from './B
 import ObjectiveProgressList from './ObjectiveProgressList';
 import StrategicMap from './StrategicMap';
 import StrategicActions from './StrategicActions';
+import PmoProjects from './PmoProjects';
 import useCorrectiveWorkflow from './useCorrectiveWorkflow';
 import { AnalysisHistoryButton, ActionsHistoryButton } from './CorrectiveWorkflow';
 import { attentionIndicators } from './lib/correctiveWorkflow';
@@ -246,7 +247,7 @@ export default function App() {
 
   const loadOperationalData = async () => {
     if (!supabase) return;
-    const [profilesResult, peopleResult, objectivesResult, projectsResult, actionsResult, indicatorsResult, reportsResult, messagesResult] = await Promise.all([
+    const [profilesResult, peopleResult, objectivesResult, projectsResult, actionsResult, indicatorsResult, reportsResult, messagesResult, catalogResult] = await Promise.all([
       supabase.from('profiles').select('email, role').order('email'),
       supabase.from('organization_people').select('id, full_name, email, role').eq('active', true).order('full_name'),
       supabase.from('objectives').select('*').order('created_at', { ascending: false }),
@@ -255,6 +256,7 @@ export default function App() {
       supabase.from('indicators').select('*').order('created_at', { ascending: false }),
       supabase.from('indicator_reports').select('*').order('registered_date', { ascending: true }),
       supabase.from('dashboard_messages').select('recipient_email, message, updated_at').order('updated_at', { ascending: false }),
+      supabase.from('pmo_project_catalog').select('*'),
     ]);
     const firstError = [profilesResult, peopleResult, objectivesResult, projectsResult, actionsResult, indicatorsResult, reportsResult].find(result => result.error)?.error;
     if (firstError) {
@@ -264,7 +266,10 @@ export default function App() {
     setProfiles(profilesResult.data || []);
     setOrganizationPeople(peopleResult.data || []);
     setObjectives((objectivesResult.data || []).map(toObjective));
-    setProjects((projectsResult.data || []).map(toProject));
+    setProjects((projectsResult.data || []).map(row => {
+      const catalog = (catalogResult.data || []).find(item => item.id === row.catalog_id);
+      return toProject(catalog ? { ...row, ...catalog, id: row.id, catalog_id: catalog.id } : row);
+    }));
     setTasks((actionsResult.data || []).map(toAction));
     setIndicators((indicatorsResult.data || []).map(toIndicator));
     setReports((reportsResult.data || []).map(toReport));
@@ -754,34 +759,8 @@ export default function App() {
 
           {activeTab === 'projects' && (
             <div className="space-y-4">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="font-semibold text-slate-900">Proyectos Vinculados</h3>
-                {(isResponsibleManager || isGcg) && <div className="flex gap-2"><Button onClick={() => navigateTo('link-project', 'Vincular proyecto', { objectiveId: obj.id, objectiveTab: 'projects' })} variant="secondary" className="text-xs py-1.5"><FolderKanban className="w-4 h-4"/> Vincular proyecto</Button><Button onClick={() => navigateTo('new-project', 'Añadir acción estratégica', { objectiveId: obj.id, objectiveTab: 'projects' })} className="text-xs py-1.5"><Plus className="w-4 h-4"/> Añadir acción estratégica</Button></div>}
-              </div>
-              {objProjects.length === 0 ? (
-                <div className="text-center py-6 bg-slate-50 border border-dashed border-slate-300 rounded-xl"><FolderKanban className="w-10 h-10 text-slate-300 mx-auto mb-3" /><p className="text-slate-600 font-medium">Este objetivo no tiene proyectos vinculados.</p>{(isResponsibleManager || isGcg) && <Button onClick={() => navigateTo('new-project', 'Añadir acción estratégica', { objectiveId: obj.id, objectiveTab: 'projects' })} variant="secondary" className="mt-4 mx-auto"><Plus className="w-4 h-4"/> Añadir acción estratégica</Button>}</div>
-              ) : (
-                <div className="grid gap-4">
-                  {objProjects.map(p => {
-                    const pTasks = tasks.filter(t => t.projectId === p.id);
-                    return (
-                      <Card key={p.id} className="p-5">
-                        <div className="flex justify-between items-start mb-3">
-                          <div><h4 className="font-semibold text-slate-900">{p.name}</h4><p className="text-xs text-slate-500 flex items-center gap-1 mt-1">Origen: <span className="font-medium">{p.source}</span></p></div>
-                          <Badge status={p.status}>{p.status}</Badge>
-                        </div>
-                        <div className="flex items-center gap-4 text-sm text-slate-600 mt-4">
-                          <div className="flex-1">
-                            <div className="flex justify-between text-xs mb-1"><span>Avance del proyecto</span><span className="font-medium">{p.progress}%</span></div>
-                            <ProgressBar progress={p.progress} status={p.status} />
-                          </div>
-                          <div className="w-24 text-right pt-4"><span className="font-medium text-slate-900">{pTasks.length}</span> Tareas</div>
-                        </div>
-                      </Card>
-                    )
-                  })}
-                </div>
-              )}
+              <PmoProjects objective={obj} projects={objProjects} canManage={isGcg || (isResponsibleManager && accountOwns(obj.ownerId))} onReload={loadOperationalData} onNotify={notify} />
+              {(isResponsibleManager || isGcg) && <div className="flex justify-end"><Button onClick={() => navigateTo('new-project', 'Añadir acción stratégique', { objectiveId: obj.id, objectiveTab: 'projects' })}><Plus className="h-4 w-4" />Añadir acción estratégica</Button></div>}
               <StrategicActions actions={objActions} users={availableUsers} onDelete={async action => { if (!(isResponsibleManager || isGcg)) throw new Error('No puedes eliminar esta acción.'); const { error } = await supabase.from('strategic_actions').delete().eq('id', action.id).select('id').single(); if (error) throw new Error('No se pudo eliminar la acción. Inténtalo nuevamente.'); setTasks(items => items.filter(item => item.id !== action.id)); notify('Acción estratégica eliminada.'); }} onStatusChange={async (action, status) => { if (!(isResponsibleManager || isGcg) || !['Cerrado', 'En progreso'].includes(status)) throw new Error('No se puede cambiar el estatus.'); const now = new Date().toISOString(); const { data, error } = await supabase.from('strategic_actions').update({ status, completed_at: status === 'Cerrado' ? now : null, updated_at: now }).eq('id', action.id).select().single(); if (error) throw new Error('No se pudo guardar el estatus.'); setTasks(items => items.map(item => item.id === action.id ? toAction(data) : item)); notify(status === 'Cerrado' ? 'Acción cerrada; se registró la fecha de término real.' : 'Acción reabierta.'); }} canEdit={isResponsibleManager || isGcg} onEdit={action => navigateTo('edit-action', 'Editar acción estratégica', { objectiveId: obj.id, actionId: action.id, objectiveTab: 'projects' })} />
             </div>
           )}
@@ -821,24 +800,6 @@ export default function App() {
     );
   };
 
-  const LinkProjectView = () => {
-    const objective = objectives.find(item => item.id === selectedObjectiveId);
-    const [form, setForm] = useState({ name: '', source: '', ownerId: '' });
-    const [busy, setBusy] = useState(false);
-    if (!objective) return <p>No se encontró el objetivo.</p>;
-    const save = async event => {
-      event.preventDefault();
-      if (busy || !form.name.trim()) return;
-      setBusy(true);
-      const { data, error } = await supabase.from('projects').insert({ objective_id: objective.id, name: form.name.trim(), source: form.source.trim() || 'Registro manual', owner_email: form.ownerId || null, status: 'En progreso', progress: 0 }).select().single();
-      setBusy(false);
-      if (error) { setDataError('No se pudo vincular el proyecto. Inténtalo nuevamente.'); return; }
-      setProjects(items => [...items, toProject(data)]);
-      notify('Proyecto vinculado al objetivo.');
-      navigateTo('objective-detail', objective.name, { objectiveId: objective.id, objectiveTab: 'projects' });
-    };
-    return <div className="mx-auto max-w-2xl space-y-5"><header><h1 className="text-2xl font-bold text-slate-900">Vincular proyecto</h1><p className="mt-2 text-sm text-slate-500">{objective.code} · {objective.name}</p></header><Card className="p-6"><form onSubmit={save} className="space-y-4"><p className="rounded-lg bg-blue-50 p-3 text-xs leading-5 text-blue-800">Registra la referencia del proyecto para vincularlo a este objetivo. No se modifican proyectos de otros objetivos ni se sincroniza con sistemas externos.</p><Input label="Nombre del proyecto *" required value={form.name} onChange={event => setForm({ ...form, name: event.target.value })} /><Input label="Origen o referencia del proyecto" placeholder="Ej.: PMO · PRY-001" value={form.source} onChange={event => setForm({ ...form, source: event.target.value })} /><Select label="Responsable del proyecto *" required options={availableUsers.map(user => ({ value: user.id, label: user.name }))} value={form.ownerId} onChange={event => setForm({ ...form, ownerId: event.target.value })} /><footer className="flex justify-end gap-2 border-t pt-4"><Button type="button" variant="ghost" onClick={() => navigateTo('objective-detail', objective.name, { objectiveId: objective.id, objectiveTab: 'projects' })}>Cancelar</Button><Button disabled={busy} type="submit">{busy ? 'Guardando…' : 'Vincular proyecto'}</Button></footer></form></Card></div>;
-  };
 
   const ProjectFormView = () => {
     const obj = objectives.find(item => item.id === selectedObjectiveId);
@@ -1203,7 +1164,6 @@ export default function App() {
           {currentView === 'new-objective' && <ObjectiveFormView />}
           {currentView === 'objective-detail' && <ObjectiveDetailView />}
           {currentView === 'new-project' && <ProjectFormView />}
-          {currentView === 'link-project' && (isResponsibleManager || isGcg) && <LinkProjectView />}
           {currentView === 'edit-action' && <EditActionView />}
           {currentView === 'new-indicator' && <IndicatorFormView />}
           {currentView === 'indicator-status' && <AssignedIndicators indicators={indicators} objectives={objectives} reports={reports} users={availableUsers} ownIds={accountIdentities(session.user.email, organizationPeople)} isSuperAdmin={isSuperAdmin} onSelect={i => navigateTo('indicator-detail', i.name, { indicatorId: i.id })} />}

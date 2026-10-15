@@ -21,6 +21,7 @@ import ObjectiveProgressList from './ObjectiveProgressList';
 import StrategicMap from './StrategicMap';
 import StrategicActions from './StrategicActions';
 import PmoProjects from './PmoProjects';
+import MicrosoftDirectory, { loadMicrosoftDirectory } from './MicrosoftDirectory';
 import useCorrectiveWorkflow from './useCorrectiveWorkflow';
 import { AnalysisHistoryButton, ActionsHistoryButton } from './CorrectiveWorkflow';
 import { attentionIndicators } from './lib/correctiveWorkflow';
@@ -180,6 +181,7 @@ export default function App() {
   const [reports, setReports] = useState(INITIAL_REPORTS);
   const [profiles, setProfiles] = useState([]);
   const [organizationPeople, setOrganizationPeople] = useState([]);
+  const [microsoftPeople, setMicrosoftPeople] = useState([]);
   const [dashboardMessages, setDashboardMessages] = useState([]);
   
   const [selectedObjectiveId, setSelectedObjectiveId] = useState(null);
@@ -217,8 +219,9 @@ export default function App() {
   const isGcg = selectedRole?.name === 'GCG';
   const isSuperAdmin = assignedRole === 'super_admin';
   const availableUsers = [
-    ...organizationPeople.map(person => ({ id: person.id, email: person.email, name: person.full_name, role: person.role, avatar: person.full_name.slice(0, 2).toUpperCase() })),
-    ...profiles.filter(profile => !organizationPeople.some(person => person.email && person.email === profile.email)).map(profile => ({
+    ...organizationPeople.map(person => ({ id: person.id, email: person.email, name: microsoftPeople.find(item => item.email === person.email?.toLowerCase())?.full_name || person.full_name, role: person.role, avatar: person.full_name.slice(0, 2).toUpperCase() })),
+    ...microsoftPeople.filter(person => !organizationPeople.some(item => item.email?.toLowerCase() === person.email)).map(person => ({ id: person.email, email: person.email, name: person.full_name, role: profiles.find(item => item.email?.toLowerCase() === person.email)?.role || 'directory', avatar: person.full_name.slice(0, 2).toUpperCase() })),
+    ...profiles.filter(profile => !organizationPeople.some(person => person.email && person.email === profile.email) && !microsoftPeople.some(person => person.email === profile.email?.toLowerCase())).map(profile => ({
     id: profile.email,
     name: profile.email,
     role: profile.role,
@@ -247,7 +250,7 @@ export default function App() {
 
   const loadOperationalData = async () => {
     if (!supabase) return;
-    const [profilesResult, peopleResult, objectivesResult, projectsResult, actionsResult, indicatorsResult, reportsResult, messagesResult, catalogResult] = await Promise.all([
+    const [profilesResult, peopleResult, objectivesResult, projectsResult, actionsResult, indicatorsResult, reportsResult, messagesResult, catalogResult, directoryResult] = await Promise.all([
       supabase.from('profiles').select('email, role').order('email'),
       supabase.from('organization_people').select('id, full_name, email, role').eq('active', true).order('full_name'),
       supabase.from('objectives').select('*').order('created_at', { ascending: false }),
@@ -257,6 +260,7 @@ export default function App() {
       supabase.from('indicator_reports').select('*').order('registered_date', { ascending: true }),
       supabase.from('dashboard_messages').select('recipient_email, message, updated_at').order('updated_at', { ascending: false }),
       supabase.from('pmo_project_catalog').select('*'),
+      loadMicrosoftDirectory(),
     ]);
     const firstError = [profilesResult, peopleResult, objectivesResult, projectsResult, actionsResult, indicatorsResult, reportsResult].find(result => result.error)?.error;
     if (firstError) {
@@ -265,6 +269,7 @@ export default function App() {
     }
     setProfiles(profilesResult.data || []);
     setOrganizationPeople(peopleResult.data || []);
+    setMicrosoftPeople(directoryResult.data || []);
     setObjectives((objectivesResult.data || []).map(toObjective));
     setProjects((projectsResult.data || []).map(row => {
       const catalog = (catalogResult.data || []).find(item => item.id === row.catalog_id);
@@ -350,7 +355,7 @@ export default function App() {
     setAuthError('');
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'azure',
-      options: { redirectTo: window.location.origin, scopes: 'email' },
+      options: { redirectTo: window.location.origin, scopes: 'email https://graph.microsoft.com/User.ReadBasic.All' },
     });
     if (error) setAuthError(error.message);
   };
@@ -1109,7 +1114,7 @@ export default function App() {
     };
 
 
-    return <div className="max-w-3xl fade-in space-y-6"><div><h1 className="text-2xl font-bold text-slate-900">Configuración</h1><p className="text-slate-500 mt-1">Administra las preferencias generales de BIOMET.</p></div><Card className="p-6"><h2 className="font-semibold text-slate-900">Preferencias de visualización</h2><div className="mt-5 space-y-4"><label className="flex items-center justify-between gap-4 py-3 border-b border-slate-100"><span><span className="block text-sm font-medium text-slate-800">Alertas estratégicas</span><span className="block text-xs text-slate-500 mt-1">Muestra objetivos retrasados en el Monitor.</span></span><input type="checkbox" defaultChecked className="w-4 h-4 accent-[#D71920]" /></label><label className="flex items-center justify-between gap-4 py-3"><span><span className="block text-sm font-medium text-slate-800">Vista compacta</span><span className="block text-xs text-slate-500 mt-1">Reduce el espacio entre elementos del dashboard.</span></span><input type="checkbox" className="w-4 h-4 accent-[#D71920]" /></label></div></Card>{isGcg && <Card className="p-6"><div><h2 className="font-semibold text-slate-900">Mensaje personalizado del monitor</h2><p className="mt-1 text-sm text-slate-500">Selecciona una persona y escribe el texto que verá debajo de su saludo en Objetivos.</p></div><form onSubmit={saveMessage} className="mt-5 space-y-4"><Select label="Persona destinataria *" required options={availableUsers.filter(user => user.email).map(user => ({ value: String(user.email).toLowerCase(), label: user.name }))} value={recipientEmail} onChange={event => setRecipientEmail(event.target.value)} /><div className="flex flex-col gap-1.5"><label className="text-sm font-medium text-slate-700">Texto personalizado *</label><textarea required maxLength={600} rows={4} value={message} onChange={event => setMessage(event.target.value)} placeholder="Ej.: Recuerda registrar la medición de este mes antes del cierre." className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#3B82F6]" /><p className="text-right text-xs text-slate-400">{message.length}/600</p></div><div className="flex flex-wrap justify-end gap-3"><Button type="submit" disabled={!recipientEmail || !message.trim() || busy}>{busy ? 'Guardando…' : existingMessage ? 'Actualizar mensaje' : 'Guardar mensaje'}</Button></div></form></Card>}<Card className="p-6"><h2 className="font-semibold text-slate-900">Sesión</h2><p className="text-sm text-slate-500 mt-2">Correo: {session?.user?.email}</p><p className="text-sm text-slate-500 mt-1">Rol actual: {selectedRole?.name || ROLE_LABELS[assignedRole]}</p><div className="mt-4 flex flex-wrap gap-3">{isSuperAdmin && <Button variant="secondary" onClick={() => { setSelectedRole(null); setCurrentView('dashboard'); }}>Cambiar rol</Button>}<Button variant="secondary" onClick={signOut}><LogOut className="w-4 h-4" />Cerrar sesión</Button></div></Card><Card className="p-6"><h2 className="font-semibold text-slate-900">Información de la plataforma</h2><p className="text-sm text-slate-500 mt-2">BIOMET · Plataforma estratégica de Biomont</p></Card></div>;
+    return <div className="max-w-3xl fade-in space-y-6"><div><h1 className="text-2xl font-bold text-slate-900">Configuración</h1><p className="text-slate-500 mt-1">Administra las preferencias generales de BIOMET.</p></div>{isGcg && <MicrosoftDirectory session={session} onReload={loadOperationalData} />}<Card className="p-6"><h2 className="font-semibold text-slate-900">Preferencias de visualización</h2><div className="mt-5 space-y-4"><label className="flex items-center justify-between gap-4 py-3 border-b border-slate-100"><span><span className="block text-sm font-medium text-slate-800">Alertas estratégicas</span><span className="block text-xs text-slate-500 mt-1">Muestra objetivos retrasados en el Monitor.</span></span><input type="checkbox" defaultChecked className="w-4 h-4 accent-[#D71920]" /></label><label className="flex items-center justify-between gap-4 py-3"><span><span className="block text-sm font-medium text-slate-800">Vista compacta</span><span className="block text-xs text-slate-500 mt-1">Reduce el espacio entre elementos del dashboard.</span></span><input type="checkbox" className="w-4 h-4 accent-[#D71920]" /></label></div></Card>{isGcg && <Card className="p-6"><div><h2 className="font-semibold text-slate-900">Mensaje personalizado del monitor</h2><p className="mt-1 text-sm text-slate-500">Selecciona una persona y escribe el texto que verá debajo de su saludo en Objetivos.</p></div><form onSubmit={saveMessage} className="mt-5 space-y-4"><Select label="Persona destinataria *" required options={availableUsers.filter(user => user.email).map(user => ({ value: String(user.email).toLowerCase(), label: user.name }))} value={recipientEmail} onChange={event => setRecipientEmail(event.target.value)} /><div className="flex flex-col gap-1.5"><label className="text-sm font-medium text-slate-700">Texto personalizado *</label><textarea required maxLength={600} rows={4} value={message} onChange={event => setMessage(event.target.value)} placeholder="Ej.: Recuerda registrar la medición de este mes antes del cierre." className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#3B82F6]" /><p className="text-right text-xs text-slate-400">{message.length}/600</p></div><div className="flex flex-wrap justify-end gap-3"><Button type="submit" disabled={!recipientEmail || !message.trim() || busy}>{busy ? 'Guardando…' : existingMessage ? 'Actualizar mensaje' : 'Guardar mensaje'}</Button></div></form></Card>}<Card className="p-6"><h2 className="font-semibold text-slate-900">Sesión</h2><p className="text-sm text-slate-500 mt-2">Correo: {session?.user?.email}</p><p className="text-sm text-slate-500 mt-1">Rol actual: {selectedRole?.name || ROLE_LABELS[assignedRole]}</p><div className="mt-4 flex flex-wrap gap-3">{isSuperAdmin && <Button variant="secondary" onClick={() => { setSelectedRole(null); setCurrentView('dashboard'); }}>Cambiar rol</Button>}<Button variant="secondary" onClick={signOut}><LogOut className="w-4 h-4" />Cerrar sesión</Button></div></Card><Card className="p-6"><h2 className="font-semibold text-slate-900">Información de la plataforma</h2><p className="text-sm text-slate-500 mt-2">BIOMET · Plataforma estratégica de Biomont</p></Card></div>;
   };
 
   const AuthShell = ({ children }) => <main className="min-h-screen bg-[#F7F8FA] flex items-center justify-center p-5 relative overflow-hidden"><div className="absolute -top-32 -right-28 w-96 h-96 rounded-full bg-red-100/60 blur-3xl" /><div className="w-full max-w-5xl relative">{children}</div></main>;

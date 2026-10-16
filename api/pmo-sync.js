@@ -8,6 +8,17 @@ function canRunSync(request) {
   return Boolean(secret && request.headers.authorization === `Bearer ${secret}`);
 }
 
+async function isGcgRequest(request, supabase) {
+  const authorization = request.headers.authorization || '';
+  const token = authorization.startsWith('Bearer ') ? authorization.slice(7) : '';
+  if (!token) return false;
+  const { data: userData, error: userError } = await supabase.auth.getUser(token);
+  const email = userData?.user?.email?.trim().toLowerCase();
+  if (userError || !email) return false;
+  const { data: assignment, error: roleError } = await supabase.from('role_assignments').select('role').eq('email', email).maybeSingle();
+  return !roleError && assignment?.role === 'gcg';
+}
+
 function toCatalogProject(project, generatedAt) {
   const progress = Number(project?.avance);
   if (!project?.codigo || !project?.nombre || !Number.isFinite(progress) || progress < 0 || progress > 100) return null;
@@ -24,15 +35,15 @@ function toCatalogProject(project, generatedAt) {
 }
 
 export default async function handler(request, response) {
-  if (request.method !== 'GET') { response.setHeader('Allow', 'GET'); return send(response, 405, { error: 'Método no permitido.' }); }
-  // Vercel envía este encabezado al invocar un Cron Job protegido. No se permite
-  // ejecutar la sincronización públicamente para no consumir la API de PMO.
-  if (!canRunSync(request)) return send(response, 401, { error: 'No autorizado.' });
-
+  if (!['GET', 'POST'].includes(request.method)) { response.setHeader('Allow', 'GET, POST'); return send(response, 405, { error: 'Método no permitido.' }); }
   const apiKey = process.env.PFMS_API_KEY;
   const supabaseUrl = process.env.VITE_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!apiKey || !supabaseUrl || !serviceRoleKey) return send(response, 503, { error: 'Falta una configuración privada de la sincronización.' });
+
+  const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { autoRefreshToken: false, persistSession: false } });
+  // GET lo invoca Vercel Cron; POST lo solicita una sesión GCG autenticada.
+  if (request.method === 'GET' ? !canRunSync(request) : !(await isGcgRequest(request, supabase))) return send(response, 401, { error: 'No autorizado.' });
 
   try {
     const upstream = await fetch(PFMS_PROJECTS_URL, { headers: { Authorization: `Bearer ${apiKey}`, Accept: 'application/json', 'User-Agent': 'BIOMET/1.0 (PMO project synchronization)' } });
@@ -43,7 +54,6 @@ export default async function handler(request, response) {
     const rows = payload.proyectos.map(project => toCatalogProject(project, payload.generado_en)).filter(Boolean);
     if (rows.length !== payload.proyectos.length) return send(response, 502, { error: 'La API de PMO contiene uno o más proyectos inválidos.' });
 
-    const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { autoRefreshToken: false, persistSession: false } });
     const { error } = await supabase.from('pmo_project_catalog').upsert(rows, { onConflict: 'code' });
     if (error) throw error;
     return send(response, 200, { synchronized: rows.length, generated_at: payload.generado_en || null });

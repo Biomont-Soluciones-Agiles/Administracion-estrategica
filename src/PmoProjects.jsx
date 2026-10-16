@@ -49,7 +49,7 @@ export default function PmoProjects({ objective, projects, canManage, canSync, a
     supabase.from('pmo_project_catalog').select('*').order('code').then(({ data, error: failure }) => {
       if (!active) return;
       setCatalog(data || []);
-      setError(failure ? 'No se pudo cargar el catálogo temporal. Verifica que esté instalada la migración 028.' : '');
+      setError(failure ? 'No se pudo cargar el catálogo de proyectos. Verifica que las migraciones de PMO estén instaladas.' : '');
       setLoading(false);
     });
     return () => { active = false; };

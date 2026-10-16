@@ -232,6 +232,10 @@ export default function App() {
   ];
   const MOCK_USERS = availableUsers;
   const currentAccountIds = accountIdentities(session?.user?.email, organizationPeople);
+  const signedInEmail = session?.user?.email?.trim().toLowerCase();
+  const signedInPerson = organizationPeople.find(person => person.email?.trim().toLowerCase() === signedInEmail)
+    || microsoftPeople.find(person => person.email?.trim().toLowerCase() === signedInEmail);
+  const signedInName = signedInPerson?.full_name || session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || 'Usuario';
   const personalizedMessage = dashboardMessages.find(message => String(message.recipient_email || '').trim().toLowerCase() === String(session?.user?.email || '').trim().toLowerCase())?.message?.trim();
   const dashboardIntroduction = personalizedMessage || 'Aquí está el resumen estratégico de tu organización.';
   const accountOwns = value => currentAccountIds.some(id => String(id).trim().toLowerCase() === String(value ?? '').trim().toLowerCase());
@@ -499,7 +503,7 @@ export default function App() {
       <div className="space-y-8 fade-in">
         <div className="flex flex-wrap justify-between items-end gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-[#0F172A] tracking-tight">Buenos días, {session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || 'usuario'}</h1>
+            <h1 className="text-2xl font-bold text-[#0F172A] tracking-tight">Buenos días, {signedInName}</h1>
             <p className="mt-1 whitespace-pre-line text-slate-500">{dashboardIntroduction}</p>
           </div>
           <div className="flex flex-wrap items-end gap-3"><label className="text-xs font-medium text-slate-500">Estatus de objetivos<select aria-label="Filtrar objetivos por estatus" value={objectiveStatusFilter} onChange={event => setObjectiveStatusFilter(event.target.value)} className="mt-1 block rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"><option value="">Todos los objetivos</option><option value="Activo">Activos</option><option value="No activo">No activos</option></select></label>
@@ -1157,7 +1161,7 @@ export default function App() {
           </nav>
         </div>
         <div className="p-4 border-t border-slate-800">
-          <div className="flex items-center gap-3 px-3 py-2"><div className="w-9 h-9 shrink-0 rounded-full bg-slate-700 flex items-center justify-center text-sm font-medium text-white">{(session?.user?.user_metadata?.full_name || session?.user?.email || 'U').split(' ').map(part => part[0]).join('').slice(0, 2).toUpperCase()}</div><div className="flex-1 overflow-hidden"><p className="text-sm font-medium text-white truncate">{session?.user?.user_metadata?.full_name || session?.user?.email}</p><p className="text-xs text-slate-500 truncate">{selectedRole.name}</p></div><button onClick={() => navigateTo('settings', 'Configuración')} aria-label="Abrir configuración" className="p-1 rounded hover:bg-slate-700"><Settings className="w-4 h-4 text-slate-400 hover:text-white" /></button></div>
+          <div className="flex items-center gap-3 px-3 py-2"><div className="w-9 h-9 shrink-0 rounded-full bg-slate-700 flex items-center justify-center text-sm font-medium text-white">{signedInName.split(' ').map(part => part[0]).join('').slice(0, 2).toUpperCase()}</div><div className="flex-1 overflow-hidden"><p className="text-sm font-medium text-white truncate">{signedInName}</p><p className="text-xs text-slate-500 truncate">{selectedRole.name}</p></div><button onClick={() => navigateTo('settings', 'Configuración')} aria-label="Abrir configuración" className="p-1 rounded hover:bg-slate-700"><Settings className="w-4 h-4 text-slate-400 hover:text-white" /></button></div>
         </div>
       </aside>
       <main className="app-main min-w-0 flex-1 flex flex-col min-h-screen">

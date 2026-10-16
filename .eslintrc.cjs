@@ -5,5 +5,5 @@ module.exports = {
   plugins: ['react'],
   rules: { 'no-undef': 'error', 'react/jsx-no-undef': 'error' },
   ignorePatterns: ['dist/', 'node_modules/', 'docs/', 'docx-render/'],
-  overrides: [{ files: ['tests/**/*.js', '.eslintrc.cjs'], env: { node: true } }],
+  overrides: [{ files: ['tests/**/*.js', 'api/**/*.js', '.eslintrc.cjs'], env: { node: true } }],
 };

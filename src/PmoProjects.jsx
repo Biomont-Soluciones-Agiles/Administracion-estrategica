@@ -5,12 +5,21 @@ import { supabase } from './lib/supabase';
 
 const field = 'rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm';
 const projectStatusClass = status => ({
-  Planificado: 'bg-slate-100 text-slate-700',
-  'En ejecución': 'bg-blue-50 text-blue-700',
-  'En pausa': 'bg-amber-50 text-amber-800',
-  Concluido: 'bg-green-50 text-green-700',
-  Cancelado: 'bg-red-50 text-red-700',
-}[status] || 'bg-slate-100 text-slate-700');
+  pendiente: 'bg-slate-100 text-slate-700',
+  evaluacion: 'bg-violet-50 text-violet-700',
+  evaluación: 'bg-violet-50 text-violet-700',
+  implementacion: 'bg-blue-50 text-blue-700',
+  implementación: 'bg-blue-50 text-blue-700',
+  lanzamiento: 'bg-cyan-50 text-cyan-700',
+  seguimiento: 'bg-teal-50 text-teal-700',
+  finalizado: 'bg-green-50 text-green-700',
+  standby: 'bg-amber-50 text-amber-800',
+  cancelado: 'bg-red-50 text-red-700',
+  planificado: 'bg-slate-100 text-slate-700',
+  'en ejecución': 'bg-blue-50 text-blue-700',
+  'en pausa': 'bg-amber-50 text-amber-800',
+  concluido: 'bg-green-50 text-green-700',
+}[String(status || '').toLowerCase()] || 'bg-slate-100 text-slate-700');
 const date = value => value ? new Date(value + 'T12:00:00').toLocaleDateString('es-PE') : 'Sin fecha';
 const stamp = value => value ? new Date(value).toLocaleString('es-PE', { timeZone: 'America/Lima' }) : 'Sin actualización';
 function Progress({ value }) {
@@ -45,8 +54,10 @@ export default function PmoProjects({ objective, projects, canManage, onReload, 
     return () => { active = false; };
   }, [open]);
   const linked = new Set(projects.map(project => project.catalog_id).filter(Boolean));
+  const hasOfficialCatalog = catalog.some(project => !project.is_demo);
+  const visibleCatalog = hasOfficialCatalog ? catalog.filter(project => !project.is_demo || linked.has(project.id)) : catalog;
   const normalize = value => String(value).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-  const rows = catalog.filter(project => normalize(project.code + ' ' + project.name).includes(normalize(search)) && (!status || project.status === status));
+  const rows = visibleCatalog.filter(project => normalize(project.code + ' ' + project.name).includes(normalize(search)) && (!status || project.status === status));
   const mutate = async (name, args, message) => {
     if (busy) return;
     setBusy(true); setError('');

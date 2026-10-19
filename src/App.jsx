@@ -39,7 +39,7 @@ const toObjective = (row) => ({ ...row, ownerId: row.owner_email, createdDate: r
 const toProject = (row) => ({ ...row, objectiveId: row.objective_id, ownerId: row.owner_email });
 const toAction = (row) => ({ ...row, objectiveId: row.objective_id, projectId: row.project_id, dueDate: row.due_date, completedAt: row.completed_at, ownerId: row.owner_email });
 const toIndicator = (row) => ({ ...row, objectiveId: row.objective_id, ownerId: row.owner_email, approvalStatus: row.approval_status, reviewFrequency: row.review_frequency, target: Number(row.target) });
-const toReport = (row) => ({ ...row, indicatorId: row.indicator_id, date: row.registered_date, result: row.result == null ? null : Number(row.result), obs: row.observations });
+const toReport = (row) => ({ ...row, indicatorId: row.indicator_id, assignmentId: row.site_assignment_id, date: row.registered_date, result: row.result == null ? null : Number(row.result), obs: row.observations });
 
 // La aplicación inicia sin datos operativos. Los usuarios registrados crean los
 // objetivos, acciones, indicadores y reportes reales desde BIOMET.
@@ -183,6 +183,8 @@ export default function App() {
   const [reports, setReports] = useState(INITIAL_REPORTS);
   const [profiles, setProfiles] = useState([]);
   const [organizationPeople, setOrganizationPeople] = useState([]);
+  const [sites, setSites] = useState([]);
+  const [siteAssignments, setSiteAssignments] = useState([]);
   const [microsoftPeople, setMicrosoftPeople] = useState([]);
   const [dashboardMessages, setDashboardMessages] = useState([]);
   
@@ -192,7 +194,7 @@ export default function App() {
   const [selectedIndicatorId, setSelectedIndicatorId] = useState(null);
   const [indicatorRequestFlyout, setIndicatorRequestFlyout] = useState(null);
   const [indicatorRequestForm, setIndicatorRequestForm] = useState(false);
-  const [indicatorFilters, setIndicatorFilters] = useState({ search: '', objectiveId: '', responsibleId: '', indicatorId: '' });
+  const [indicatorFilters, setIndicatorFilters] = useState({ search: '', objectiveId: '', responsibleId: '', siteId: '', indicatorId: '' });
   const [bioIndicatorYear, setBioIndicatorYear] = useState(String(new Date().getFullYear()));
   const changeIndicatorFilters = next => {
     if (next.indicatorId !== indicatorFilters.indicatorId) setBioIndicatorYear(String(new Date().getFullYear()));
@@ -242,8 +244,14 @@ export default function App() {
   const isManagerScoped = isResponsibleManager && !isSuperAdmin;
   const objectivesWithProjectProgress = withLinkedProjectProgress(objectives, projects);
   const scopedObjectives = isManagerScoped ? objectivesWithProjectProgress.filter(objective => accountOwns(objective.ownerId)) : objectivesWithProjectProgress;
+  const managerAssignments = siteAssignments.filter(assignment => assignment.active && accountOwns(assignment.responsible_email));
   const scopedIndicators = isManagerScoped
-    ? indicators.filter(indicator => indicatorAccess(indicator, objectivesWithProjectProgress.find(objective => objective.id === indicator.objectiveId), currentAccountIds).canReport)
+    ? indicators.filter(indicator => {
+      const assignments = siteAssignments.filter(item => String(item.indicator_id) === String(indicator.id) && item.active);
+      return assignments.length
+        ? managerAssignments.some(item => String(item.indicator_id) === String(indicator.id))
+        : indicatorAccess(indicator, objectivesWithProjectProgress.find(objective => objective.id === indicator.objectiveId), currentAccountIds).canReport;
+    })
     : indicators;
   const scopedProjects = isManagerScoped
     ? projects.filter(project => scopedObjectives.some(objective => objective.id === project.objectiveId))
@@ -252,12 +260,14 @@ export default function App() {
     ? tasks.filter(task => scopedObjectives.some(objective => objective.id === task.objectiveId))
     : tasks;
   const scopedReports = isManagerScoped
-    ? reports.filter(report => scopedIndicators.some(indicator => indicator.id === report.indicatorId))
+    ? reports.filter(report => report.assignmentId
+      ? managerAssignments.some(assignment => String(assignment.id) === String(report.assignmentId))
+      : scopedIndicators.some(indicator => indicator.id === report.indicatorId))
     : reports;
 
   const loadOperationalData = async () => {
     if (!supabase) return;
-    const [profilesResult, peopleResult, objectivesResult, projectsResult, actionsResult, indicatorsResult, reportsResult, messagesResult, catalogResult, directoryResult] = await Promise.all([
+    const [profilesResult, peopleResult, objectivesResult, projectsResult, actionsResult, indicatorsResult, reportsResult, messagesResult, catalogResult, directoryResult, sitesResult, assignmentsResult] = await Promise.all([
       supabase.from('profiles').select('email, role').order('email'),
       supabase.from('organization_people').select('id, full_name, email, role').eq('active', true).order('full_name'),
       supabase.from('objectives').select('*').order('created_at', { ascending: false }),
@@ -268,6 +278,8 @@ export default function App() {
       supabase.from('dashboard_messages').select('recipient_email, message, updated_at').order('updated_at', { ascending: false }),
       supabase.from('pmo_project_catalog').select('*'),
       loadMicrosoftDirectory(),
+      supabase.from('sites').select('*').eq('active', true).order('name'),
+      supabase.from('indicator_site_assignments').select('*').eq('active', true),
     ]);
     const firstError = [profilesResult, peopleResult, objectivesResult, projectsResult, actionsResult, indicatorsResult, reportsResult].find(result => result.error)?.error;
     if (firstError) {
@@ -285,6 +297,8 @@ export default function App() {
     setTasks((actionsResult.data || []).map(toAction));
     setIndicators((indicatorsResult.data || []).map(toIndicator));
     setReports((reportsResult.data || []).map(toReport));
+    setSites(sitesResult.data || []);
+    setSiteAssignments(assignmentsResult.data || []);
     setDashboardMessages(messagesResult.data || []);
     setDataError('');
     await corrective.reload();
@@ -378,7 +392,7 @@ export default function App() {
     setIndicatorRequestForm(false);
     if ((['new-objective', 'new-indicator', 'edit-indicator', 'gcg-review'].includes(view) && !isGcg)
       || (['edit-target', 'report-indicator', 'indicator-status'].includes(view) && !isResponsibleManager)
-      || (['new-project', 'edit-action', 'link-project'].includes(view) && !isResponsibleManager && !isGcg)) return;
+      || (['new-project', 'edit-action', 'link-project'].includes(view) && !isGcg)) return;
     setCurrentView(view);
     if (view === 'new-indicator' && !params.objectiveId) setSelectedObjectiveId(null);
     if (params.objectiveId) setSelectedObjectiveId(params.objectiveId);
@@ -771,9 +785,9 @@ export default function App() {
 
           {activeTab === 'projects' && (
             <div className="space-y-4">
-              <PmoProjects objective={obj} projects={objProjects} canManage={isGcg || (isResponsibleManager && accountOwns(obj.ownerId))} canSync={isGcg} accessToken={session?.access_token} onReload={loadOperationalData} onNotify={notify} />
-              <div className="flex flex-wrap items-center justify-between gap-3"><h3 className="text-lg font-bold text-slate-900">Acciones estratégicas</h3>{(isResponsibleManager || isGcg) && <Button onClick={() => navigateTo('new-project', 'Añadir acción stratégique', { objectiveId: obj.id, objectiveTab: 'projects' })}><Plus className="h-4 w-4" />Añadir acción estratégica</Button>}</div>
-              <StrategicActions actions={objActions} users={availableUsers} onDelete={async action => { if (!(isResponsibleManager || isGcg)) throw new Error('No puedes eliminar esta acción.'); const { error } = await supabase.from('strategic_actions').delete().eq('id', action.id).select('id').single(); if (error) throw new Error('No se pudo eliminar la acción. Inténtalo nuevamente.'); setTasks(items => items.filter(item => item.id !== action.id)); notify('Acción estratégica eliminada.'); }} onStatusChange={async (action, status) => { if (!(isResponsibleManager || isGcg) || !['Cerrado', 'En progreso'].includes(status)) throw new Error('No se puede cambiar el estatus.'); const now = new Date().toISOString(); const { data, error } = await supabase.from('strategic_actions').update({ status, completed_at: status === 'Cerrado' ? now : null, updated_at: now }).eq('id', action.id).select().single(); if (error) throw new Error('No se pudo guardar el estatus.'); setTasks(items => items.map(item => item.id === action.id ? toAction(data) : item)); notify(status === 'Cerrado' ? 'Acción cerrada; se registró la fecha de término real.' : 'Acción reabierta.'); }} canEdit={isResponsibleManager || isGcg} onEdit={action => navigateTo('edit-action', 'Editar acción estratégica', { objectiveId: obj.id, actionId: action.id, objectiveTab: 'projects' })} />
+              <PmoProjects objective={obj} projects={objProjects} canManage={isGcg} canSync={isGcg} accessToken={session?.access_token} onReload={loadOperationalData} onNotify={notify} />
+              <div className="flex flex-wrap items-center justify-between gap-3"><div><h3 className="text-lg font-bold text-slate-900">Acciones estratégicas</h3>{isResponsibleManager && <p className="mt-1 text-sm text-slate-500">Solo consulta: la creación y vinculación se gestionan por GCG.</p>}</div>{isGcg && <Button onClick={() => navigateTo('new-project', 'Añadir acción stratégique', { objectiveId: obj.id, objectiveTab: 'projects' })}><Plus className="h-4 w-4" />Añadir acción estratégica</Button>}</div>
+              <StrategicActions actions={objActions} users={availableUsers} onDelete={async action => { if (!isGcg) throw new Error('Solo GCG puede eliminar esta acción.'); const { error } = await supabase.from('strategic_actions').delete().eq('id', action.id).select('id').single(); if (error) throw new Error('No se pudo eliminar la acción. Inténtalo nuevamente.'); setTasks(items => items.filter(item => item.id !== action.id)); notify('Acción estratégica eliminada.'); }} onStatusChange={async (action, status) => { if (!isGcg || !['Cerrado', 'En progreso'].includes(status)) throw new Error('Solo GCG puede cambiar el estatus.'); const now = new Date().toISOString(); const { data, error } = await supabase.from('strategic_actions').update({ status, completed_at: status === 'Cerrado' ? now : null, updated_at: now }).eq('id', action.id).select().single(); if (error) throw new Error('No se pudo guardar el estatus.'); setTasks(items => items.map(item => item.id === action.id ? toAction(data) : item)); notify(status === 'Cerrado' ? 'Acción cerrada; se registró la fecha de término real.' : 'Acción reabierta.'); }} canEdit={isGcg} onEdit={action => navigateTo('edit-action', 'Editar acción estratégica', { objectiveId: obj.id, actionId: action.id, objectiveTab: 'projects' })} />
             </div>
           )}
 
@@ -781,10 +795,10 @@ export default function App() {
             <div className="space-y-4">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="font-semibold text-slate-900">Indicadores Estratégicos</h3>
-                {isGcg && <Button onClick={() => navigateTo('new-indicator', 'Nuevo Indicador', { objectiveId: obj.id, objectiveTab: 'indicators' })} className="text-xs py-1.5"><Plus className="w-4 h-4"/> Crear Indicador</Button>}
+                {isGcg && objIndicators.length === 0 && <Button onClick={() => navigateTo('new-indicator', 'Nuevo Indicador', { objectiveId: obj.id, objectiveTab: 'indicators' })} className="text-xs py-1.5"><Plus className="w-4 h-4"/> Crear Indicador</Button>}
               </div>
               {objIndicators.length === 0 ? (
-                <div className="text-center py-10 bg-slate-50 border border-dashed border-slate-300 rounded-xl"><BarChart3 className="w-10 h-10 text-slate-300 mx-auto mb-3" /><p className="text-slate-600 font-medium">Aún no hay indicadores para medir este objetivo.</p>{isGcg && <Button onClick={() => navigateTo('new-indicator', 'Nuevo Indicador', { objectiveId: obj.id, objectiveTab: 'indicators' })} variant="secondary" className="mt-4 mx-auto"><Plus className="w-4 h-4"/> Definir primer indicador</Button>}</div>
+                <div className="text-center py-10 bg-slate-50 border border-dashed border-slate-300 rounded-xl"><BarChart3 className="w-10 h-10 text-slate-300 mx-auto mb-3" /><p className="text-slate-600 font-medium">Aún no hay indicadores para medir este objetivo.</p>{isGcg && <Button onClick={() => navigateTo('new-indicator', 'Nuevo Indicador', { objectiveId: obj.id, objectiveTab: 'indicators' })} variant="secondary" className="mt-4 mx-auto"><Plus className="w-4 h-4"/> Definir único indicador</Button>}</div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {objIndicators.map(ind => {
@@ -880,11 +894,15 @@ export default function App() {
 
   const IndicatorFormView = () => {
     const obj = objectives.find(o => String(o.id) === String(selectedObjectiveId));
-    const [formData, setFormData] = useState({ name: '', formula: '', target: '', unit: '%', comparator: '>=', frequency: 'Mensual', reviewFrequency: 'Mensual', ownerId: objectives.find(o => o.id === selectedObjectiveId)?.ownerId || '' });
+    const [formData, setFormData] = useState({ name: '', formula: '', target: '', unit: '%', comparator: '>=', frequency: 'Mensual', reviewFrequency: 'Mensual', ownerId: '', siteAssignments: [{ siteId: '', responsibleEmail: '', weight: '1' }] });
 
     const handleSubmit = async (e) => {
       e.preventDefault();
       if (!isGcg || !obj) { setDataError('Solo GCG puede crear indicadores desde un objetivo válido.'); return; }
+      if (indicators.some(item => String(item.objectiveId) === String(obj.id))) { setDataError('Este objetivo ya tiene un indicador. Cada objetivo admite solo uno.'); return; }
+      const invalidAssignment = formData.siteAssignments.some(item => !item.siteId || !item.responsibleEmail || !Number(item.weight));
+      const duplicateSites = new Set(formData.siteAssignments.map(item => item.siteId)).size !== formData.siteAssignments.length;
+      if (invalidAssignment || duplicateSites) { setDataError(duplicateSites ? 'Cada sede puede registrarse una sola vez.' : 'Completa sede, responsable y ponderación para cada asignación.'); return; }
       const { data, error } = await supabase.from('indicators').insert({
         objective_id: obj.id,
         name: formData.name,
@@ -894,15 +912,22 @@ export default function App() {
         comparator: formData.comparator,
         frequency: formData.frequency,
         review_frequency: formData.reviewFrequency,
-        owner_email: formData.ownerId || null,
+        owner_email: formData.siteAssignments[0]?.responsibleEmail || null,
         approval_status: 'Aprobado',
       }).select().single();
       if (error) {
         setDataError(`No se pudo guardar el indicador: ${error.message}`);
         return;
       }
+      const { data: assignmentRows, error: assignmentError } = await supabase.from('indicator_site_assignments').insert(formData.siteAssignments.map(item => ({ indicator_id: data.id, site_id: Number(item.siteId), responsible_email: item.responsibleEmail, weight: Number(item.weight), active: true }))).select();
+      if (assignmentError) {
+        await supabase.from('indicators').delete().eq('id', data.id);
+        setDataError(`No se pudo guardar las sedes del indicador: ${assignmentError.message}`);
+        return;
+      }
       setIndicators([...indicators, toIndicator(data)]);
-      notify('Indicador creado por GCG y habilitado para reportar.');
+      setSiteAssignments(items => [...items, ...(assignmentRows || [])]);
+      notify('Indicador creado y asignado por sede.');
       navigateTo('objective-detail', obj.name, { objectiveId: obj.id, objectiveTab: 'indicators' });
     };
 
@@ -932,11 +957,11 @@ export default function App() {
           </Card>
           <Card className="p-6">
             <h3 className="text-sm font-bold text-[#1D4ED8] uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">3. Gestión</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <Select label="Plazo *" required options={['Mensual', 'Bimestral', 'Trimestral', 'Semestral', 'Anual']} value={formData.frequency} onChange={e => setFormData({...formData, frequency: e.target.value})} />
               <Select label="Frecuencia de revisión *" required options={['Mensual', 'Bimestral', 'Trimestral', 'Semestral', 'Anual']} value={formData.reviewFrequency} onChange={e => setFormData({...formData, reviewFrequency: e.target.value})} />
-              <Select label="Responsable del reporte *" required options={availableUsers.filter(u => u.role === 'gerente_responsable').map(u => ({ value: u.id, label: u.name }))} value={formData.ownerId} onChange={e => setFormData({...formData, ownerId: e.target.value})} />
             </div>
+            <div className="mt-5 rounded-xl border border-slate-200 p-4"><div className="mb-3 flex items-center justify-between gap-3"><div><h4 className="font-semibold text-slate-900">Asignación por sede</h4><p className="text-xs text-slate-500">El mismo indicador se reporta de forma independiente en cada sede.</p></div><Button type="button" variant="secondary" className="px-3 py-1.5" onClick={() => setFormData({ ...formData, siteAssignments: [...formData.siteAssignments, { siteId: '', responsibleEmail: '', weight: '1' }] })}><Plus className="h-4 w-4" />Añadir sede</Button></div><div className="space-y-3">{formData.siteAssignments.map((assignment, index) => <div key={index} className="grid grid-cols-1 gap-3 rounded-lg bg-slate-50 p-3 md:grid-cols-[1fr_1fr_120px_auto]"><Select label="Sede *" required options={sites.map(site => ({ value: String(site.id), label: site.name }))} value={assignment.siteId} onChange={event => setFormData({ ...formData, siteAssignments: formData.siteAssignments.map((item, itemIndex) => itemIndex === index ? { ...item, siteId: event.target.value } : item) })} /><Select label="Responsable *" required options={availableUsers.filter(user => user.role === 'gerente_responsable').map(user => ({ value: user.email || user.id, label: user.name }))} value={assignment.responsibleEmail} onChange={event => setFormData({ ...formData, siteAssignments: formData.siteAssignments.map((item, itemIndex) => itemIndex === index ? { ...item, responsibleEmail: event.target.value } : item) })} /><Input label="Ponderación *" required min="0.01" step="0.01" type="number" value={assignment.weight} onChange={event => setFormData({ ...formData, siteAssignments: formData.siteAssignments.map((item, itemIndex) => itemIndex === index ? { ...item, weight: event.target.value } : item) })} />{formData.siteAssignments.length > 1 && <Button type="button" variant="ghost" className="self-end text-red-600" onClick={() => setFormData({ ...formData, siteAssignments: formData.siteAssignments.filter((_, itemIndex) => itemIndex !== index) })}>Quitar</Button>}</div>)}</div></div>
           </Card>
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="ghost" onClick={() => obj ? navigateTo('objective-detail', obj.name, { objectiveId: obj.id, objectiveTab: 'indicators' }) : navigateTo('objectives', 'Objetivos')}>Cancelar</Button>
@@ -952,7 +977,9 @@ export default function App() {
     const ind = indicators.find(i => i.id === selectedIndicatorId);
     const obj = objectives.find(o => o.id === ind?.objectiveId);
     if (!ind) return null;
-    const indReports = sortReportsByPeriod(reports.filter(r => r.indicatorId === ind.id));
+    const indAssignments = siteAssignments.filter(assignment => String(assignment.indicator_id) === String(ind.id) && assignment.active);
+    const visibleAssignmentIds = isManagerScoped ? managerAssignments.filter(assignment => String(assignment.indicator_id) === String(ind.id)).map(assignment => String(assignment.id)) : null;
+    const indReports = sortReportsByPeriod(reports.filter(r => r.indicatorId === ind.id && (!visibleAssignmentIds || !r.assignmentId || visibleAssignmentIds.includes(String(r.assignmentId)))));
     const latestReport = indReports[indReports.length - 1];
     const reportYears = [...new Set(indReports.map(report => reportPeriodTime(report) ? String(new Date(reportPeriodTime(report)).getUTCFullYear()) : '').filter(Boolean))].sort((a, b) => Number(b) - Number(a));
     const activeWeightedYear = reportYears[0] || '';
@@ -960,7 +987,8 @@ export default function App() {
     const weightedDisplay = weighted.value === null ? '—' : (Number.isInteger(weighted.value) ? weighted.value : Number(weighted.value.toFixed(2)));
     const weightedStatus = weighted.value === null ? 'Sin reporte' : calculateIndicatorStatus(weighted.value, ind.target, ind.comparator);
     const ownIds = accountIdentities(session.user.email, organizationPeople);
-    const { canManage, canReport } = indicatorAccess(ind, obj, ownIds, isSuperAdmin);
+    const { canManage, canReport: legacyCanReport } = indicatorAccess(ind, obj, ownIds, isSuperAdmin);
+    const canReport = legacyCanReport || managerAssignments.some(assignment => String(assignment.indicator_id) === String(ind.id));
     const reporter = ind.reporter_email ? personName(ind.reporter_email, availableUsers) : 'Sin asignar';
 
     return (
@@ -1037,7 +1065,8 @@ export default function App() {
 
   const ReportFormView = () => {
     const ind = indicators.find(i => i.id === selectedIndicatorId);
-    const [formData, setFormData] = useState({ period: '', result: '', obs: '', noData: false });
+    const reportingAssignments = siteAssignments.filter(assignment => String(assignment.indicator_id) === String(ind?.id) && assignment.active && (!isManagerScoped || accountOwns(assignment.responsible_email)));
+    const [formData, setFormData] = useState({ period: '', result: '', obs: '', noData: false, assignmentId: reportingAssignments[0] ? String(reportingAssignments[0].id) : '' });
     const registrationDate = new Date().toLocaleDateString('en-CA');
     const registrationDateLabel = registrationDate.split('-').reverse().join('-');
     const formatPeriod = (value) => { const [year, month] = value.split('-'); const months = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']; return value ? `${months[Number(month) - 1]},${year}` : ''; };
@@ -1046,12 +1075,11 @@ export default function App() {
       e.preventDefault();
       const calcStatus = formData.noData ? 'Sin datos' : calculateIndicatorStatus(formData.result, ind.target, ind.comparator);
       setDataError('');
-      const { error } = await supabase.rpc('register_indicator_measurement', {
-        indicator: ind.id,
-        report_period: formatPeriod(formData.period),
-        report_result: formData.noData ? null : parseFloat(formData.result),
-        report_observations: formData.noData ? null : formData.obs || null,
-      });
+      const rpc = formData.assignmentId ? 'register_site_indicator_measurement' : 'register_indicator_measurement';
+      const payload = formData.assignmentId
+        ? { indicator: ind.id, assignment: Number(formData.assignmentId), report_period: formatPeriod(formData.period), report_result: formData.noData ? null : parseFloat(formData.result), report_observations: formData.noData ? null : formData.obs || null }
+        : { indicator: ind.id, report_period: formatPeriod(formData.period), report_result: formData.noData ? null : parseFloat(formData.result), report_observations: formData.noData ? null : formData.obs || null };
+      const { error } = await supabase.rpc(rpc, payload);
       if (error) {
         setDataError(`No se pudo registrar el resultado: ${error.message || 'inténtalo nuevamente.'}`);
         return;
@@ -1073,6 +1101,7 @@ export default function App() {
              <div className="text-right"><p className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1">Frecuencia</p><p className="text-sm font-medium text-slate-700">{ind?.frequency}</p></div>
           </div>
           <form onSubmit={handleSubmit} className="space-y-5">
+            {reportingAssignments.length > 0 && <Select label="Sede *" required options={reportingAssignments.map(assignment => ({ value: String(assignment.id), label: `${sites.find(site => String(site.id) === String(assignment.site_id))?.name || 'Sede'} · ${personName(assignment.responsible_email, availableUsers)}` }))} value={formData.assignmentId} onChange={e => setFormData({ ...formData, assignmentId: e.target.value })} />}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4"><Input label="Periodo de Registro *" type="month" required value={formData.period} onChange={e => setFormData({...formData, period: e.target.value})} /><div className="flex flex-col gap-1.5"><label className="text-sm font-medium text-slate-700">Fecha de registro</label><div className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-600">{registrationDateLabel}</div></div></div>
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={formData.noData} onChange={e => setFormData({ ...formData, noData: e.target.checked })}/>Sin datos para este periodo</label>
             {!formData.noData && <div className="relative">
@@ -1137,7 +1166,8 @@ export default function App() {
   if (!selectedRole && assignedRole === 'super_admin') {
     const roles = [
       { key: 'gerente_responsable', name: 'Gerente responsable', description: 'Reporta indicadores asignados y delega responsables de reporte.', icon: Target, color: 'bg-blue-50 text-blue-600 border-blue-100' },
-      { key: 'gcg', name: 'GCG', description: 'Crea objetivos e indicadores y aprueba solicitudes de modificación.', icon: CheckCircle2, color: 'bg-emerald-50 text-emerald-600 border-emerald-100' }
+      { key: 'gcg', name: 'GCG', description: 'Crea objetivos e indicadores y aprueba solicitudes de modificación.', icon: CheckCircle2, color: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
+      { key: 'usuario', name: 'Usuario', description: 'Consulta y registra únicamente los indicadores donde fue asignado como apoyo.', icon: User, color: 'bg-violet-50 text-violet-600 border-violet-100' }
     ];
     return <AuthShell><div className="text-center mb-9"><img src={biomontLogo} alt="Biomont" className="h-20 w-auto object-contain mx-auto mb-6" /><p className="text-sm font-bold text-[#D71920] uppercase tracking-[0.2em]">Super administrador</p><h1 className="text-4xl font-bold text-slate-900 mt-2">Selecciona una vista</h1><p className="text-slate-500 mt-3 max-w-xl mx-auto">Elige el rol con el que deseas ingresar a BIOMET.</p></div><div className="grid grid-cols-1 md:grid-cols-3 gap-5">{roles.map(role => { const Icon = role.icon; return <button key={role.name} onClick={() => setSelectedRole(role)} className="bg-white border border-slate-200 rounded-2xl p-6 text-left shadow-sm hover:shadow-lg hover:-translate-y-1 hover:border-[#D71920]/40 transition-all group"><div className={`w-12 h-12 border rounded-xl flex items-center justify-center ${role.color}`}><Icon className="w-6 h-6" /></div><h2 className="text-lg font-bold text-slate-900 mt-5">{role.name}</h2><p className="text-sm text-slate-500 leading-6 mt-2">{role.description}</p><div className="flex items-center gap-2 text-sm font-semibold text-[#D71920] mt-6">Ingresar <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" /></div></button>})}</div><div className="text-center mt-7"><button onClick={signOut} className="text-sm text-slate-500 hover:text-slate-800">Cerrar sesión de {session.user.email}</button></div></AuthShell>;
   }
@@ -1167,13 +1197,13 @@ export default function App() {
       <main className="app-main min-w-0 flex-1 flex flex-col min-h-screen">
         <header className="h-14 min-h-14 shrink-0 bg-white border-b border-slate-200 flex items-center px-4 md:px-5 sticky top-0 z-50 isolate overflow-visible shadow-sm gap-3">
            {(navHistory.length > 1 || (currentView === 'bio-indicators' && indicatorFilters.indicatorId)) && <button onClick={goBack} className="shrink-0 flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900" aria-label="Retroceder"><ArrowLeft className="w-4 h-4" /> <span>Atrás</span></button>}
-           {currentView === 'bio-indicators' && (indicatorFilters.indicatorId ? <IndicatorYearFilter reports={reports.filter(report => String(report.indicatorId) === String(indicatorFilters.indicatorId))} year={bioIndicatorYear} onChange={setBioIndicatorYear} /> : <IndicatorFilterMenu reports={reports} isGcg={isGcg} objectives={objectivesWithProjectProgress} indicators={indicators} users={availableUsers} filters={indicatorFilters} onChange={changeIndicatorFilters} />)}
+           {currentView === 'bio-indicators' && (indicatorFilters.indicatorId ? <IndicatorYearFilter reports={reports.filter(report => String(report.indicatorId) === String(indicatorFilters.indicatorId))} year={bioIndicatorYear} onChange={setBioIndicatorYear} /> : <IndicatorFilterMenu reports={reports} isGcg={isGcg} objectives={objectivesWithProjectProgress} indicators={indicators} users={availableUsers} sites={sites} assignments={siteAssignments} filters={indicatorFilters} onChange={changeIndicatorFilters} />)}
 
         </header>
         <div className="app-content p-4 md:p-6 flex-1 relative z-0">
           {dataError && <div className="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-center justify-between gap-3"><span>{dataError}</span><button onClick={() => setDataError('')} className="font-semibold shrink-0">Cerrar</button></div>}
           {currentView === 'dashboard' && (bscVisible ? <StrategicMap objectives={objectivesWithProjectProgress} indicators={indicators} reports={reports} users={availableUsers} onClose={() => setBscVisible(false)} onSelectIndicator={indicator => { setBscVisible(false); navigateTo('indicator-detail', indicator.name, { indicatorId: indicator.id }); }} /> : <MonitorView />)}
-          {currentView === 'bio-indicators' && <BioIndicatorsView workflow={corrective} objectives={objectivesWithProjectProgress} indicators={indicators} reports={reports} users={availableUsers} filters={indicatorFilters} onChange={changeIndicatorFilters} year={bioIndicatorYear} isGcg={isGcg} session={session} onReload={loadOperationalData} onError={setDataError} onNotify={notify} />}
+          {currentView === 'bio-indicators' && <BioIndicatorsView workflow={corrective} objectives={objectivesWithProjectProgress} indicators={isManagerScoped ? scopedIndicators : indicators} reports={isManagerScoped ? scopedReports : reports} users={availableUsers} sites={sites} assignments={siteAssignments} filters={indicatorFilters} onChange={changeIndicatorFilters} year={bioIndicatorYear} isGcg={isGcg} session={session} onReload={loadOperationalData} onError={setDataError} onNotify={notify} />}
           {currentView === 'change-requests' && <ChangeRequests isGcg={isGcg} indicators={indicators} users={organizationPeople} onReload={loadOperationalData} onError={setDataError} />}
           {currentView === 'indicator-request-history' && <ChangeRequests isGcg={isGcg} indicators={indicators} users={organizationPeople} reports={reports} onReload={loadOperationalData} onError={setDataError} indicatorId={selectedIndicatorId} initialHistory onBack={goBack} />}
           {currentView === 'objectives' && <ObjectivesView />}

@@ -89,7 +89,6 @@ export default function MeasurementChart({ indicator, reports, year: controlledY
   const lastCurrentIndex = data.findLastIndex(row => row.resultado != null);
   const lastPreviousIndex = comparison ? data.findLastIndex(row => row.previous != null) : -1;
   const lastTargetIndex = data.findLastIndex(row => row.meta != null);
-  const lastCriticalIndex = data.findLastIndex(row => row.critical != null);
   const unit = displayUnit(indicator.unit);
   const currentDot = props => <MeasurementDot {...props} comparison={comparison} indicator={indicator} />;
   const controlStyle = 'rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:border-blue-300 hover:bg-blue-50';
@@ -125,13 +124,6 @@ export default function MeasurementChart({ indicator, reports, year: controlledY
               <Line type="stepAfter" dataKey="meta" name="Meta" stroke={NAVY} strokeDasharray="6 4" strokeWidth={1.6} dot={false} connectNulls={false} isAnimationActive={false}>
                 <LabelList dataKey="meta" content={props => <EndLabel {...props} lastIndex={lastTargetIndex} text={`Meta · ${valueWithUnit(data[lastTargetIndex]?.meta, unit)}`} color={NAVY} />} />
               </Line>
-              <Line type="stepAfter" dataKey="critical" name="Límite crítico" stroke="#b45309" strokeDasharray="5 4" strokeWidth={1.6} dot={false} connectNulls={false} isAnimationActive={false}>
-                <LabelList dataKey="critical" content={props => <EndLabel {...props} lastIndex={lastCriticalIndex} text={`Crítico · ${valueWithUnit(data[lastCriticalIndex]?.critical, unit)}`} color="#b45309" offset={16} />} />
-              </Line>
-              {data.some(row => row.criticalLower != null && row.critical == null) && <>
-                <Line type="stepAfter" dataKey="criticalLower" name="Límite crítico inferior" stroke="#b45309" strokeDasharray="5 4" strokeWidth={1.6} dot={false} connectNulls={false} isAnimationActive={false} />
-                <Line type="stepAfter" dataKey="criticalUpper" name="Límite crítico superior" stroke="#b45309" strokeDasharray="5 4" strokeWidth={1.6} dot={false} connectNulls={false} isAnimationActive={false} />
-              </>}
             </>}
           </ComposedChart>
         </ResponsiveContainer>

@@ -28,6 +28,7 @@ import useCorrectiveWorkflow from './useCorrectiveWorkflow';
 import { AnalysisHistoryButton, ActionsHistoryButton } from './CorrectiveWorkflow';
 import { attentionIndicators } from './lib/correctiveWorkflow';
 import { personName } from './lib/personNames';
+import { complianceMark } from './lib/complianceBand';
 
 const ROLE_LABELS = {
   usuario: 'Usuario',
@@ -1043,16 +1044,19 @@ export default function App() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
               <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
-                <tr><th className="px-6 py-3">Periodo</th><th className="px-6 py-3">Fecha Reporte</th><th className="px-6 py-3">Resultado</th><th className="px-6 py-3">Estado</th><th className="px-6 py-3">Análisis de causa</th><th className="px-6 py-3">Acciones</th></tr>
+                <tr><th className="px-6 py-3">Periodo</th><th className="px-6 py-3">Fecha Reporte</th><th className="px-6 py-3">Resultado</th><th className="px-6 py-3">Estado</th><th className="px-4 py-3 text-center">Pesimista</th><th className="px-4 py-3 text-center">Optimista</th><th className="px-4 py-3 text-center">Excepcional</th><th className="px-6 py-3">Análisis de causa</th><th className="px-6 py-3">Acciones</th></tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {indReports.length === 0 && <tr><td colSpan="6" className="px-6 py-8 text-center text-slate-500">Aún no existen resultados registrados para este indicador.</td></tr>}
+                {indReports.length === 0 && <tr><td colSpan="9" className="px-6 py-8 text-center text-slate-500">Aún no existen resultados registrados para este indicador.</td></tr>}
                 {[...indReports].reverse().map(r => (
                   <tr key={r.id} className="hover:bg-slate-50/50 transition-colors">
                     <td className="px-6 py-4 font-medium text-slate-900">{r.period}</td>
                     <td className="px-6 py-4 text-slate-500">{r.registeredDate || r.date}</td>
                     <td className="px-6 py-4 font-bold text-slate-900">{r.result == null ? 'Sin datos' : `${r.result} ${displayUnit(ind.unit)}`}</td>
                     <td className="px-6 py-4"><Badge status={r.status}>{r.status}</Badge></td>
+                    <td className="px-4 py-4 text-center font-bold text-red-700">{complianceMark(r.result, ind.target, ind.comparator, 'pesimista')}</td>
+                    <td className="px-4 py-4 text-center font-bold text-amber-700">{complianceMark(r.result, ind.target, ind.comparator, 'optimista')}</td>
+                    <td className="px-4 py-4 text-center font-bold text-green-700">{complianceMark(r.result, ind.target, ind.comparator, 'excepcional')}</td>
                     <td className="px-6 py-4"><AnalysisHistoryButton report={r} indicator={ind} objective={obj} workflow={corrective} users={availableUsers} canManage={isResponsibleManager && canManage} /></td>
                     <td className="px-6 py-4"><ActionsHistoryButton report={r} workflow={corrective} users={availableUsers} canManage={isResponsibleManager && canManage} /></td>
                   </tr>

@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   LayoutDashboard, Target, FolderKanban, Settings, User, Plus, 
-  ChevronRight, AlertCircle, CheckCircle2, Clock, ArrowRight, ArrowLeft, BarChart3, Calendar, Users, Activity, LogOut, FilePenLine, History, Trash2
+  ChevronRight, AlertCircle, CheckCircle2, Clock, ArrowRight, ArrowLeft, BarChart3, Calendar, Users, Activity, LogOut, FilePenLine, History, Trash2, Star
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, BarChart, Bar, PieChart, Pie, Cell, Legend } from 'recharts';
 import biomontLogo from './assets/biomont-logo.png';
@@ -23,6 +23,7 @@ import StrategicActions from './StrategicActions';
 import PmoProjects from './PmoProjects';
 import MicrosoftDirectory, { loadMicrosoftDirectory } from './MicrosoftDirectory';
 import UserWorkspace from './UserWorkspace';
+import CoreIndicators from './CoreIndicators';
 import useCorrectiveWorkflow from './useCorrectiveWorkflow';
 import { AnalysisHistoryButton, ActionsHistoryButton } from './CorrectiveWorkflow';
 import { attentionIndicators } from './lib/correctiveWorkflow';
@@ -187,6 +188,7 @@ export default function App() {
   const [siteAssignments, setSiteAssignments] = useState([]);
   const [microsoftPeople, setMicrosoftPeople] = useState([]);
   const [dashboardMessages, setDashboardMessages] = useState([]);
+  const [coreIndicatorRows, setCoreIndicatorRows] = useState([]);
   
   const [selectedObjectiveId, setSelectedObjectiveId] = useState(null);
   const [selectedObjectiveTab, setSelectedObjectiveTab] = useState('summary');
@@ -267,7 +269,7 @@ export default function App() {
 
   const loadOperationalData = async () => {
     if (!supabase) return;
-    const [profilesResult, peopleResult, objectivesResult, projectsResult, actionsResult, indicatorsResult, reportsResult, messagesResult, catalogResult, directoryResult, sitesResult, assignmentsResult] = await Promise.all([
+    const [profilesResult, peopleResult, objectivesResult, projectsResult, actionsResult, indicatorsResult, reportsResult, messagesResult, catalogResult, directoryResult, sitesResult, assignmentsResult, coreResult] = await Promise.all([
       supabase.from('profiles').select('email, role').order('email'),
       supabase.from('organization_people').select('id, full_name, email, role').eq('active', true).order('full_name'),
       supabase.from('objectives').select('*').order('created_at', { ascending: false }),
@@ -280,6 +282,7 @@ export default function App() {
       loadMicrosoftDirectory(),
       supabase.from('sites').select('*').eq('active', true).order('name'),
       supabase.from('indicator_site_assignments').select('*').eq('active', true),
+      supabase.from('core_indicators').select('*').order('position'),
     ]);
     const firstError = [profilesResult, peopleResult, objectivesResult, projectsResult, actionsResult, indicatorsResult, reportsResult].find(result => result.error)?.error;
     if (firstError) {
@@ -299,6 +302,7 @@ export default function App() {
     setReports((reportsResult.data || []).map(toReport));
     setSites(sitesResult.data || []);
     setSiteAssignments(assignmentsResult.data || []);
+    setCoreIndicatorRows(coreResult.data || []);
     setDashboardMessages(messagesResult.data || []);
     setDataError('');
     await corrective.reload();
@@ -390,7 +394,7 @@ export default function App() {
   const navigateTo = (view, name, params = {}) => {
     setIndicatorRequestFlyout(null);
     setIndicatorRequestForm(false);
-    if ((['new-objective', 'new-indicator', 'edit-indicator', 'gcg-review'].includes(view) && !isGcg)
+    if ((['new-objective', 'new-indicator', 'edit-indicator', 'gcg-review', 'core-indicators'].includes(view) && !isGcg)
       || (['edit-target', 'report-indicator', 'indicator-status'].includes(view) && !isResponsibleManager)
       || (['new-project', 'edit-action', 'link-project'].includes(view) && !isGcg)) return;
     setCurrentView(view);
@@ -540,7 +544,7 @@ export default function App() {
             <div className="flex justify-between items-start">
               <div>
                 <p className="text-sm font-medium text-slate-500 mb-1">Indicadores registrados</p>
-                <h3 className="text-3xl font-bold text-slate-900">{registeredIndicators}</h3>
+                <h3 className="text-3xl font-bold text-slate-900">{registeredIndicators}/{scopedObjectives.length}</h3>
               </div>
               <div className="p-2 bg-yellow-50 rounded-lg"><AlertCircle className="w-5 h-5 text-yellow-600" /></div>
             </div>
@@ -1188,6 +1192,7 @@ export default function App() {
             <button onClick={() => navigateTo(isGeneralManager ? 'new-objective' : 'objectives', isGeneralManager ? 'Crear objetivo' : 'Objetivos')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${(currentView.includes('objective') && currentView !== 'dashboard') ? 'bg-[#1e293b] text-white' : 'hover:bg-slate-800 hover:text-white'}`}><Target className="w-5 h-5" /> {isGeneralManager ? 'Crear objetivo' : 'Objetivos'}</button>
             {isResponsibleManager && <button onClick={() => navigateTo('indicator-status', 'Mis indicadores')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${currentView === 'indicator-status' || currentView === 'edit-indicator' ? 'bg-[#1e293b] text-white' : 'hover:bg-slate-800 hover:text-white'}`}><BarChart3 className="w-5 h-5" /> Mis indicadores</button>}
             {isGcg && <button onClick={() => navigateTo('gcg-review', 'Solicitudes')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${currentView === 'gcg-review' ? 'bg-[#1e293b] text-white' : 'hover:bg-slate-800 hover:text-white'}`}><CheckCircle2 className="w-5 h-5" /> Solicitudes</button>}
+            {isGcg && <button onClick={() => navigateTo('core-indicators', 'Indicadores core')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${currentView === 'core-indicators' ? 'bg-[#1e293b] text-white' : 'hover:bg-slate-800 hover:text-white'}`}><Star className="w-5 h-5" /> Indicadores core</button>}
           </nav>
         </div>
         <div className="p-4 border-t border-slate-800">
@@ -1216,6 +1221,7 @@ export default function App() {
           {currentView === 'edit-indicator' && <EditIndicatorView />}
           {currentView === 'edit-target' && <EditTargetView />}
           {currentView === 'gcg-review' && isGcg && <ChangeRequests isGcg indicators={indicators} users={organizationPeople} onReload={loadOperationalData} onError={setDataError} />}
+          {currentView === 'core-indicators' && isGcg && <CoreIndicators indicators={indicators} objectives={objectivesWithProjectProgress} coreRows={coreIndicatorRows} onReload={loadOperationalData} onError={setDataError} onNotify={notify} onOpenIndicator={indicator => navigateTo('indicator-detail', indicator.name, { indicatorId: indicator.id })} />}
           {currentView === 'settings' && <SettingsView />}
           {currentView === 'indicator-detail' && <IndicatorDetailView />}
           {currentView === 'report-indicator' && <ReportFormView />}

@@ -474,7 +474,7 @@ export default function App() {
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
           <div>
             <p className="text-sm font-semibold text-[#D71920] uppercase tracking-[0.16em]">BIOMET</p>
-            <h1 className="text-3xl font-bold text-slate-900 tracking-tight mt-1">Monitor estratégico</h1>
+            <h1 className="text-3xl font-bold text-slate-900 tracking-tight mt-1">Gestión Estratégica</h1>
             <p className="text-slate-500 mt-1">Vista ejecutiva del avance de los objetivos de Biomont.</p>
           </div>
           <div className="bg-white rounded-xl border border-slate-200 px-4 py-2.5 flex items-center gap-2 text-sm font-medium text-slate-600 shadow-sm"><Calendar className="w-4 h-4 text-[#D71920]" /> Periodo: 2026</div>

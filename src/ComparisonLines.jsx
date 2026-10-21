@@ -30,7 +30,7 @@ export default function ComparisonLines({ indicators, reports }) {
   const ticks = measurementTicks(data.map(row => ({ resultado: row.a, meta: row.b })), 0);
   const ready = Boolean(a.indicatorId && b.indicatorId);
   return <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 space-y-5">
-    <header><h2 className="text-lg font-bold text-slate-900">Comparativa de indicadores</h2><p className="text-sm text-slate-500 mt-1">Compara dos indicadores o dos anios del mismo indicador por mes.</p></header>
+    <header><h2 className="text-lg font-bold text-slate-900">Comparativa de indicadores</h2><p className="text-sm text-slate-500 mt-1">Compara dos indicadores o dos años del mismo indicador por mes.</p></header>
     <Filters indicators={indicators} years={years} shared={shared} onShared={setShared} yearA={yearA} yearB={yearB} onYearA={setYearA} onYearB={setYearB} />
     <p className="text-xs text-slate-500">{a.year && b.year ? 'Los años seleccionados se comparan por el mismo mes. El detalle de cada punto conserva su año.' : 'Selecciona un año en ambos filtros para superponer los meses de años distintos; con Todos se usa la fecha real.'} Ambas líneas usan la misma escala numérica; las unidades se conservan en el detalle.</p>
     {ready && data.length ? <div className="h-80" aria-label="Comparativa de indicadores con dos líneas"><ResponsiveContainer width="100%" height="100%"><LineChart data={data} margin={{ top: 12, right: 24, bottom: 12, left: 16 }}>

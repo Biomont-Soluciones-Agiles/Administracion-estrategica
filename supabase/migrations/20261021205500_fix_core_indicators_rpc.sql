@@ -7,6 +7,9 @@ create table if not exists public.core_indicators (
   position integer
 );
 
+alter table public.core_indicators
+  add column if not exists position integer;
+
 grant select on table public.core_indicators to authenticated;
 
 create or replace function public.set_core_indicators(selected_indicator_ids bigint[])

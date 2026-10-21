@@ -3,7 +3,8 @@
 
 create table if not exists public.core_indicators (
   indicator_id bigint primary key references public.indicators(id) on delete cascade,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  position integer
 );
 
 grant select on table public.core_indicators to authenticated;
@@ -38,8 +39,8 @@ begin
   delete from public.core_indicators
   where indicator_id is not null;
 
-  insert into public.core_indicators (indicator_id)
-  select indicator_id
+  insert into public.core_indicators (indicator_id, position)
+  select indicator_id, position
   from unnest(selected_indicator_ids) with ordinality as selected(indicator_id, position)
   order by position;
 end;

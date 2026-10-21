@@ -287,7 +287,7 @@ export default function App() {
       loadMicrosoftDirectory(),
       supabase.from('sites').select('*').eq('active', true).order('name'),
       supabase.from('indicator_site_assignments').select('*').eq('active', true),
-      supabase.from('core_indicators').select('*').order('position'),
+      supabase.from('core_indicators').select('*').order('created_at'),
     ]);
     const firstError = [profilesResult, peopleResult, objectivesResult, projectsResult, actionsResult, indicatorsResult, reportsResult].find(result => result.error)?.error;
     if (firstError) {

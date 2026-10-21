@@ -31,7 +31,7 @@ import useCorrectiveWorkflow from './useCorrectiveWorkflow';
 import { AnalysisHistoryButton, ActionsHistoryButton } from './CorrectiveWorkflow';
 import { attentionIndicators } from './lib/correctiveWorkflow';
 import { personName } from './lib/personNames';
-import { complianceMark } from './lib/complianceBand';
+import { complianceMark, measurementComplianceBand } from './lib/complianceBand';
 
 const ROLE_LABELS = {
   usuario: 'Usuario',
@@ -952,7 +952,7 @@ export default function App() {
   };
 
   const IndicatorDetailView = () => {
-
+    const [historyView, setHistoryView] = useState('detailed');
     const ind = indicators.find(i => i.id === selectedIndicatorId);
     const obj = objectives.find(o => o.id === ind?.objectiveId);
     if (!ind) return null;
@@ -969,6 +969,11 @@ export default function App() {
     const { canManage, canReport: legacyCanReport } = indicatorAccess(ind, obj, ownIds, isSuperAdmin);
     const canReport = legacyCanReport || managerAssignments.some(assignment => String(assignment.indicator_id) === String(ind.id));
     const reporter = ind.reporter_email ? personName(ind.reporter_email, availableUsers) : 'Sin asignar';
+    const historyCondition = report => {
+      if (report.result == null) return 'Sin datos';
+      const band = measurementComplianceBand(report.result, ind.target, ind.comparator).band;
+      return ({ pesimista: 'Pesimista', optimista: 'Optimista', excepcional: 'Excepcional' })[band] || 'Sin condición';
+    };
 
     return (
       <div className="fade-in space-y-6">
@@ -1014,11 +1019,11 @@ export default function App() {
           <MeasurementChart indicator={ind} reports={indReports} headerAction={isResponsibleManager && canReport ? <Button onClick={() => navigateTo('report-indicator', 'Registrar Resultado', { indicatorId: ind.id })} variant="secondary">Registrar resultado</Button> : null} />
         </Card>
         <Card className="overflow-hidden">
-          <div className="p-5 border-b border-slate-200"><h3 className="font-semibold text-slate-900">Historial de Mediciones</h3></div>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 p-5"><div><h3 className="font-semibold text-slate-900">Historial de Mediciones</h3><p className="mt-1 text-xs text-slate-500">{historyView === 'detailed' ? 'Vista detallada por estándar de cumplimiento.' : 'Vista simple con una condición consolidada.'}</p></div><button type="button" onClick={() => setHistoryView(view => view === 'detailed' ? 'simple' : 'detailed')} className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-100">{historyView === 'detailed' ? 'Ver modelo simple' : 'Ver modelo detallado'}</button></div>
           <div className="overflow-x-auto">
             <table className="w-full table-fixed text-center text-sm">
               <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
-                <tr><th className="w-[13%] px-3 py-3 text-center">Periodo</th><th className="w-[12%] px-3 py-3 text-center">Fecha Reporte</th><th className="w-[11%] px-3 py-3 text-center">Resultado</th><th className="w-[13%] px-3 py-3 text-center">Estado</th><th className="w-[8%] px-2 py-3 text-center">Pesimista</th><th className="w-[8%] px-2 py-3 text-center">Optimista</th><th className="w-[9%] px-2 py-3 text-center">Excepcional</th><th className="w-[16%] px-3 py-3 text-center">Análisis de causa</th><th className="w-[10%] px-3 py-3 text-center">Acciones</th></tr>
+                <tr><th className="w-[13%] px-3 py-3 text-center">Periodo</th><th className="w-[12%] px-3 py-3 text-center">Fecha Reporte</th><th className="w-[11%] px-3 py-3 text-center">Resultado</th><th className="w-[13%] px-3 py-3 text-center">Estado</th>{historyView === 'detailed' ? <><th className="w-[8%] px-2 py-3 text-center">Pesimista</th><th className="w-[8%] px-2 py-3 text-center">Optimista</th><th className="w-[9%] px-2 py-3 text-center">Excepcional</th></> : <th className="w-[18%] px-3 py-3 text-center">Condición</th>}<th className="w-[16%] px-3 py-3 text-center">Análisis de causa</th><th className="w-[10%] px-3 py-3 text-center">Acciones</th></tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {indReports.length === 0 && <tr><td colSpan="9" className="px-6 py-8 text-center text-slate-500">Aún no existen resultados registrados para este indicador.</td></tr>}
@@ -1028,9 +1033,7 @@ export default function App() {
                     <td className="px-3 py-4 text-slate-500">{r.registeredDate || r.date}</td>
                     <td className="px-3 py-4 font-bold text-slate-900">{r.result == null ? 'Sin datos' : `${r.result} ${displayUnit(ind.unit)}`}</td>
                     <td className="px-3 py-4"><div className="flex justify-center"><Badge status={r.status}>{r.status}</Badge></div></td>
-                    <td className="px-4 py-4 text-center font-bold text-red-700">{complianceMark(r.result, ind.target, ind.comparator, 'pesimista')}</td>
-                    <td className="px-4 py-4 text-center font-bold text-amber-700">{complianceMark(r.result, ind.target, ind.comparator, 'optimista')}</td>
-                    <td className="px-4 py-4 text-center font-bold text-green-700">{complianceMark(r.result, ind.target, ind.comparator, 'excepcional')}</td>
+                    {historyView === 'detailed' ? <><td className="px-4 py-4 text-center font-bold text-red-700">{complianceMark(r.result, ind.target, ind.comparator, 'pesimista')}</td><td className="px-4 py-4 text-center font-bold text-amber-700">{complianceMark(r.result, ind.target, ind.comparator, 'optimista')}</td><td className="px-4 py-4 text-center font-bold text-green-700">{complianceMark(r.result, ind.target, ind.comparator, 'excepcional')}</td></> : <td className="px-3 py-4 text-center font-semibold text-slate-700">{historyCondition(r)}</td>}
                     <td className="px-3 py-4"><div className="flex justify-center"><AnalysisHistoryButton report={r} indicator={ind} objective={obj} workflow={corrective} users={availableUsers} canManage={isResponsibleManager && canManage} /></div></td>
                     <td className="px-3 py-4"><div className="flex justify-center"><ActionsHistoryButton report={r} workflow={corrective} users={availableUsers} canManage={isResponsibleManager && canManage} /></div></td>
                   </tr>

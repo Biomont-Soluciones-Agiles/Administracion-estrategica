@@ -780,10 +780,10 @@ export default function App() {
                      {objIndicators.map(ind => {
                         const latest = sortReportsByPeriod(reports.filter(r => r.indicatorId === ind.id), 'desc')[0];
                         return (
-                          <div key={ind.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
+                          <button type="button" key={ind.id} onClick={() => navigateTo('indicator-detail', ind.name, { indicatorId: ind.id, objectiveId: obj.id, objectiveTab: 'summary' })} className="flex w-full items-center justify-between rounded-lg border border-slate-100 bg-slate-50 p-3 text-left transition hover:border-blue-200 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                             <div><p className="text-sm font-medium text-slate-800">{ind.name}</p><p className="text-xs text-slate-500 mt-0.5">Meta: {ind.comparator} {ind.target} {displayUnit(ind.unit)}</p></div>
                             <div className="text-right"><Badge status={ind.status}>{ind.status}</Badge><p className="text-xs font-bold mt-1 text-slate-700">Actual: {latest?.result || '-'} {displayUnit(ind.unit)}</p></div>
-                          </div> 
+                          </button>
                         )
                      })}
                    </div>

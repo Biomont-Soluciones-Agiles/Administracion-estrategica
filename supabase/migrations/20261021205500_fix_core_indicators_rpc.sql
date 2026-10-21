@@ -1,5 +1,12 @@
--- Corrige la persistencia de Indicadores Core.
--- La tabla core_indicators guarda una fila por indicador, no un arreglo indicator_ids.
+-- Crea y corrige la persistencia de Indicadores Core.
+-- La tabla guarda una fila por indicador, no un arreglo indicator_ids.
+
+create table if not exists public.core_indicators (
+  indicator_id bigint primary key references public.indicators(id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+
+grant select on table public.core_indicators to authenticated;
 
 create or replace function public.set_core_indicators(selected_indicator_ids bigint[])
 returns void

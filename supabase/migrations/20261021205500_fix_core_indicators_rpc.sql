@@ -35,7 +35,8 @@ begin
     raise exception 'Uno o más indicadores seleccionados no existen.';
   end if;
 
-  delete from public.core_indicators;
+  delete from public.core_indicators
+  where indicator_id is not null;
 
   insert into public.core_indicators (indicator_id)
   select indicator_id

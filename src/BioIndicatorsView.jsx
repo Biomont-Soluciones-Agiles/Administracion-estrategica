@@ -4,6 +4,7 @@ import { Filter } from 'lucide-react';
 import { AttentionPanel, IndicatorPortfolioCard, PortfolioSummary, PortfolioStatus } from './IndicatorPortfolio';
 import { portfolioRows } from './lib/indicatorPortfolio';
 import MeasurementChart from './MeasurementChart';
+import ComparisonLines from './ComparisonLines';
 import { filterIndicators, weightedIndicatorSummary } from './lib/indicatorViews';
 import { parseReportPeriod } from './lib/reporting';
 import { personName } from './lib/personNames';
@@ -63,7 +64,7 @@ export default function BioIndicatorsView({ objectives, indicators, reports, use
   const select = item => onChange({ ...filters, indicatorId: String(item.id) });
   return <div className="fade-in space-y-6">
     <header><p className="text-xs font-medium text-slate-500">Reportería / Indicadores general</p><h1 className="text-3xl font-bold tracking-tight text-slate-900 mt-2">Indicadores general</h1><p className="text-sm text-slate-500 mt-2">Seguimiento integral del portafolio</p></header>
-    {!indicator && <PortfolioSummary rows={portfolio} />}
+    {!indicator && <><PortfolioSummary rows={portfolio} /><ComparisonLines indicators={availableIndicators} reports={reports} /></>}
     {!list.length && <p className="rounded-xl bg-white border p-8 text-center text-slate-500">No hay indicadores que coincidan con estos filtros.</p>}
     {indicator ? <div className="space-y-6">
       {isGcg && <IndicatorManagement indicator={indicator} reports={reports.filter(report => report.indicatorId === indicator.id)} users={users} session={session} onReload={onReload} onError={onError} onNotify={onNotify} />}

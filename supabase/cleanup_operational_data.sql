@@ -1,8 +1,10 @@
 -- LIMPIEZA PARA ENTREGA DE BIOMET.
 -- Ejecutar manualmente en SQL Editor del proyecto de Supabase de esta app.
 -- Exportar antes los datos si se desea poder recuperarlos.
--- Borra TODOS los datos operativos. Conserva usuarios, perfiles, roles,
--- directorio, políticas de seguridad, funciones y estructura de la app.
+-- Borra TODOS los datos operativos: objetivos, indicadores, selección Core,
+-- reportes, acciones, proyectos, hallazgos y mensajes del tablero.
+-- Conserva usuarios, perfiles, roles, sedes, catálogos, directorio,
+-- políticas de seguridad, funciones y estructura de la app.
 -- No se usa CASCADE: una dependencia no contemplada detiene la operación.
 -- Los contadores de códigos se conservan para no reutilizar códigos antiguos.
 -- Los archivos físicos de Storage se eliminan desde Storage, nunca por SQL.
@@ -15,8 +17,9 @@ declare
     'corrective_evidence', 'corrective_events', 'corrective_tasks',
     'corrective_actions', 'cause_analyses', 'indicator_change_audit',
     'indicator_change_requests', 'indicator_target_history',
-    'indicator_reports', 'indicators', 'strategic_actions', 'projects',
-    'objectives', 'dashboard_messages'
+    'core_indicators', 'indicator_site_assignments', 'indicator_reports',
+    'indicators', 'strategic_actions', 'projects', 'objectives',
+    'dashboard_messages'
   ];
   table_name text;
   targets text := '';
@@ -31,7 +34,7 @@ begin
   select count(*) into users_before from auth.users;
 
   foreach table_name in array operational_tables loop
-    -- Permite limpiar una instalación donde aún falte el módulo de mensajes.
+    -- Permite limpiar una instalación donde aún falte algún módulo.
     if to_regclass(format('public.%I', table_name)) is not null then
       targets := targets || case when targets = '' then '' else ', ' end
         || format('public.%I', table_name);
@@ -55,4 +58,4 @@ $$;
 
 commit;
 
-select 'Limpieza completada. Usuarios, accesos y roles conservados.' as resultado;
+select 'Limpieza completada. Usuarios, accesos, roles, sedes y catálogos conservados.' as resultado;

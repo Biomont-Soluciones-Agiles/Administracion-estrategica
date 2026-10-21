@@ -32,7 +32,6 @@ function MeasurementTooltip({ active, payload, label, unit, defaultComparator, c
     <div className="mt-3 space-y-2 text-sm">
       <p className="flex justify-between gap-5 text-slate-600"><span>Meta de la medición</span><strong className="text-slate-900">{comparator} {valueWithUnit(row.meta, unit)}</strong></p>
       <p className="flex justify-between gap-5 text-slate-600"><span>Resultado</span><strong style={{ color: NAVY }}>{valueWithUnit(row.resultado, unit)}</strong></p>
-      {assessment.critical != null && <p className="flex justify-between gap-5 text-slate-600"><span>Límite crítico</span><strong className="text-slate-900">{valueWithUnit(assessment.critical, unit)}</strong></p>}
       <p className={`w-fit rounded-full px-2.5 py-1 text-xs font-semibold ${inTarget ? 'bg-green-50 text-green-700' : moderate ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700'}`}>{inTarget ? 'En meta' : moderate ? 'Desviación ≤ 20%' : 'Desviación crítica'}</p>
     </div>
   </div>;
@@ -94,9 +93,9 @@ export default function MeasurementChart({ indicator, reports, year: controlledY
   const controlStyle = 'rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:border-blue-300 hover:bg-blue-50';
   return <section aria-label={`Gráfica de medición de ${indicator.name}`}>
     <header className="mb-4 flex flex-wrap items-center justify-between gap-3">
-      <h3 className="font-semibold text-slate-900">Tendencia Histórica</h3>
+      <h3 className="font-semibold text-slate-900">{comparison ? 'Gráfica de Comparativa' : 'Tendencia Histórica'}</h3>
       <div className="flex flex-wrap items-center gap-2">
-        {showYearFilter && <select id={yearInputId} aria-label="Año de tendencia histórica" value={year} onChange={event => setYear(event.target.value)} className={controlStyle}>
+        {showYearFilter && !comparison && <select id={yearInputId} aria-label="Año de tendencia histórica" value={year} onChange={event => setYear(event.target.value)} className={controlStyle}>
           {years.map(value => <option key={value} value={value}>{value}</option>)}<option value="">Todos los años</option>
         </select>}
         <button type="button" aria-pressed={comparison} onClick={() => setComparison(!comparison)} className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition ${comparison ? 'border-blue-700 bg-blue-700 text-white hover:bg-blue-800' : 'border-slate-200 bg-white text-blue-700 hover:border-blue-300 hover:bg-blue-50'}`}><BarChart3 className="h-4 w-4" />Comparativa</button>
@@ -129,9 +128,8 @@ export default function MeasurementChart({ indicator, reports, year: controlledY
         </ResponsiveContainer>
       </div>
       {!comparison && <div className="mt-3 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-slate-600">
-        <span className="flex items-center gap-2"><i className="h-2.5 w-2.5 rounded-full bg-green-600" />En meta</span>
-        <span className="flex items-center gap-2"><i className="h-2.5 w-2.5 rounded-full bg-amber-500" />Desviación ≤ 20%</span>
-        <span className="flex items-center gap-2"><i className="h-2.5 w-2.5 rounded-full bg-red-600" />Desviación crítica</span>
+        <span className="flex items-center gap-2"><i className="h-2.5 w-2.5 rounded-full" style={{ background: NAVY }} />Medición</span>
+        <span className="flex items-center gap-2"><i className="h-0.5 w-5 border-t-2 border-dashed" style={{ borderColor: NAVY }} />Meta</span>
       </div>}
       {comparison && (!hasCurrent || !hasPrevious) && <p className="mt-3 text-xs text-slate-500">Sin mediciones de {hasCurrent ? previousYear : comparisonYear}; se muestran únicamente los valores disponibles.</p>}
     </>}

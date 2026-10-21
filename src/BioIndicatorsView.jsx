@@ -1,13 +1,13 @@
 import { displayUnit } from './lib/units';
-import React from 'react';
+import React, { useState } from 'react';
 import { Filter } from 'lucide-react';
 import { AttentionPanel, IndicatorPortfolioCard, PortfolioSummary, PortfolioStatus } from './IndicatorPortfolio';
 import { portfolioRows } from './lib/indicatorPortfolio';
 import MeasurementChart from './MeasurementChart';
-import ComparisonLines from './ComparisonLines';
 import { filterIndicators, weightedIndicatorSummary } from './lib/indicatorViews';
 import { parseReportPeriod } from './lib/reporting';
 import { personName } from './lib/personNames';
+import { complianceMark, measurementComplianceBand } from './lib/complianceBand';
 import IndicatorManagement from './IndicatorManagement';
 import SearchableIndicatorSelect from './SearchableIndicatorSelect';
 import { AnalysisHistoryButton, ActionsHistoryButton } from './CorrectiveWorkflow';
@@ -47,7 +47,17 @@ export function IndicatorYearFilter({ reports, year, onChange }) {
   return <details className="relative ml-auto shrink-0"><summary aria-label="Filtrar indicador por año" className="flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100"><Filter className="h-5 w-5" /></summary><div className="absolute right-0 top-full z-[60] mt-2 w-56 rounded-xl border border-slate-200 bg-white p-4 shadow-xl"><label className="block text-sm font-semibold text-slate-700">Año<select aria-label="Año del indicador" className={input} value={year} onChange={event => onChange(event.target.value)}><option value="">Todos los años</option>{years.map(value => <option key={value} value={value}>{value}</option>)}</select></label></div></details>;
 }
 
+function SimpleMeasurementHistory({ rows, indicator }) {
+  const condition = row => {
+    if (row.result == null) return 'Sin datos';
+    const band = measurementComplianceBand(row.result, indicator.target, indicator.comparator).band;
+    return ({ pesimista: 'Pesimista', optimista: 'Optimista', excepcional: 'Excepcional' })[band] || 'Sin condición';
+  };
+  return <section className="rounded-2xl border border-slate-200 bg-white overflow-hidden"><div className="p-5 border-b"><h3 className="font-semibold">Historial de mediciones · modelo simple</h3><p className="mt-1 text-xs text-slate-500">La condición consolida el estándar de cumplimiento de cada medición.</p></div><div className="overflow-x-auto"><table className="w-full text-center text-sm"><thead className="bg-slate-50 text-slate-500"><tr><th className="p-3">Periodo</th><th className="p-3">Resultado</th><th className="p-3">Condición</th><th className="p-3">Estado</th></tr></thead><tbody>{rows.map(row => <tr key={row.id} className="border-t"><td className="p-3">{row.period}</td><td className="p-3 font-medium">{row.result == null ? 'Sin datos' : row.result + ' ' + displayUnit(indicator.unit)}</td><td className="p-3">{condition(row)}</td><td className="p-3"><div className="flex justify-center"><PortfolioStatus status={row.status} /></div></td></tr>)}{!rows.length && <tr><td colSpan={4} className="p-8 text-center text-slate-500">Sin mediciones.</td></tr>}</tbody></table></div></section>;
+}
+
 export default function BioIndicatorsView({ objectives, indicators, reports, users = [], sites = [], assignments = [], filters, onChange, year = '', isGcg = false, workflow, session, onReload, onError, onNotify }) {
+  const [historyMode, setHistoryMode] = useState('detail');
   const scopedIndicatorIds = filters.siteId ? new Set(assignments.filter(assignment => String(assignment.site_id) === String(filters.siteId) && assignment.active).map(assignment => String(assignment.indicator_id))) : null;
   const availableIndicators = scopedIndicatorIds ? indicators.filter(indicator => scopedIndicatorIds.has(String(indicator.id))) : indicators;
   const list = filterIndicators(portfolioRows(availableIndicators, reports).map(row => ({ ...row.indicator, status: row.status })), filters);
@@ -64,7 +74,7 @@ export default function BioIndicatorsView({ objectives, indicators, reports, use
   const select = item => onChange({ ...filters, indicatorId: String(item.id) });
   return <div className="fade-in space-y-6">
     <header><p className="text-xs font-medium text-slate-500">Reportería / Indicadores general</p><h1 className="text-3xl font-bold tracking-tight text-slate-900 mt-2">Indicadores general</h1><p className="text-sm text-slate-500 mt-2">Seguimiento integral del portafolio</p></header>
-    {!indicator && <><PortfolioSummary rows={portfolio} /><ComparisonLines indicators={availableIndicators} reports={reports} /></>}
+    {!indicator && <PortfolioSummary rows={portfolio} />}
     {!list.length && <p className="rounded-xl bg-white border p-8 text-center text-slate-500">No hay indicadores que coincidan con estos filtros.</p>}
     {indicator ? <div className="space-y-6">
       {isGcg && <IndicatorManagement indicator={indicator} reports={reports.filter(report => report.indicatorId === indicator.id)} users={users} session={session} onReload={onReload} onError={onError} onNotify={onNotify} />}
@@ -77,7 +87,9 @@ export default function BioIndicatorsView({ objectives, indicators, reports, use
       </section>
       {isGcg && <section className="rounded-2xl border border-blue-200 bg-blue-50 p-5"><p className="text-sm font-semibold text-blue-900">Ponderación global por sede</p><p className="mt-1 text-sm text-blue-800">Consolida la última medición reportada de cada sede según su ponderación.</p><p className="mt-3 text-3xl font-bold text-blue-950">{globalWeighted === null ? '—' : Number(globalWeighted.toFixed(2))} <span className="text-lg font-normal">{globalWeighted === null ? '' : displayUnit(indicator.unit)}</span></p><p className="mt-2 text-xs text-blue-700">{latestByAssignment.length} de {siteAssignments.length} sede(s) con datos · Ponderación total: {totalWeight || 0}</p></section>}
       <section className="rounded-2xl border border-slate-200 bg-white p-6"><MeasurementChart indicator={indicator} reports={reports.filter(report => String(report.indicatorId) === String(indicator.id))} year={year} showYearFilter={false} /></section>
-      <section className="rounded-2xl border border-slate-200 bg-white overflow-hidden"><h3 className="p-5 border-b font-semibold">Historial de mediciones</h3><div className="overflow-x-auto"><table className="w-full table-fixed text-center text-sm"><thead className="bg-slate-50 text-slate-500"><tr><th className="w-[17%] p-3 text-center">Periodo</th><th className="w-[15%] p-3 text-center">Resultado</th><th className="w-[16%] p-3 text-center">Estado</th>{isGcg && workflow && <><th className="w-[11%] p-3 text-center">Análisis de causa</th><th className="w-[7%] p-3 text-center">Acciones</th></>}</tr></thead><tbody>{rows.map(row => <tr key={row.id} className="border-t"><td className="p-3">{row.period}</td><td className="p-3 font-medium">{row.result == null ? 'Sin datos' : row.result + ' ' + displayUnit(indicator.unit)}</td><td className="p-3"><div className="flex justify-center"><PortfolioStatus status={row.status} /></div></td>{isGcg && workflow && <><td className="p-3"><div className="flex justify-center"><AnalysisHistoryButton report={row} indicator={indicator} objective={objective} workflow={workflow} users={users} canManage={false} /></div></td><td className="p-3"><div className="flex justify-center"><ActionsHistoryButton report={row} workflow={workflow} users={users} canManage={false} /></div></td></>}</tr>)}{!rows.length && <tr><td colSpan={isGcg && workflow ? 5 : 3} className="p-8 text-center text-slate-500">Sin mediciones.</td></tr>}</tbody></table></div></section>
+      <div className="flex justify-end"><button type="button" onClick={() => setHistoryMode(value => value === 'detail' ? 'simple' : 'detail')} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">{historyMode === 'detail' ? 'Ver modelo simple' : 'Ver modelo detallado'}</button></div>
+      {historyMode === 'detail' && <section className="rounded-2xl border border-slate-200 bg-white overflow-hidden"><h3 className="p-5 border-b font-semibold">Historial de mediciones</h3><div className="overflow-x-auto"><table className="w-full table-fixed text-center text-sm"><thead className="bg-slate-50 text-slate-500"><tr><th className="w-[14%] p-3 text-center">Periodo</th><th className="w-[14%] p-3 text-center">Resultado</th><th className="w-[12%] p-3 text-center">Pesimista</th><th className="w-[12%] p-3 text-center">Optimista</th><th className="w-[12%] p-3 text-center">Excepcional</th><th className="w-[14%] p-3 text-center">Estado</th>{isGcg && workflow && <><th className="w-[11%] p-3 text-center">Análisis de causa</th><th className="w-[7%] p-3 text-center">Acciones</th></>}</tr></thead><tbody>{rows.map(row => <tr key={row.id} className="border-t"><td className="p-3">{row.period}</td><td className="p-3 font-medium">{row.result == null ? 'Sin datos' : row.result + ' ' + displayUnit(indicator.unit)}</td><td className="p-3 font-bold text-red-700">{complianceMark(row.result, indicator.target, indicator.comparator, 'pesimista')}</td><td className="p-3 font-bold text-amber-700">{complianceMark(row.result, indicator.target, indicator.comparator, 'optimista')}</td><td className="p-3 font-bold text-green-700">{complianceMark(row.result, indicator.target, indicator.comparator, 'excepcional')}</td><td className="p-3"><div className="flex justify-center"><PortfolioStatus status={row.status} /></div></td>{isGcg && workflow && <><td className="p-3"><div className="flex justify-center"><AnalysisHistoryButton report={row} indicator={indicator} objective={objective} workflow={workflow} users={users} canManage={false} /></div></td><td className="p-3"><div className="flex justify-center"><ActionsHistoryButton report={row} workflow={workflow} users={users} canManage={false} /></div></td></>}</tr>)}{!rows.length && <tr><td colSpan={isGcg && workflow ? 8 : 6} className="p-8 text-center text-slate-500">Sin mediciones.</td></tr>}</tbody></table></div></section>}
+      {historyMode === 'simple' && <SimpleMeasurementHistory rows={rows} indicator={indicator} />}
     </div> : list.length > 0 && <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_290px]"><div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-3">{portfolio.map(row => <IndicatorPortfolioCard key={row.indicator.id} row={row} objective={objectives.find(item => item.id === row.indicator.objectiveId)} users={users} onSelect={select} />)}</div><AttentionPanel rows={portfolio} objectives={objectives} onSelect={select} /></div>}
   </div>;
 }

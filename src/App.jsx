@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, BarChart, Bar, PieChart, Pie, Cell, Legend } from 'recharts';
 import biomontLogo from './assets/biomont-logo.png';
+import kunturLogo from './assets/kuntur-pharma-logo.png';
 
 const APP_TITLE = 'Gestión Estratégica';
 import { supabase } from './lib/supabase';
@@ -240,6 +241,7 @@ export default function App() {
   const MOCK_USERS = availableUsers;
   const currentAccountIds = accountIdentities(session?.user?.email, organizationPeople);
   const signedInEmail = session?.user?.email?.trim().toLowerCase();
+  const isKunturAccount = /@kunturpharma\.pe$/i.test(signedInEmail || '');
   const signedInPerson = organizationPeople.find(person => person.email?.trim().toLowerCase() === signedInEmail)
     || microsoftPeople.find(person => person.email?.trim().toLowerCase() === signedInEmail);
   const signedInName = signedInPerson?.full_name || session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || 'Usuario';
@@ -1156,7 +1158,7 @@ export default function App() {
     <div className="biomet-app min-h-screen bg-[#F8FAFC] flex font-sans text-slate-900">
       <aside className="app-sidebar bg-[#0F172A] text-slate-300 flex-col hidden md:flex fixed h-full z-20">
         <div className="h-14 flex items-center px-4 border-b border-slate-800">
-          <div className="flex items-center gap-2"><img src={biomontLogo} alt="Biomont" className="w-12 h-8 object-contain" /><span className="text-white font-bold text-lg tracking-tight">{APP_TITLE}</span></div>
+          <div className="flex items-center gap-2"><img src={isKunturAccount ? kunturLogo : biomontLogo} alt={isKunturAccount ? "Kuntur Pharma" : "Biomont"} className={`${isKunturAccount ? "w-28" : "w-12"} h-9 object-contain`} /><span className="text-white font-bold text-lg tracking-tight">{APP_TITLE}</span></div>
         </div>
         <div className="flex-1 overflow-y-auto py-4">
           <nav className="px-3 space-y-1">

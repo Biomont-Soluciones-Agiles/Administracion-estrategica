@@ -27,7 +27,6 @@ import StrategicActions from './StrategicActions';
 import PmoProjects from './PmoProjects';
 import MicrosoftDirectory, { loadMicrosoftDirectory } from './MicrosoftDirectory';
 import UserWorkspace from './UserWorkspace';
-import CoreIndicators from './CoreIndicators';
 import useCorrectiveWorkflow from './useCorrectiveWorkflow';
 import { AnalysisHistoryButton, ActionsHistoryButton } from './CorrectiveWorkflow';
 import { attentionIndicators } from './lib/correctiveWorkflow';
@@ -400,7 +399,7 @@ export default function App() {
   const navigateTo = (view, name, params = {}) => {
     setIndicatorRequestFlyout(null);
     setIndicatorRequestForm(false);
-    if ((['new-objective', 'new-indicator', 'edit-indicator', 'gcg-review', 'core-indicators'].includes(view) && !isGcg)
+    if ((['new-objective', 'new-indicator', 'edit-indicator', 'gcg-review'].includes(view) && !isGcg)
       || (['edit-target', 'report-indicator', 'indicator-status'].includes(view) && !isResponsibleManager)
       || (['new-project', 'edit-action', 'link-project'].includes(view) && !isGcg)) return;
     setCurrentView(view);
@@ -1169,12 +1168,11 @@ export default function App() {
             <div className="pt-2 pb-1"><p className="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Reportería</p></div>
             <button onClick={() => { setBscVisible(true); navigateTo('dashboard', 'Monitor estratégico'); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${currentView === 'dashboard' && bscVisible ? 'bg-[#1e293b] text-white' : 'hover:bg-slate-800 hover:text-white'}`}><BarChart3 className="w-5 h-5" /> Gráfica BSC</button>
             <button onClick={() => { setBscVisible(false); navigateTo('dashboard', 'Monitor estratégico'); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${currentView === 'dashboard' && !bscVisible ? 'bg-[#1e293b] text-white' : 'hover:bg-slate-800 hover:text-white'}`}><LayoutDashboard className="w-5 h-5" /> Monitor estratégico</button>
-            <button onClick={() => navigateTo('bio-indicators', 'Indicadores general')} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium ${currentView === 'bio-indicators' ? 'bg-slate-800 text-white' : 'hover:bg-slate-800 hover:text-white'}`}><BarChart3 className="w-5 h-5" />Indicadores general</button>{!isGcg && <button onClick={() => navigateTo('change-requests', 'Solicitudes')} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium ${currentView === 'change-requests' ? 'bg-slate-800 text-white' : 'hover:bg-slate-800 hover:text-white'}`}><FilePenLine className="w-5 h-5" />Solicitudes</button>}
+            <button onClick={() => navigateTo('bio-indicators', 'Indicadores')} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium ${currentView === 'bio-indicators' ? 'bg-slate-800 text-white' : 'hover:bg-slate-800 hover:text-white'}`}><BarChart3 className="w-5 h-5" />Indicadores</button>{!isGcg && <button onClick={() => navigateTo('change-requests', 'Solicitudes')} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium ${currentView === 'change-requests' ? 'bg-slate-800 text-white' : 'hover:bg-slate-800 hover:text-white'}`}><FilePenLine className="w-5 h-5" />Solicitudes</button>}
             <div className="pt-4 pb-1"><p className="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Gestión Estratégica</p></div>
             <button onClick={() => navigateTo(isGeneralManager ? 'new-objective' : 'objectives', isGeneralManager ? 'Crear objetivo' : 'Objetivos')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${(currentView.includes('objective') && currentView !== 'dashboard') ? 'bg-[#1e293b] text-white' : 'hover:bg-slate-800 hover:text-white'}`}><Target className="w-5 h-5" /> {isGeneralManager ? 'Crear objetivo' : 'Objetivos'}</button>
             {isResponsibleManager && <button onClick={() => navigateTo('indicator-status', 'Mis indicadores')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${currentView === 'indicator-status' || currentView === 'edit-indicator' ? 'bg-[#1e293b] text-white' : 'hover:bg-slate-800 hover:text-white'}`}><BarChart3 className="w-5 h-5" /> Mis indicadores</button>}
             {isGcg && <button onClick={() => navigateTo('gcg-review', 'Solicitudes')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${currentView === 'gcg-review' ? 'bg-[#1e293b] text-white' : 'hover:bg-slate-800 hover:text-white'}`}><CheckCircle2 className="w-5 h-5" /> Solicitudes</button>}
-            {isGcg && <button onClick={() => navigateTo('core-indicators', 'Indicadores core')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${currentView === 'core-indicators' ? 'bg-[#1e293b] text-white' : 'hover:bg-slate-800 hover:text-white'}`}><Star className="w-5 h-5" /> Indicadores core</button>}
           </nav>
         </div>
         <div className="p-4 border-t border-slate-800">
@@ -1190,7 +1188,7 @@ export default function App() {
         <div className="app-content p-4 md:p-6 flex-1 relative z-0">
           {dataError && <div className="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-center justify-between gap-3"><span>{dataError}</span><button onClick={() => setDataError('')} className="font-semibold shrink-0">Cerrar</button></div>}
           {currentView === 'dashboard' && (bscVisible ? <StrategicMap objectives={objectivesWithProjectProgress} indicators={indicators} reports={reports} users={availableUsers} onClose={() => setBscVisible(false)} onSelectIndicator={indicator => { setBscVisible(false); navigateTo('indicator-detail', indicator.name, { indicatorId: indicator.id }); }} /> : <MonitorView />)}
-          {currentView === 'bio-indicators' && <BioIndicatorsView workflow={corrective} objectives={objectivesWithProjectProgress} indicators={isManagerScoped ? scopedIndicators : indicators} reports={isManagerScoped ? scopedReports : reports} users={availableUsers} sites={sites} assignments={siteAssignments} filters={indicatorFilters} onChange={changeIndicatorFilters} year={bioIndicatorYear} isGcg={isGcg} session={session} onReload={loadOperationalData} onError={setDataError} onNotify={notify} />}
+          {currentView === 'bio-indicators' && <BioIndicatorsView coreRows={coreIndicatorRows} workflow={corrective} objectives={objectivesWithProjectProgress} indicators={isManagerScoped ? scopedIndicators : indicators} reports={isManagerScoped ? scopedReports : reports} users={availableUsers} sites={sites} assignments={siteAssignments} filters={indicatorFilters} onChange={changeIndicatorFilters} year={bioIndicatorYear} isGcg={isGcg} session={session} onReload={loadOperationalData} onError={setDataError} onNotify={notify} />}
           {currentView === 'change-requests' && <ChangeRequests isGcg={isGcg} indicators={indicators} users={organizationPeople} onReload={loadOperationalData} onError={setDataError} />}
           {currentView === 'indicator-request-history' && <ChangeRequests isGcg={isGcg} indicators={indicators} users={organizationPeople} reports={reports} onReload={loadOperationalData} onError={setDataError} indicatorId={selectedIndicatorId} initialHistory onBack={goBack} />}
           {currentView === 'objectives' && <ObjectivesView />}
@@ -1203,7 +1201,6 @@ export default function App() {
           {currentView === 'edit-indicator' && <EditIndicatorView />}
           {currentView === 'edit-target' && <EditTargetView />}
           {currentView === 'gcg-review' && isGcg && <ChangeRequests isGcg indicators={indicators} users={organizationPeople} onReload={loadOperationalData} onError={setDataError} />}
-          {currentView === 'core-indicators' && isGcg && <CoreIndicators indicators={indicators} objectives={objectivesWithProjectProgress} coreRows={coreIndicatorRows} onReload={loadOperationalData} onError={setDataError} onNotify={notify} onOpenIndicator={indicator => navigateTo('indicator-detail', indicator.name, { indicatorId: indicator.id })} />}
           {currentView === 'settings' && <SettingsView />}
           {currentView === 'indicator-detail' && <IndicatorDetailView />}
           {currentView === 'report-indicator' && <ReportFormView />}
@@ -1213,7 +1210,7 @@ export default function App() {
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around p-3 z-50">
         <button onClick={() => navigateTo('dashboard', 'Monitor estratégico')} className={`flex flex-col items-center gap-1 ${currentView === 'dashboard' ? 'text-[#D71920]' : 'text-slate-500'}`}><LayoutDashboard className="w-5 h-5" /><span className="text-[10px] font-medium">Monitor</span></button>
         {isGeneralManager ? <button onClick={() => navigateTo('new-objective', 'Nuevo Objetivo')} className="flex flex-col items-center gap-1 text-[#1D4ED8]"><div className="bg-blue-50 p-2 rounded-full mb-[-10px] translate-y-[-10px] border shadow-sm"><Plus className="w-5 h-5" /></div><span className="text-[10px] font-medium">Objetivo</span></button> : <button onClick={() => navigateTo('objectives', 'Objetivos')} className="flex flex-col items-center gap-1 text-slate-500"><Target className="w-5 h-5" /><span className="text-[10px] font-medium">Objetivos</span></button>}
-        <button onClick={() => navigateTo('bio-indicators', 'Indicadores general')} className="flex flex-col items-center gap-1 text-slate-500"><BarChart3 className="w-5 h-5" /><span className="text-[10px] font-medium">Indicadores general</span></button>
+        <button onClick={() => navigateTo('bio-indicators', 'Indicadores')} className="flex flex-col items-center gap-1 text-slate-500"><BarChart3 className="w-5 h-5" /><span className="text-[10px] font-medium">Indicadores</span></button>
         <button onClick={() => navigateTo(isGcg ? 'gcg-review' : 'change-requests', isGcg ? 'Revisión GCG' : 'Solicitudes')} className="flex flex-col items-center gap-1 text-slate-500"><CheckCircle2 className="w-5 h-5" /><span className="text-[10px] font-medium">{isGcg ? 'Revisión GCG' : 'Solicitudes'}</span></button>
       </div>
     </div>

@@ -1,6 +1,6 @@
 import { displayUnit } from './lib/units';
 import React, { useState } from 'react';
-import { Filter } from 'lucide-react';
+import { Filter, Star } from 'lucide-react';
 import { AttentionPanel, IndicatorPortfolioCard, PortfolioSummary, PortfolioStatus } from './IndicatorPortfolio';
 import { portfolioRows } from './lib/indicatorPortfolio';
 import MeasurementChart from './MeasurementChart';
@@ -11,6 +11,7 @@ import { complianceMark, measurementComplianceBand } from './lib/complianceBand'
 import IndicatorManagement from './IndicatorManagement';
 import SearchableIndicatorSelect from './SearchableIndicatorSelect';
 import { AnalysisHistoryButton, ActionsHistoryButton } from './CorrectiveWorkflow';
+import CoreIndicators from './CoreIndicators';
 
 const input = 'mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm';
 
@@ -56,8 +57,9 @@ function SimpleMeasurementHistory({ rows, indicator }) {
   return <section className="rounded-2xl border border-slate-200 bg-white overflow-hidden"><div className="p-5 border-b"><h3 className="font-semibold">Historial de mediciones · modelo simple</h3><p className="mt-1 text-xs text-slate-500">La condición consolida el estándar de cumplimiento de cada medición.</p></div><div className="overflow-x-auto"><table className="w-full text-center text-sm"><thead className="bg-slate-50 text-slate-500"><tr><th className="p-3">Periodo</th><th className="p-3">Resultado</th><th className="p-3">Condición</th><th className="p-3">Estado</th></tr></thead><tbody>{rows.map(row => <tr key={row.id} className="border-t"><td className="p-3">{row.period}</td><td className="p-3 font-medium">{row.result == null ? 'Sin datos' : row.result + ' ' + displayUnit(indicator.unit)}</td><td className="p-3">{condition(row)}</td><td className="p-3"><div className="flex justify-center"><PortfolioStatus status={row.status} /></div></td></tr>)}{!rows.length && <tr><td colSpan={4} className="p-8 text-center text-slate-500">Sin mediciones.</td></tr>}</tbody></table></div></section>;
 }
 
-export default function BioIndicatorsView({ objectives, indicators, reports, users = [], sites = [], assignments = [], filters, onChange, year = '', isGcg = false, workflow, session, onReload, onError, onNotify }) {
+export default function BioIndicatorsView({ objectives, indicators, reports, users = [], sites = [], assignments = [], filters, onChange, year = '', isGcg = false, workflow, session, onReload, onError, onNotify, coreRows = [] }) {
   const [historyMode, setHistoryMode] = useState('detail');
+  const [coreModalOpen, setCoreModalOpen] = useState(false);
   const scopedIndicatorIds = filters.siteId ? new Set(assignments.filter(assignment => String(assignment.site_id) === String(filters.siteId) && assignment.active).map(assignment => String(assignment.indicator_id))) : null;
   const availableIndicators = scopedIndicatorIds ? indicators.filter(indicator => scopedIndicatorIds.has(String(indicator.id))) : indicators;
   const list = filterIndicators(portfolioRows(availableIndicators, reports).map(row => ({ ...row.indicator, status: row.status })), filters);
@@ -71,9 +73,12 @@ export default function BioIndicatorsView({ objectives, indicators, reports, use
   const totalWeight = latestByAssignment.reduce((sum, item) => sum + Number(item.assignment.weight || 1), 0);
   const globalWeighted = totalWeight ? latestByAssignment.reduce((sum, item) => sum + Number(item.report.result) * Number(item.assignment.weight || 1), 0) / totalWeight : null;
   const portfolio = portfolioRows(list, reports);
+  const coreIds = new Set(coreRows.map(row => String(row.indicator_id)));
+  const corePortfolio = isGcg ? portfolio.filter(row => coreIds.has(String(row.indicator.id))) : [];
+  const generalPortfolio = isGcg ? portfolio.filter(row => !coreIds.has(String(row.indicator.id))) : portfolio;
   const select = item => onChange({ ...filters, indicatorId: String(item.id) });
   return <div className="fade-in space-y-6">
-    <header><p className="text-xs font-medium text-slate-500">Reportería / Indicadores general</p><h1 className="text-3xl font-bold tracking-tight text-slate-900 mt-2">Indicadores general</h1><p className="text-sm text-slate-500 mt-2">Seguimiento integral del portafolio</p></header>
+    <header className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-medium text-slate-500">Reportería / Indicadores</p><h1 className="text-3xl font-bold tracking-tight text-slate-900 mt-2">Indicadores</h1><p className="text-sm text-slate-500 mt-2">Seguimiento integral del portafolio</p></div>{isGcg && <button type="button" onClick={() => setCoreModalOpen(true)} className="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-800 hover:bg-amber-100"><Star className="h-4 w-4" />Indicadores Core</button>}</header>
     {!indicator && <PortfolioSummary rows={portfolio} />}
     {!list.length && <p className="rounded-xl bg-white border p-8 text-center text-slate-500">No hay indicadores que coincidan con estos filtros.</p>}
     {indicator ? <div className="space-y-6">
@@ -90,6 +95,7 @@ export default function BioIndicatorsView({ objectives, indicators, reports, use
       <div className="flex justify-end"><button type="button" onClick={() => setHistoryMode(value => value === 'detail' ? 'simple' : 'detail')} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">{historyMode === 'detail' ? 'Ver modelo simple' : 'Ver modelo detallado'}</button></div>
       {historyMode === 'detail' && <section className="rounded-2xl border border-slate-200 bg-white overflow-hidden"><h3 className="p-5 border-b font-semibold">Historial de mediciones</h3><div className="overflow-x-auto"><table className="w-full table-fixed text-center text-sm"><thead className="bg-slate-50 text-slate-500"><tr><th className="w-[14%] p-3 text-center">Periodo</th><th className="w-[14%] p-3 text-center">Resultado</th><th className="w-[12%] p-3 text-center">Pesimista</th><th className="w-[12%] p-3 text-center">Optimista</th><th className="w-[12%] p-3 text-center">Excepcional</th><th className="w-[14%] p-3 text-center">Estado</th>{isGcg && workflow && <><th className="w-[11%] p-3 text-center">Análisis de causa</th><th className="w-[7%] p-3 text-center">Acciones</th></>}</tr></thead><tbody>{rows.map(row => <tr key={row.id} className="border-t"><td className="p-3">{row.period}</td><td className="p-3 font-medium">{row.result == null ? 'Sin datos' : row.result + ' ' + displayUnit(indicator.unit)}</td><td className="p-3 font-bold text-red-700">{complianceMark(row.result, indicator.target, indicator.comparator, 'pesimista')}</td><td className="p-3 font-bold text-amber-700">{complianceMark(row.result, indicator.target, indicator.comparator, 'optimista')}</td><td className="p-3 font-bold text-green-700">{complianceMark(row.result, indicator.target, indicator.comparator, 'excepcional')}</td><td className="p-3"><div className="flex justify-center"><PortfolioStatus status={row.status} /></div></td>{isGcg && workflow && <><td className="p-3"><div className="flex justify-center"><AnalysisHistoryButton report={row} indicator={indicator} objective={objective} workflow={workflow} users={users} canManage={false} /></div></td><td className="p-3"><div className="flex justify-center"><ActionsHistoryButton report={row} workflow={workflow} users={users} canManage={false} /></div></td></>}</tr>)}{!rows.length && <tr><td colSpan={isGcg && workflow ? 8 : 6} className="p-8 text-center text-slate-500">Sin mediciones.</td></tr>}</tbody></table></div></section>}
       {historyMode === 'simple' && <SimpleMeasurementHistory rows={rows} indicator={indicator} />}
-    </div> : list.length > 0 && <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_290px]"><div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-3">{portfolio.map(row => <IndicatorPortfolioCard key={row.indicator.id} row={row} objective={objectives.find(item => item.id === row.indicator.objectiveId)} users={users} onSelect={select} />)}</div><AttentionPanel rows={portfolio} objectives={objectives} onSelect={select} /></div>}
+    </div> : list.length > 0 && <div className="space-y-8">{isGcg && <section><div className="mb-4 flex items-center gap-2"><Star className="h-4 w-4 text-amber-500" fill="currentColor" /><h2 className="text-sm font-bold uppercase tracking-wider text-slate-700">Indicadores Core</h2></div>{corePortfolio.length ? <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-3">{corePortfolio.map(row => <IndicatorPortfolioCard key={row.indicator.id} row={row} objective={objectives.find(item => item.id === row.indicator.objectiveId)} users={users} onSelect={select} />)}</div> : <p className="rounded-xl border border-dashed border-slate-300 bg-white p-5 text-sm text-slate-500">Aún no has seleccionado indicadores Core.</p>}</section>}<section><h2 className="mb-4 text-sm font-bold uppercase tracking-wider text-slate-700">Indicadores General</h2><div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_290px]"><div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-3">{generalPortfolio.map(row => <IndicatorPortfolioCard key={row.indicator.id} row={row} objective={objectives.find(item => item.id === row.indicator.objectiveId)} users={users} onSelect={select} />)}{!generalPortfolio.length && <p className="rounded-xl border border-dashed border-slate-300 bg-white p-5 text-sm text-slate-500">No hay más indicadores para mostrar.</p>}</div><AttentionPanel rows={portfolio} objectives={objectives} onSelect={select} /></div></section></div>}
+    <CoreIndicators open={coreModalOpen} onClose={() => setCoreModalOpen(false)} indicators={indicators} objectives={objectives} coreRows={coreRows} onReload={onReload} onError={onError} onNotify={onNotify} />
   </div>;
 }

@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   LayoutDashboard, Target, FolderKanban, Settings, User, Plus, 
-  ChevronRight, AlertCircle, CheckCircle2, Clock, ArrowRight, ArrowLeft, BarChart3, Calendar, Users, Activity, LogOut, FilePenLine, History, Trash2, Star, Filter, Search, X
+  ChevronRight, AlertCircle, CheckCircle2, Clock, ArrowRight, ArrowLeft, BarChart3, Calendar, Users, Activity, LogOut, FilePenLine, History, Trash2, Star, Filter, Search, X, Hammer
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, BarChart, Bar, PieChart, Pie, Cell, Legend } from 'recharts';
 import biomontLogo from './assets/biomont-logo.png';
@@ -18,7 +18,7 @@ import { IndicatorControls, AssignedIndicators } from './Governance';
 import ChangeRequests, { IndicatorRequestFlyout } from './ChangeRequestsView';
 import MeasurementChart from './MeasurementChart';
 import { reportedProgress, weightedMeasurementValue } from './lib/indicatorViews';
-import { activeObjectives, objectiveActivityStatus, withLinkedProjectProgress } from './lib/objectiveViews';
+import { activeObjectives, objectiveActivityStatus, withIndicatorSiteProgress } from './lib/objectiveViews';
 import ObjectiveStatusControl from './ObjectiveStatusControl';
 import BioIndicatorsView, { IndicatorFilterMenu, IndicatorYearFilter } from './BioIndicatorsView';
 import ObjectiveProgressList from './ObjectiveProgressList';
@@ -253,7 +253,7 @@ export default function App() {
   const dashboardIntroduction = personalizedMessage || 'Aquí está el resumen estratégico de tu organización.';
   const accountOwns = value => currentAccountIds.some(id => String(id).trim().toLowerCase() === String(value ?? '').trim().toLowerCase());
   const isManagerScoped = isResponsibleManager && !isSuperAdmin;
-  const objectivesWithProjectProgress = withLinkedProjectProgress(objectives, projects);
+  const objectivesWithProjectProgress = withIndicatorSiteProgress(objectives, indicators, reports);
   const scopedObjectives = isManagerScoped ? objectivesWithProjectProgress.filter(objective => accountOwns(objective.ownerId)) : objectivesWithProjectProgress;
   const managerAssignments = siteAssignments.filter(assignment => assignment.active && accountOwns(assignment.responsible_email));
   const scopedIndicators = isManagerScoped
@@ -609,6 +609,8 @@ export default function App() {
                 const owner = availableUsers.find(u => u.id === obj.ownerId);
                 const objProjects = projects.filter(p => p.objectiveId === obj.id);
                 const objIndicators = indicators.filter(i => i.objectiveId === obj.id);
+    const closedActions = objActions.filter(action => ['Cerrado', 'Concluido'].includes(action.status)).length;
+    const actionProgress = objActions.length ? Math.round((closedActions / objActions.length) * 100) : 0;
                 
                 return (
                   <Card key={obj.id} className="p-5 hover:-translate-y-0.5 transition-transform duration-200 group" onClick={() => navigateTo('objective-detail', obj.name, { objectiveId: obj.id })}>
@@ -631,7 +633,7 @@ export default function App() {
                     <div className="flex items-center justify-between pt-4 border-t border-slate-100">
                       <div className="flex items-center gap-4 text-sm text-slate-600">
                         <div className="flex items-center gap-1.5" title="Proyectos"><FolderKanban className="w-4 h-4 text-slate-400" /> {objProjects.length}</div>
-                        <div className="flex items-center gap-1.5" title="Indicadores"><BarChart3 className="w-4 h-4 text-slate-400" /> {objIndicators.length}</div>
+                        <div className="flex items-center gap-1.5" title={objIndicators.length ? 'Con indicador' : 'Pendiente de indicador'}><Hammer className="w-4 h-4 text-slate-400" /> {objIndicators.length} <span className="text-xs">{objIndicators.length ? 'Con indicador' : 'Pendiente de indicador'}</span></div>
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-xs font-medium text-slate-600" title={owner?.name}>{owner?.avatar}</div>
@@ -744,7 +746,6 @@ export default function App() {
                   <div className="text-3xl font-bold text-[#1D4ED8]">{obj.progress}%</div>
                   <p className="text-sm text-slate-500 font-medium">Avance general</p>
                 </div>
-                {isGcg && <Button type="button" variant="danger" onClick={deleteObjective} className="px-3 py-2"><Trash2 className="w-4 h-4" />Eliminar objetivo</Button>}
               </div>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-4 border-t border-slate-100">
@@ -799,14 +800,20 @@ export default function App() {
                    </div>
                  )}
                </Card>
+               <Card className="p-5">
+                 <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-slate-400"/> Avance de acciones estratégicas</h3>
+                 <div className="flex items-end justify-between gap-4"><div><p className="text-3xl font-bold text-slate-900">{actionProgress}%</p><p className="mt-1 text-sm text-slate-500">{closedActions} de {objActions.length} acciones cerradas</p></div></div>
+                 <div className="mt-4"><ProgressBar progress={actionProgress} status={actionProgress === 100 ? 'Cumplido' : 'En progreso'} /></div>
+               </Card>
             </div>
           )}
 
           {activeTab === 'projects' && (
-            <div className="space-y-4">
-              <PmoProjects objective={obj} projects={objProjects} canManage={isGcg} canSync={isGcg} accessToken={session?.access_token} onReload={loadOperationalData} onNotify={notify} />
-              <div className="flex flex-wrap items-center justify-between gap-3"><div><h3 className="text-lg font-bold text-slate-900">Acciones estratégicas</h3>{isResponsibleManager && <p className="mt-1 text-sm text-slate-500">Solo consulta: la creación y vinculación se gestionan por GCG.</p>}</div>{isGcg && <Button onClick={() => navigateTo('new-project', 'Añadir acción stratégique', { objectiveId: obj.id, objectiveTab: 'projects' })}><Plus className="h-4 w-4" />Añadir acción estratégica</Button>}</div>
-              <StrategicActions actions={objActions} users={availableUsers} onDelete={async action => { if (!isGcg) throw new Error('Solo GCG puede eliminar esta acción.'); const { error } = await supabase.from('strategic_actions').delete().eq('id', action.id).select('id').single(); if (error) throw new Error('No se pudo eliminar la acción. Inténtalo nuevamente.'); setTasks(items => items.filter(item => item.id !== action.id)); notify('Acción estratégica eliminada.'); }} onStatusChange={async (action, status) => { if (!isGcg || !['Cerrado', 'En progreso'].includes(status)) throw new Error('Solo GCG puede cambiar el estatus.'); const now = new Date().toISOString(); const { data, error } = await supabase.from('strategic_actions').update({ status, completed_at: status === 'Cerrado' ? now : null, updated_at: now }).eq('id', action.id).select().single(); if (error) throw new Error('No se pudo guardar el estatus.'); setTasks(items => items.map(item => item.id === action.id ? toAction(data) : item)); notify(status === 'Cerrado' ? 'Acción cerrada; se registró la fecha de término real.' : 'Acción reabierta.'); }} canEdit={isGcg} onEdit={action => navigateTo('edit-action', 'Editar acción estratégica', { objectiveId: obj.id, actionId: action.id, objectiveTab: 'projects' })} />
+            <div className="space-y-5">
+              <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white"><div className="border-b border-slate-200 bg-slate-50 px-5 py-4"><h3 className="text-lg font-bold text-slate-900">Proyectos</h3><p className="mt-1 text-sm text-slate-500">Proyectos vinculados a este objetivo.</p></div><div className="p-4"><PmoProjects objective={obj} projects={objProjects} canManage={isGcg} canSync={isGcg} accessToken={session?.access_token} onReload={loadOperationalData} onNotify={notify} /></div></section>
+              <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white"><div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-slate-50 px-5 py-4"><div><h3 className="text-lg font-bold text-slate-900">Acciones estratégicas</h3>{isResponsibleManager && <p className="mt-1 text-sm text-slate-500">Solo consulta: la creación y vinculación se gestionan por GCG.</p>}</div>{isGcg && <Button onClick={() => navigateTo('new-project', 'Añadir acción estratégica', { objectiveId: obj.id, objectiveTab: 'projects' })}><Plus className="h-4 w-4" />Añadir acción estratégica</Button>}</div><div className="p-4">
+              <StrategicActions actions={objActions} users={availableUsers} onDelete={async action => { if (!isGcg) throw new Error('Solo GCG puede eliminar esta acción.'); const { error } = await supabase.from('strategic_actions').delete().eq('id', action.id).select('id').single(); if (error) throw new Error('No se pudo eliminar la acción. Inténtalo nuevamente.'); setTasks(items => items.filter(item => item.id !== action.id)); notify('Acción estratégica eliminada.'); }} onStatusChange={async (action, status) => { if (!isGcg || !['Cerrado', 'En progreso'].includes(status)) throw new Error('Solo GCG puede cambiar el estatus.'); const now = new Date().toISOString(); const { data, error } = await supabase.from('strategic_actions').update({ status, completed_at: status === 'Cerrado' ? now : null, updated_at: now }).eq('id', action.id).select().single(); if (error) throw new Error('No se pudo guardar el estatus.'); setTasks(items => items.map(item => item.id === action.id ? toAction(data) : item)); notify(status === 'Cerrado' ? 'Acción cerrada; se registró la fecha de término real.' : 'Acción reabierta.'); }} canEdit={isGcg} onEdit={action => navigateTo('edit-action', 'Editar acción estratégica', { objectiveId: obj.id, actionId: action.id, objectiveTab: 'projects' })} /></div></section>
+              {isGcg && <div className="flex justify-end pt-2"><Button type="button" variant="danger" onClick={deleteObjective} className="px-3 py-2"><Trash2 className="w-4 h-4" />Eliminar objetivo</Button></div>}
             </div>
           )}
 

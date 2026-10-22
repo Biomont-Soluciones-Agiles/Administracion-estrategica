@@ -1,6 +1,7 @@
 import { displayUnit } from './lib/units';
 import React, { useState } from 'react';
-import { Filter, Star } from 'lucide-react';
+import { Filter, Star, Trash2 } from 'lucide-react';
+import { supabase } from './lib/supabase';
 import { AttentionPanel, IndicatorPortfolioCard, PortfolioSummary, PortfolioStatus } from './IndicatorPortfolio';
 import { portfolioRows } from './lib/indicatorPortfolio';
 import MeasurementChart from './MeasurementChart';
@@ -85,12 +86,25 @@ export default function BioIndicatorsView({ objectives, indicators, reports, use
       ? portfolio.filter(row => !coreIds.has(String(row.indicator.id)))
       : portfolio;
   const select = item => onChange({ ...filters, indicatorId: String(item.id) });
+  const deleteIndicator = async () => {
+    if (!indicator || !isGcg) return;
+    if (!window.confirm(`¿Eliminar el indicador “${indicator.name}”? También se eliminarán sus mediciones, responsables por sede y análisis asociados.`)) return;
+    const { error } = await supabase.rpc('delete_indicator', { indicator: indicator.id });
+    if (error) {
+      onError?.(`No se pudo eliminar el indicador: ${error.message}`);
+      return;
+    }
+    await onReload?.();
+    onNotify?.('Indicador eliminado.');
+    onChange({ ...filters, indicatorId: '' });
+  };
   return <div className="fade-in space-y-6">
     {!indicator &&     <header className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-medium text-slate-500">Reportería / Indicadores</p><h1 className="text-3xl font-bold tracking-tight text-slate-900 mt-2">{featuredOnly ? featuredTitle : 'Indicadores'}</h1><p className="text-sm text-slate-500 mt-2">{featuredOnly ? 'Indicadores priorizados para Gerencia General.' : 'Seguimiento integral del portafolio'}</p></div>{isGcg && !featuredOnly && <div className="flex flex-wrap gap-2"><button type="button" onClick={() => setSelectionMode('gcg')} className="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-800 hover:bg-amber-100"><Star className="h-4 w-4" />Indicadores GCG</button><button type="button" onClick={() => setSelectionMode('gg')} className="inline-flex items-center gap-2 rounded-lg border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm font-semibold text-violet-800 hover:bg-violet-100"><Star className="h-4 w-4" />Indicadores GG</button></div>}</header>}
     {!indicator && <PortfolioSummary rows={portfolio} />}
     {!list.length && <p className="rounded-xl bg-white border p-8 text-center text-slate-500">No hay indicadores que coincidan con estos filtros.</p>}
     {indicator ? <div className="space-y-6">
       {isGcg && <IndicatorManagement indicator={indicator} reports={reports.filter(report => report.indicatorId === indicator.id)} users={users} session={session} onReload={onReload} onError={onError} onNotify={onNotify} onSaved={onCoreSaved} />}
+      {isGcg && <div className="flex justify-end"><button type="button" onClick={deleteIndicator} className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-white px-4 py-2.5 text-sm font-semibold text-red-700 shadow-sm transition hover:bg-red-50"><Trash2 className="h-4 w-4" />Eliminar indicador</button></div>}
       <section className="bg-white border border-slate-200 rounded-2xl p-6 grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_minmax(0,480px)] gap-6">
         <div><p className="text-sm text-slate-500">{objective?.code} · {objective?.name}</p><p className="text-xs font-semibold text-blue-700 mt-4">{indicator.code}</p><h2 className="text-2xl font-bold text-slate-900 mt-1">{indicator.name}</h2><p className="text-slate-500 mt-3 break-words">Fórmula: {indicator.formula || '—'}</p><p className="text-sm text-slate-500 mt-2">Frecuencia: {indicator.frequency}</p></div>
         <div className="grid gap-3 sm:grid-cols-2">

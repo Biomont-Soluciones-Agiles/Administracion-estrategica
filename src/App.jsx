@@ -1009,7 +1009,7 @@ export default function App() {
     const weightedStatus = weighted.value === null ? 'Sin reporte' : calculateIndicatorStatus(weighted.value, ind.target, ind.comparator);
     const ownIds = accountIdentities(session.user.email, organizationPeople);
     const { canManage, canReport: legacyCanReport } = indicatorAccess(ind, obj, ownIds, isSuperAdmin);
-    const canReport = legacyCanReport || managerAssignments.some(assignment => String(assignment.indicator_id) === String(ind.id));
+    const canReport = !isGeneralManager && (legacyCanReport || managerAssignments.some(assignment => String(assignment.indicator_id) === String(ind.id)));
     const reporter = ind.reporter_email ? personName(ind.reporter_email, availableUsers) : 'Sin asignar';
     const historyCondition = report => {
       if (report.result == null) return 'Sin datos';
@@ -1036,10 +1036,10 @@ export default function App() {
           </div>
           <div className="md:col-span-2">
             <div className="mb-4 flex flex-wrap justify-end gap-2">
-              {(isGcg || canReport) && <button type="button" onClick={() => setIndicatorRequestForm(true)} className="inline-flex items-center gap-2 rounded-lg bg-[#1D4ED8] px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800"><FilePenLine className="h-4 w-4" />{isGcg ? 'Realizar modificación' : 'Solicitar modificación'}</button>}
+              {!isGeneralManager && (isGcg || canReport) && <button type="button" onClick={() => setIndicatorRequestForm(true)} className="inline-flex items-center gap-2 rounded-lg bg-[#1D4ED8] px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800"><FilePenLine className="h-4 w-4" />{isGcg ? 'Realizar modificación' : 'Solicitar modificación'}</button>}
               {isGcg && <button type="button" onClick={async () => { if (!window.confirm(`¿Eliminar el indicador “${ind.name}”? También se eliminarán sus mediciones y análisis asociados.`)) return; const { error } = await supabase.rpc('delete_indicator', { indicator: ind.id }); if (error) { setDataError(`No se pudo eliminar el indicador: ${error.message}`); return; } await loadOperationalData(); corrective.reload(); notify('Indicador eliminado.'); navigateTo('objective-detail', obj?.name || 'Objetivo', { objectiveId: obj?.id, objectiveTab: 'summary' }); }} className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-white px-3.5 py-2 text-sm font-semibold text-red-700 shadow-sm transition hover:bg-red-50"><Trash2 className="h-4 w-4" />Eliminar indicador</button>}
-              {!isGcg && <button type="button" onClick={() => setIndicatorRequestFlyout('pending')} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"><Clock className="h-4 w-4 text-amber-600" />En revisión</button>}
-              <button type="button" onClick={() => setIndicatorRequestFlyout('history')} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"><History className="h-4 w-4 text-slate-500" />Historial</button>
+              {!isGcg && !isGeneralManager && <button type="button" onClick={() => setIndicatorRequestFlyout('pending')} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"><Clock className="h-4 w-4 text-amber-600" />En revisión</button>}
+              {!isGeneralManager && <button type="button" onClick={() => setIndicatorRequestFlyout('history')} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"><History className="h-4 w-4 text-slate-500" />Historial</button>}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Card className={`p-6 flex flex-col justify-center items-center text-center border-t-4 ${latestReport?.status === 'En meta' ? 'border-t-green-500' : latestReport?.status === 'Fuera de meta' ? 'border-t-red-500' : 'border-t-slate-300'}`}>

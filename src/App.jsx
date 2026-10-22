@@ -848,13 +848,25 @@ export default function App() {
     const [formData, setFormData] = useState({ name: '', formula: '', target: '', unit: '%', comparator: '>=', frequency: 'Mensual', reviewFrequency: 'Mensual', ownerId: '', siteAssignments: sites.map(site => ({ siteId: String(site.id), responsibleEmail: '', weight: '1' })) });
     const [openSiteIndex, setOpenSiteIndex] = useState(0);
     const responsibleOptionsForSite = siteId => {
+      const siteName = String(sites.find(site => String(site.id) === String(siteId))?.name || '')
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
       const configuredEmails = siteResponsibleRows
         .filter(row => String(row.site_id) === String(siteId))
         .map(row => String(row.email || '').trim().toLowerCase())
         .filter(Boolean);
+      const allowedNames = siteName.includes('kuntur')
+        ? ['chiara pedraglio', 'john cardenas']
+        : siteName.includes('ecuador')
+          ? ['angel perez']
+          : [];
       const people = configuredEmails.length
         ? availableUsers.filter(user => configuredEmails.includes(String(user.email || '').trim().toLowerCase()))
-        : availableUsers.filter(user => user.role === 'gerente_responsable');
+        : allowedNames.length
+          ? availableUsers.filter(user => {
+              const normalizedName = String(user.name || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+              return allowedNames.some(name => normalizedName.includes(name));
+            })
+          : availableUsers.filter(user => user.role === 'gerente_responsable');
       return people.map(user => ({ value: user.email || user.id, label: user.name }));
     };
 

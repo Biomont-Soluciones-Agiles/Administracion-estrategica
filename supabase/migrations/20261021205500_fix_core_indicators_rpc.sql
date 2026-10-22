@@ -12,6 +12,11 @@ alter table public.core_indicators
 
 grant select on table public.core_indicators to authenticated;
 
+alter table public.core_indicators enable row level security;
+drop policy if exists "authenticated users can read core indicators" on public.core_indicators;
+create policy "authenticated users can read core indicators"
+  on public.core_indicators for select to authenticated using (true);
+
 create or replace function public.set_core_indicators(selected_indicator_ids bigint[])
 returns void
 language plpgsql

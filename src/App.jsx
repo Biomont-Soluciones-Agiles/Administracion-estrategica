@@ -37,6 +37,7 @@ const ROLE_LABELS = {
   usuario: 'Usuario',
   gerente_responsable: 'Gerente responsable',
   gcg: 'GCG',
+  gerente_general: 'Gerencia general',
   super_admin: 'Super admin',
 };
 
@@ -193,6 +194,7 @@ export default function App() {
   const [microsoftPeople, setMicrosoftPeople] = useState([]);
   const [dashboardMessages, setDashboardMessages] = useState([]);
   const [coreIndicatorRows, setCoreIndicatorRows] = useState([]);
+  const [generalManagerIndicatorRows, setGeneralManagerIndicatorRows] = useState([]);
   
   const [selectedObjectiveId, setSelectedObjectiveId] = useState(null);
   const [selectedObjectiveTab, setSelectedObjectiveTab] = useState('summary');
@@ -224,7 +226,7 @@ export default function App() {
     setNotification({ message, type, id: Date.now() });
     window.setTimeout(() => setNotification(current => current?.message === message ? null : current), 3800);
   };
-  const isGeneralManager = false;
+  const isGeneralManager = selectedRole?.key === 'gerente_general';
   const isResponsibleManager = selectedRole?.name === 'Gerente responsable';
   const isGcg = selectedRole?.name === 'GCG';
   const isSuperAdmin = assignedRole === 'super_admin';
@@ -274,7 +276,7 @@ export default function App() {
 
   const loadOperationalData = async () => {
     if (!supabase) return;
-    const [profilesResult, peopleResult, objectivesResult, projectsResult, actionsResult, indicatorsResult, reportsResult, messagesResult, catalogResult, directoryResult, sitesResult, assignmentsResult, coreResult] = await Promise.all([
+    const [profilesResult, peopleResult, objectivesResult, projectsResult, actionsResult, indicatorsResult, reportsResult, messagesResult, catalogResult, directoryResult, sitesResult, assignmentsResult, coreResult, generalManagerResult] = await Promise.all([
       supabase.from('profiles').select('email, role').order('email'),
       supabase.from('organization_people').select('id, full_name, email, role').eq('active', true).order('full_name'),
       supabase.from('objectives').select('*').order('created_at', { ascending: false }),
@@ -288,6 +290,7 @@ export default function App() {
       supabase.from('sites').select('*').eq('active', true).order('name'),
       supabase.from('indicator_site_assignments').select('*').eq('active', true),
       supabase.from('core_indicators').select('*').order('created_at'),
+      supabase.from('general_manager_indicators').select('*').order('position'),
     ]);
     const firstError = [profilesResult, peopleResult, objectivesResult, projectsResult, actionsResult, indicatorsResult, reportsResult].find(result => result.error)?.error;
     if (firstError) {
@@ -308,6 +311,7 @@ export default function App() {
     setSites(sitesResult.data || []);
     setSiteAssignments(assignmentsResult.data || []);
     if (!coreResult.error) setCoreIndicatorRows(coreResult.data || []);
+    if (!generalManagerResult.error) setGeneralManagerIndicatorRows(generalManagerResult.data || []);
     setDashboardMessages(messagesResult.data || []);
     setDataError('');
     await corrective.reload();
@@ -361,7 +365,7 @@ export default function App() {
         setAuthError(`Tu correo corporativo no tiene un rol asignado en ${APP_TITLE}. Contacta al administrador.`);
       } else {
         setAuthError('');
-        const role = data.role === 'gerente_general' ? 'gcg' : data.role;
+        const role = data.role;
         setAssignedRole(role);
         setSelectedRole(role === 'super_admin' ? null : { key: role, name: ROLE_LABELS[role] });
         await loadOperationalData();
@@ -1165,12 +1169,13 @@ export default function App() {
         </div>
         <div className="flex-1 overflow-y-auto py-4">
           <nav className="px-3 space-y-1">
-            <div className="pt-2 pb-1"><p className="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Reportería</p></div>
-            <button onClick={() => { setBscVisible(true); navigateTo('dashboard', 'Monitor estratégico'); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${currentView === 'dashboard' && bscVisible ? 'bg-[#1e293b] text-white' : 'hover:bg-slate-800 hover:text-white'}`}><BarChart3 className="w-5 h-5" /> Gráfica BSC</button>
-            <button onClick={() => { setBscVisible(false); navigateTo('dashboard', 'Monitor estratégico'); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${currentView === 'dashboard' && !bscVisible ? 'bg-[#1e293b] text-white' : 'hover:bg-slate-800 hover:text-white'}`}><LayoutDashboard className="w-5 h-5" /> Monitor estratégico</button>
-            <button onClick={() => navigateTo('bio-indicators', 'Indicadores')} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium ${currentView === 'bio-indicators' ? 'bg-slate-800 text-white' : 'hover:bg-slate-800 hover:text-white'}`}><BarChart3 className="w-5 h-5" />Indicadores</button>{!isGcg && <button onClick={() => navigateTo('change-requests', 'Solicitudes')} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium ${currentView === 'change-requests' ? 'bg-slate-800 text-white' : 'hover:bg-slate-800 hover:text-white'}`}><FilePenLine className="w-5 h-5" />Solicitudes</button>}
+            {!isGeneralManager && <><div className="pt-2 pb-1"><p className="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Reportería</p></div><button onClick={() => { setBscVisible(true); navigateTo('dashboard', 'Monitor estratégico'); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${currentView === 'dashboard' && bscVisible ? 'bg-[#1e293b] text-white' : 'hover:bg-slate-800 hover:text-white'}`}><BarChart3 className="w-5 h-5" /> Gráfica BSC</button><button onClick={() => { setBscVisible(false); navigateTo('dashboard', 'Monitor estratégico'); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${currentView === 'dashboard' && !bscVisible ? 'bg-[#1e293b] text-white' : 'hover:bg-slate-800 hover:text-white'}`}><LayoutDashboard className="w-5 h-5" /> Monitor estratégico</button></>}
+            <div className="pt-2 pb-1"><p className="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">{isGeneralManager ? 'Gerencia general' : 'Reportería'}</p></div>
+            <button onClick={() => navigateTo('bio-indicators', 'Indicadores')} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium ${currentView === 'bio-indicators' ? 'bg-slate-800 text-white' : 'hover:bg-slate-800 hover:text-white'}`}><BarChart3 className="w-5 h-5" />Indicadores</button>
+            {isGeneralManager && <button onClick={() => navigateTo('general-manager-indicators', 'Indicadores gerenciales')} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium ${currentView === 'general-manager-indicators' ? 'bg-slate-800 text-white' : 'hover:bg-slate-800 hover:text-white'}`}><Star className="w-5 h-5" />Indicadores gerenciales</button>}
+            {!isGeneralManager && !isGcg && <button onClick={() => navigateTo('change-requests', 'Solicitudes')} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium ${currentView === 'change-requests' ? 'bg-slate-800 text-white' : 'hover:bg-slate-800 hover:text-white'}`}><FilePenLine className="w-5 h-5" />Solicitudes</button>}
             <div className="pt-4 pb-1"><p className="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Gestión Estratégica</p></div>
-            <button onClick={() => navigateTo(isGeneralManager ? 'new-objective' : 'objectives', isGeneralManager ? 'Crear objetivo' : 'Objetivos')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${(currentView.includes('objective') && currentView !== 'dashboard') ? 'bg-[#1e293b] text-white' : 'hover:bg-slate-800 hover:text-white'}`}><Target className="w-5 h-5" /> {isGeneralManager ? 'Crear objetivo' : 'Objetivos'}</button>
+            <button onClick={() => navigateTo('objectives', 'Objetivos')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${(currentView.includes('objective') && currentView !== 'dashboard') ? 'bg-[#1e293b] text-white' : 'hover:bg-slate-800 hover:text-white'}`}><Target className="w-5 h-5" />Objetivos</button>
             {isResponsibleManager && <button onClick={() => navigateTo('indicator-status', 'Mis indicadores')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${currentView === 'indicator-status' || currentView === 'edit-indicator' ? 'bg-[#1e293b] text-white' : 'hover:bg-slate-800 hover:text-white'}`}><BarChart3 className="w-5 h-5" /> Mis indicadores</button>}
             {isGcg && <button onClick={() => navigateTo('gcg-review', 'Solicitudes')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${currentView === 'gcg-review' ? 'bg-[#1e293b] text-white' : 'hover:bg-slate-800 hover:text-white'}`}><CheckCircle2 className="w-5 h-5" /> Solicitudes</button>}
           </nav>
@@ -1188,7 +1193,7 @@ export default function App() {
         <div className="app-content p-4 md:p-6 flex-1 relative z-0">
           {dataError && <div className="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-center justify-between gap-3"><span>{dataError}</span><button onClick={() => setDataError('')} className="font-semibold shrink-0">Cerrar</button></div>}
           {currentView === 'dashboard' && (bscVisible ? <StrategicMap objectives={objectivesWithProjectProgress} indicators={indicators} reports={reports} users={availableUsers} onClose={() => setBscVisible(false)} onSelectIndicator={indicator => { setBscVisible(false); navigateTo('indicator-detail', indicator.name, { indicatorId: indicator.id }); }} /> : <MonitorView />)}
-          {currentView === 'bio-indicators' && <BioIndicatorsView coreRows={coreIndicatorRows} workflow={corrective} objectives={objectivesWithProjectProgress} indicators={isManagerScoped ? scopedIndicators : indicators} reports={isManagerScoped ? scopedReports : reports} users={availableUsers} sites={sites} assignments={siteAssignments} filters={indicatorFilters} onChange={changeIndicatorFilters} year={bioIndicatorYear} isGcg={isGcg} session={session} onReload={loadOperationalData} onError={setDataError} onNotify={notify} onCoreSaved={ids => setCoreIndicatorRows(ids.map((indicator_id, index) => ({ indicator_id, position: index + 1 })))} />}
+          {(currentView === 'bio-indicators' || currentView === 'general-manager-indicators') && <BioIndicatorsView coreRows={coreIndicatorRows} generalManagerRows={generalManagerIndicatorRows} workflow={corrective} objectives={objectivesWithProjectProgress} indicators={isManagerScoped ? scopedIndicators : indicators} reports={isManagerScoped ? scopedReports : reports} users={availableUsers} sites={sites} assignments={siteAssignments} filters={indicatorFilters} onChange={changeIndicatorFilters} year={bioIndicatorYear} isGcg={isGcg} featuredOnly={currentView === 'general-manager-indicators'} session={session} onReload={loadOperationalData} onError={setDataError} onNotify={notify} onCoreSaved={ids => setCoreIndicatorRows(ids.map((indicator_id, index) => ({ indicator_id, position: index + 1 })))} onGeneralManagerSaved={ids => setGeneralManagerIndicatorRows(ids.map((indicator_id, index) => ({ indicator_id, position: index + 1 })))} />}
           {currentView === 'change-requests' && <ChangeRequests isGcg={isGcg} indicators={indicators} users={organizationPeople} onReload={loadOperationalData} onError={setDataError} />}
           {currentView === 'indicator-request-history' && <ChangeRequests isGcg={isGcg} indicators={indicators} users={organizationPeople} reports={reports} onReload={loadOperationalData} onError={setDataError} indicatorId={selectedIndicatorId} initialHistory onBack={goBack} />}
           {currentView === 'objectives' && <ObjectivesView />}

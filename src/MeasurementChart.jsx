@@ -99,26 +99,26 @@ export default function MeasurementChart({ indicator, reports, year: controlledY
         {showYearFilter && !comparison && <select id={yearInputId} aria-label="Año de tendencia histórica" value={year} onChange={event => setYear(event.target.value)} className={controlStyle}>
           {years.map(value => <option key={value} value={value}>{value}</option>)}<option value="">Todos los años</option>
         </select>}
+        {comparison && <><select aria-label="Primer año de comparativa" value={comparisonYear} onChange={event => { if (controlledYear == null) setYear(event.target.value); }} className={controlStyle} disabled={controlledYear != null}>{years.map(value => <option key={value} value={value}>{value}</option>)}</select><select aria-label="Segundo año de comparativa" value={comparisonAgainstYear || previousYear} onChange={event => setComparisonAgainstYear(event.target.value)} className={controlStyle}>{years.filter(value => value !== comparisonYear).map(value => <option key={value} value={value}>{value}</option>)}</select></>}
         <button type="button" aria-pressed={comparison} onClick={() => setComparison(!comparison)} className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition ${comparison ? 'border-blue-700 bg-blue-700 text-white hover:bg-blue-800' : 'border-slate-200 bg-white text-blue-700 hover:border-blue-300 hover:bg-blue-50'}`}><BarChart3 className="h-4 w-4" />Comparativa</button>
-        {comparison && <><select aria-label="Primer año de comparativa" value={comparisonYear} onChange={event => { if (controlledYear == null) setYear(event.target.value); }} className={controlStyle} disabled={controlledYear != null}>{years.map(value => <option key={value} value={value}>{value}</option>)}</select><select aria-label="Segundo año de comparativa" value={comparisonAgainstYear || previousYear} onChange={event => setComparisonAgainstYear(event.target.value)} className={controlStyle}>{years.filter(value => value !== comparisonYear).map(value => <option key={value} value={value}>{value}</option>)}</select></>}{comparison && <button type="button" onClick={() => setComparison(false)} className={controlStyle}>Volver a tendencia</button>}
         {headerAction}
       </div>
     </header>
     {!hasCurrent && !hasPrevious ? <p className="rounded-xl border border-slate-100 bg-slate-50 py-16 text-center text-sm text-slate-500">{comparison ? `Sin mediciones registradas para ${comparisonYear} ni ${previousYear}.` : year ? `Sin mediciones registradas en ${year}.` : 'Sin mediciones registradas.'}</p> : <>
       <div className="h-[23rem] rounded-xl border border-slate-100 bg-gradient-to-b from-slate-50/60 to-white p-2 sm:p-3">
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={data} margin={{ top: 30, right: 116, left: 0, bottom: 16 }} accessibilityLayer>
+          <ComposedChart data={data} margin={{ top: 48, right: 116, left: 0, bottom: 42 }} accessibilityLayer>
             <defs><linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#315c8c" stopOpacity={0.42} /><stop offset="100%" stopColor="#315c8c" stopOpacity={0.08} /></linearGradient></defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
             <XAxis dataKey="period" padding={{ left: 18, right: 12 }} tickMargin={12} tick={{ fontSize: 11, fill: '#64748b' }} tickFormatter={value => comparison || !year ? value : value.split(' ')[0].slice(0, 3)} axisLine={{ stroke: '#cbd5e1' }} tickLine={false} />
             <YAxis ticks={ticks} interval={0} domain={[ticks[0], ticks[ticks.length - 1]]} width={60} tickMargin={8} tick={{ fontSize: 11, fill: '#64748b' }} tickFormatter={value => `${formatValue(value)}${unit === '%' ? '%' : ''}`} axisLine={false} tickLine={false} />
             <Tooltip filterNull={false} cursor={{ stroke: '#94a3b8', strokeWidth: 1 }} content={<MeasurementTooltip unit={unit} defaultComparator={indicator.comparator} comparison={comparison} year={comparisonYear} comparedYear={previousYear} />} />
             <Area type="linear" dataKey="resultado" name={comparison ? comparisonYear : 'Medición'} stroke={NAVY} strokeWidth={2.5} fill={`url(#${gradientId})`} baseValue={0} dot={currentDot} activeDot={currentDot} connectNulls={false} isAnimationActive={false}>
-              <LabelList dataKey="resultado" content={props => <ValueLabel {...props} unit={unit} />} />
+              <LabelList dataKey="resultado" content={props => <ValueLabel {...props} unit={unit} offset={comparison ? -22 : -14} />} />
               {comparison && <LabelList dataKey="resultado" content={props => <EndLabel {...props} lastIndex={lastCurrentIndex} text={comparisonYear} color={NAVY} />} />}
             </Area>
             {comparison ? <Line type="linear" dataKey="previous" name={previousYear} stroke={PREVIOUS} strokeWidth={2} dot={{ r: 4, fill: PREVIOUS, stroke: '#fff', strokeWidth: 1.5 }} activeDot={{ r: 5, fill: PREVIOUS }} connectNulls={false} isAnimationActive={false}>
-              <LabelList dataKey="previous" content={props => <ValueLabel {...props} unit={unit} color="#7c8798" offset={18} />} />
+              <LabelList dataKey="previous" content={props => <ValueLabel {...props} unit={unit} color="#7c8798" offset={30} />} />
               <LabelList dataKey="previous" content={props => <EndLabel {...props} lastIndex={lastPreviousIndex} text={previousYear} color="#7c8798" offset={20} />} />
             </Line> : <>
               <Line type="stepAfter" dataKey="meta" name="Meta" stroke={NAVY} strokeDasharray="6 4" strokeWidth={1.6} dot={false} connectNulls={false} isAnimationActive={false}>
@@ -128,6 +128,7 @@ export default function MeasurementChart({ indicator, reports, year: controlledY
           </ComposedChart>
         </ResponsiveContainer>
       </div>
+      {comparison && <div className="mt-3 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-slate-600"><span className="flex items-center gap-2"><i className="h-0.5 w-5" style={{ background: NAVY }} />{comparisonYear}</span><span className="flex items-center gap-2"><i className="h-0.5 w-5" style={{ background: PREVIOUS }} />{previousYear}</span></div>}
       {!comparison && <div className="mt-3 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-slate-600">
         <span className="flex items-center gap-2"><i className="h-2.5 w-2.5 rounded-full" style={{ background: NAVY }} />Medición</span>
         <span className="flex items-center gap-2"><i className="h-0.5 w-5 border-t-2 border-dashed" style={{ borderColor: NAVY }} />Meta</span>

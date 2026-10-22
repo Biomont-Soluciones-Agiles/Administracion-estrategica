@@ -13,13 +13,13 @@ const PREVIOUS = '#a3adbb';
 const formatValue = value => Number(value).toLocaleString('es-PE', { maximumFractionDigits: 4 });
 const valueWithUnit = (value, unit) => value == null ? 'Sin medición' : `${formatValue(value)} ${unit}`.trim();
 
-function MeasurementTooltip({ active, payload, label, unit, defaultComparator, comparison, year }) {
+function MeasurementTooltip({ active, payload, label, unit, defaultComparator, comparison, year, comparedYear }) {
   if (!active || !payload?.length) return null;
   const row = payload[0]?.payload;
   if (!row) return null;
   if (comparison) return <div className="min-w-52 rounded-xl border border-slate-200 bg-white p-3.5 text-sm shadow-xl">
     <p className="mb-3 font-semibold text-slate-900">{row.monthName}</p>
-    {[{ year, value: row.resultado, color: NAVY }, { year: Number(year) - 1, value: row.previous, color: PREVIOUS }].map(item =>
+    {[{ year, value: row.resultado, color: NAVY }, { year: comparedYear || Number(year) - 1, value: row.previous, color: PREVIOUS }].map(item =>
       <p key={item.year} className="mt-2 flex items-center justify-between gap-6"><span className="flex items-center gap-2 text-slate-600"><i className="h-2 w-2 rounded-full" style={{ background: item.color }} />{item.year}</span><strong style={{ color: item.color }}>{valueWithUnit(item.value, unit)}</strong></p>)}
   </div>;
   if (row.resultado == null) return null;
@@ -58,9 +58,10 @@ export default function MeasurementChart({ indicator, reports, year: controlledY
   const calendarYear = String(new Date().getFullYear());
   const [localYear, setYear] = useState(calendarYear);
   const [comparison, setComparison] = useState(false);
+  const [comparisonAgainstYear, setComparisonAgainstYear] = useState('');
   const year = controlledYear == null ? localYear : String(controlledYear);
   const comparisonYear = year || calendarYear;
-  const previousYear = String(Number(comparisonYear) - 1);
+  const previousYear = String(comparisonAgainstYear || (Number(comparisonYear) - 1));
   const gradientId = `measurement-area-${useId().replace(/:/g, '')}`;
   const yearInputId = `measurement-year-${useId().replace(/:/g, '')}`;
   const years = useMemo(() => [...new Set([calendarYear, ...reports.map(report => parseReportPeriod(report.period)?.year).filter(Boolean)])].sort((a, b) => Number(b) - Number(a)), [reports, calendarYear]);
@@ -80,7 +81,7 @@ export default function MeasurementChart({ indicator, reports, year: controlledY
     return { ...report, measurement_target: report.measurement_target ?? (nextChange ? nextChange.target : indicator.target), measurement_comparator: report.measurement_comparator || (nextChange && nextChange.comparator) || indicator.comparator };
   });
   const trendData = measurementSeries(resolvedReports).map(row => ({ ...row, ...deviationAssessment(row.resultado, row.meta, row.comparator) }));
-  const comparedData = historicalComparisonSeries(reports, comparisonYear);
+  const comparedData = historicalComparisonSeries(reports, comparisonYear, previousYear);
   const data = comparison ? comparedData : trendData;
   const hasCurrent = data.some(row => row.resultado != null);
   const hasPrevious = comparison && data.some(row => row.previous != null);
@@ -99,7 +100,7 @@ export default function MeasurementChart({ indicator, reports, year: controlledY
           {years.map(value => <option key={value} value={value}>{value}</option>)}<option value="">Todos los años</option>
         </select>}
         <button type="button" aria-pressed={comparison} onClick={() => setComparison(!comparison)} className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition ${comparison ? 'border-blue-700 bg-blue-700 text-white hover:bg-blue-800' : 'border-slate-200 bg-white text-blue-700 hover:border-blue-300 hover:bg-blue-50'}`}><BarChart3 className="h-4 w-4" />Comparativa</button>
-        {comparison && <button type="button" onClick={() => setComparison(false)} className={controlStyle}>Volver a tendencia</button>}
+        {comparison && <><select aria-label="Primer año de comparativa" value={comparisonYear} onChange={event => { if (controlledYear == null) setYear(event.target.value); }} className={controlStyle} disabled={controlledYear != null}>{years.map(value => <option key={value} value={value}>{value}</option>)}</select><select aria-label="Segundo año de comparativa" value={comparisonAgainstYear || previousYear} onChange={event => setComparisonAgainstYear(event.target.value)} className={controlStyle}>{years.filter(value => value !== comparisonYear).map(value => <option key={value} value={value}>{value}</option>)}</select></>}{comparison && <button type="button" onClick={() => setComparison(false)} className={controlStyle}>Volver a tendencia</button>}
         {headerAction}
       </div>
     </header>
@@ -111,7 +112,7 @@ export default function MeasurementChart({ indicator, reports, year: controlledY
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
             <XAxis dataKey="period" padding={{ left: 18, right: 12 }} tickMargin={12} tick={{ fontSize: 11, fill: '#64748b' }} tickFormatter={value => comparison || !year ? value : value.split(' ')[0].slice(0, 3)} axisLine={{ stroke: '#cbd5e1' }} tickLine={false} />
             <YAxis ticks={ticks} interval={0} domain={[ticks[0], ticks[ticks.length - 1]]} width={60} tickMargin={8} tick={{ fontSize: 11, fill: '#64748b' }} tickFormatter={value => `${formatValue(value)}${unit === '%' ? '%' : ''}`} axisLine={false} tickLine={false} />
-            <Tooltip filterNull={false} cursor={{ stroke: '#94a3b8', strokeWidth: 1 }} content={<MeasurementTooltip unit={unit} defaultComparator={indicator.comparator} comparison={comparison} year={comparisonYear} />} />
+            <Tooltip filterNull={false} cursor={{ stroke: '#94a3b8', strokeWidth: 1 }} content={<MeasurementTooltip unit={unit} defaultComparator={indicator.comparator} comparison={comparison} year={comparisonYear} comparedYear={previousYear} />} />
             <Area type="linear" dataKey="resultado" name={comparison ? comparisonYear : 'Medición'} stroke={NAVY} strokeWidth={2.5} fill={`url(#${gradientId})`} baseValue={0} dot={currentDot} activeDot={currentDot} connectNulls={false} isAnimationActive={false}>
               <LabelList dataKey="resultado" content={props => <ValueLabel {...props} unit={unit} />} />
               {comparison && <LabelList dataKey="resultado" content={props => <EndLabel {...props} lastIndex={lastCurrentIndex} text={comparisonYear} color={NAVY} />} />}

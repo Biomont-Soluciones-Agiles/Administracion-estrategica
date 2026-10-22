@@ -493,7 +493,6 @@ export default function App() {
             <Card className="p-5 border-l-4 border-l-[#D71920]"><p className="text-sm font-medium text-slate-500">Indicadores activos</p><div className="flex items-end justify-between mt-2"><h3 className="text-3xl font-bold text-slate-900">{scopedIndicators.length}</h3><Activity className="w-6 h-6 text-[#D71920]" /></div><div className="border-t border-slate-100 pt-3 mt-3"><p className="text-sm text-slate-600">Avance de indicadores <span className="font-semibold text-slate-900">{indicatorProgress}%</span></p><p className="text-xs text-slate-500 mt-1">{indicatorReporting.reported} de {indicatorReporting.total} indicadores con medición</p><ProgressBar progress={indicatorProgress} status="En progreso" /></div></Card>
             <Card className="p-5 border-l-4 border-l-blue-600"><p className="text-sm font-medium text-slate-500">Proyectos registrados</p><div className="flex items-end justify-between mt-2"><h3 className="text-3xl font-bold text-slate-900">{scopedProjects.length}</h3><FolderKanban className="w-6 h-6 text-blue-600" /></div><div className="border-t border-slate-100 pt-3 mt-3"><p className="text-sm text-slate-600">Avance de proyectos <span className="font-semibold text-slate-900">{projectsProgress}%</span></p><p className="text-xs text-slate-500 mt-1">Proyectos PMO</p><ProgressBar progress={projectsProgress} status="En progreso" /></div></Card>
             <Card className="p-5 border-l-4 border-l-green-500"><p className="text-sm font-medium text-slate-500">{isGcg ? 'Objetivos activos' : 'Número de acciones'}</p><div className="flex items-end justify-between mt-2"><h3 className="text-3xl font-bold text-slate-900">{isGcg ? activeObjectiveCount : scopedTasks.length}</h3><CheckCircle2 className="w-6 h-6 text-green-600" /></div><p className="text-xs text-green-700 mt-3">{isGcg ? 'Según el estatus de los objetivos' : 'Acciones estratégicas registradas'}</p></Card>
-            <Card className="p-5 border-l-4 border-l-amber-500"><p className="text-sm font-medium text-slate-500">Indicadores sin medición</p><div className="flex items-end justify-between mt-2"><h3 className="text-3xl font-bold text-slate-900">{overdueIndicators}</h3><Clock className="w-6 h-6 text-amber-500" /></div><p className="text-xs text-slate-500 mt-3">Pendientes de su primer reporte</p></Card>
           </> : <>
             <Card className="p-5 border-l-4 border-l-[#D71920]"><p className="text-sm font-medium text-slate-500">Avance estratégico</p><div className="flex items-end justify-between mt-2"><h3 className="text-3xl font-bold text-slate-900">{averageProgress}%</h3><Activity className="w-6 h-6 text-[#D71920]" /></div><p className="text-xs text-slate-500 mt-3">Promedio de objetivos activos</p></Card>
             <Card className="p-5 border-l-4 border-l-blue-600"><p className="text-sm font-medium text-slate-500">Objetivos activos</p><div className="flex items-end justify-between mt-2"><h3 className="text-3xl font-bold text-slate-900">{activeObjectiveCount}</h3><Target className="w-6 h-6 text-blue-600" /></div><p className="text-xs text-slate-500 mt-3">En seguimiento este periodo</p></Card>
@@ -578,14 +577,9 @@ export default function App() {
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-lg font-semibold text-[#0F172A]">Objetivos Estratégicos</h2>
-              <button onClick={() => navigateTo('objectives', 'Objetivos')} className="text-sm text-[#1D4ED8] hover:underline font-medium flex items-center gap-1">
-                Ver todos <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
+        <div className="space-y-6">
+          <div className="space-y-6">
+            <h2 className="text-lg font-semibold text-[#0F172A]">Objetivos Estratégicos</h2>
             
             <div className="grid gap-4">
               {!visibleObjectives.length && <p className="rounded-xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-500">No hay objetivos con este estatus.</p>}
@@ -626,35 +620,6 @@ export default function App() {
                 );
               })}
             </div>
-          </div>
-
-          <div className="space-y-6">
-            <h2 className="text-lg font-semibold text-[#0F172A] flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-yellow-500" />
-              Requiere tu atención
-            </h2>
-            <Card className="p-0 border-yellow-200 shadow-sm">
-              <div className="divide-y divide-slate-100">
-                {riskInds.length > 0 ? (
-                  riskInds.map(({ indicator: ind, report: latestReport, label }) => {
-                    const obj = objectives.find(o => o.id === ind.objectiveId);
-                    return (
-                      <div key={ind.id} className="p-4 hover:bg-slate-50 cursor-pointer transition-colors" onClick={() => navigateTo('indicator-detail', ind.name, { indicatorId: ind.id, objectiveId: obj?.id })}>
-                        <p className="text-xs text-slate-500 mb-1 truncate">{obj?.name}</p>
-                        <h4 className="text-sm font-semibold text-slate-900 mb-2">{ind.code ? `${ind.code} · ` : ''}{ind.name}</h4>
-                        <p className="text-xs text-slate-600 mb-2">{corrective.error ? 'Análisis no disponible' : corrective.loading ? 'Consultando análisis…' : label}</p>
-                        <div className="flex justify-between items-center text-sm">
-                          <div><span className="text-slate-500 block text-xs">Resultado</span><span className="font-bold text-red-600">{latestReport?.result ?? '—'} {displayUnit(ind.unit)}</span></div>
-                          <div className="text-right"><span className="text-slate-500 block text-xs">Meta</span><span className="font-medium text-slate-700">{ind.comparator} {ind.target} {displayUnit(ind.unit)}</span></div>
-                        </div>
-                      </div>
-                    )
-                  })
-                ) : (
-                  <div className="p-8 text-center text-slate-500 text-sm">No hay indicadores fuera de meta. ¡Buen trabajo!</div>
-                )}
-              </div>
-            </Card>
           </div>
         </div>
       </div>
@@ -1156,6 +1121,7 @@ export default function App() {
     const roles = [
       { key: 'gerente_responsable', name: 'Gerente responsable', description: 'Reporta indicadores asignados y delega responsables de reporte.', icon: Target, color: 'bg-blue-50 text-blue-600 border-blue-100' },
       { key: 'gcg', name: 'GCG', description: 'Crea objetivos e indicadores y aprueba solicitudes de modificación.', icon: CheckCircle2, color: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
+      { key: 'gerente_general', name: 'Gerencia general', description: 'Consulta objetivos, todos los indicadores e indicadores gerenciales, sin permisos de edición.', icon: Users, color: 'bg-violet-50 text-violet-600 border-violet-100' },
       { key: 'usuario', name: 'Usuario', description: 'Consulta y registra únicamente los indicadores donde fue asignado como apoyo.', icon: User, color: 'bg-violet-50 text-violet-600 border-violet-100' }
     ];
     return <AuthShell><div className="text-center mb-9"><img src={biomontLogo} alt="Biomont" className="h-20 w-auto object-contain mx-auto mb-6" /><p className="text-sm font-bold text-[#D71920] uppercase tracking-[0.2em]">Super administrador</p><h1 className="text-4xl font-bold text-slate-900 mt-2">Selecciona una vista</h1><p className="text-slate-500 mt-3 max-w-xl mx-auto">Elige el rol con el que deseas ingresar a {APP_TITLE}.</p></div><div className="grid grid-cols-1 md:grid-cols-3 gap-5">{roles.map(role => { const Icon = role.icon; return <button key={role.name} onClick={() => setSelectedRole(role)} className="bg-white border border-slate-200 rounded-2xl p-6 text-left shadow-sm hover:shadow-lg hover:-translate-y-1 hover:border-[#D71920]/40 transition-all group"><div className={`w-12 h-12 border rounded-xl flex items-center justify-center ${role.color}`}><Icon className="w-6 h-6" /></div><h2 className="text-lg font-bold text-slate-900 mt-5">{role.name}</h2><p className="text-sm text-slate-500 leading-6 mt-2">{role.description}</p><div className="flex items-center gap-2 text-sm font-semibold text-[#D71920] mt-6">Ingresar <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" /></div></button>})}</div><div className="text-center mt-7"><button onClick={signOut} className="text-sm text-slate-500 hover:text-slate-800">Cerrar sesión de {session.user.email}</button></div></AuthShell>;

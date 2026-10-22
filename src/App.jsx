@@ -1184,7 +1184,7 @@ export default function App() {
     <div className="biomet-app min-h-screen bg-[#F8FAFC] flex font-sans text-slate-900">
       <aside className="app-sidebar bg-[#0F172A] text-slate-300 flex-col hidden md:flex fixed h-full z-20">
         <div className="h-14 flex items-center px-4 border-b border-slate-800">
-          <div className="flex items-center gap-2"><img src={isKunturAccount ? kunturLogo : biomontLogo} alt={isKunturAccount ? "Kuntur Pharma" : "Biomont"} className={`${isKunturAccount ? "w-28" : "w-12"} h-9 object-contain`} /><span className="text-white font-bold text-lg tracking-tight">{APP_TITLE}</span></div>
+          <div className="flex items-center gap-2"><img src={isKunturAccount ? kunturLogo : biomontLogo} alt={isKunturAccount ? "Kuntur Pharma" : "Biomont"} className={`${isKunturAccount ? "w-28 h-10 rounded-md bg-white px-2 py-1 shadow-sm" : "w-12 h-9"} object-contain`} /><span className="text-white font-bold text-lg tracking-tight">{APP_TITLE}</span></div>
         </div>
         <div className="flex-1 overflow-y-auto py-4">
           <nav className="px-3 space-y-1">

@@ -4,7 +4,7 @@ import { CheckCircle2, Search, Star, X } from 'lucide-react';
 import { supabase } from './lib/supabase';
 import { displayUnit } from './lib/units';
 
-export default function CoreIndicators({ open, onClose, indicators = [], objectives = [], coreRows = [], onReload, onNotify, onError }) {
+export default function CoreIndicators({ open, onClose, indicators = [], objectives = [], coreRows = [], onReload, onNotify, onError, onSaved }) {
   const initial = useMemo(() => coreRows.map(row => String(row.indicator_id)), [coreRows]);
   const [selected, setSelected] = useState(initial);
   const [query, setQuery] = useState('');
@@ -26,6 +26,7 @@ export default function CoreIndicators({ open, onClose, indicators = [], objecti
     setBusy(false);
     if (error) { onError(`No se pudieron guardar los indicadores core: ${error.message}`); return; }
     await onReload();
+    onSaved?.(selected.map(Number));
     onNotify('Indicadores core actualizados.');
     onClose();
   };

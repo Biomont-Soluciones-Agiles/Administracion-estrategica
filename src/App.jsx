@@ -853,10 +853,11 @@ export default function App() {
         const site = sites.find(candidate => String(candidate.id) === String(item.siteId));
         return String(site?.name || '').trim().toLocaleLowerCase('es') === 'biomont';
       });
-      const invalidAssignment = formData.siteAssignments.some(item => !item.siteId || !Number(item.weight));
-      const duplicateSites = new Set(formData.siteAssignments.map(item => item.siteId)).size !== formData.siteAssignments.length;
+      const selectedSiteAssignments = formData.siteAssignments.filter(item => item.responsibleEmail);
+      const invalidAssignment = selectedSiteAssignments.some(item => !item.siteId || !Number(item.weight));
+      const duplicateSites = new Set(selectedSiteAssignments.map(item => item.siteId)).size !== selectedSiteAssignments.length;
       if (invalidAssignment || duplicateSites || !biomontAssignment?.responsibleEmail) {
-        setDataError(!biomontAssignment?.responsibleEmail ? 'Debes seleccionar un responsable para Biomont.' : duplicateSites ? 'Cada sede puede registrarse una sola vez.' : 'Completa la ponderación de cada sede.');
+        setDataError(!biomontAssignment?.responsibleEmail ? 'Debes seleccionar un responsable para Biomont.' : duplicateSites ? 'Cada sede puede registrarse una sola vez.' : 'Completa la ponderación de cada sede seleccionada.');
         return;
       }
       const { data, error } = await supabase.from('indicators').insert({
@@ -868,14 +869,14 @@ export default function App() {
         comparator: formData.comparator,
         frequency: formData.frequency,
         review_frequency: formData.reviewFrequency,
-        owner_email: formData.siteAssignments[0]?.responsibleEmail || null,
+        owner_email: biomontAssignment.responsibleEmail,
         approval_status: 'Aprobado',
       }).select().single();
       if (error) {
         setDataError(`No se pudo guardar el indicador: ${error.message}`);
         return;
       }
-      const { data: assignmentRows, error: assignmentError } = await supabase.from('indicator_site_assignments').insert(formData.siteAssignments.map(item => ({ indicator_id: data.id, site_id: Number(item.siteId), responsible_email: item.responsibleEmail || null, weight: Number(item.weight), active: true }))).select();
+      const { data: assignmentRows, error: assignmentError } = await supabase.from('indicator_site_assignments').insert(selectedSiteAssignments.map(item => ({ indicator_id: data.id, site_id: Number(item.siteId), responsible_email: item.responsibleEmail, weight: Number(item.weight), active: true }))).select();
       if (assignmentError) {
         await supabase.from('indicators').delete().eq('id', data.id);
         setDataError(`No se pudo guardar las sedes del indicador: ${assignmentError.message}`);

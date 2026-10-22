@@ -1,5 +1,21 @@
--- Corrige la persistencia de Indicadores Core.
--- La tabla core_indicators guarda una fila por indicador, no un arreglo indicator_ids.
+-- Crea y corrige la persistencia de Indicadores Core.
+-- La tabla guarda una fila por indicador, no un arreglo indicator_ids.
+
+create table if not exists public.core_indicators (
+  indicator_id bigint primary key references public.indicators(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  position integer
+);
+
+alter table public.core_indicators
+  add column if not exists position integer;
+
+grant select on table public.core_indicators to authenticated;
+
+alter table public.core_indicators enable row level security;
+drop policy if exists "authenticated users can read core indicators" on public.core_indicators;
+create policy "authenticated users can read core indicators"
+  on public.core_indicators for select to authenticated using (true);
 
 create or replace function public.set_core_indicators(selected_indicator_ids bigint[])
 returns void
@@ -28,10 +44,11 @@ begin
     raise exception 'Uno o más indicadores seleccionados no existen.';
   end if;
 
-  delete from public.core_indicators;
+  delete from public.core_indicators
+  where indicator_id is not null;
 
-  insert into public.core_indicators (indicator_id)
-  select indicator_id
+  insert into public.core_indicators (indicator_id, position)
+  select indicator_id, position
   from unnest(selected_indicator_ids) with ordinality as selected(indicator_id, position)
   order by position;
 end;

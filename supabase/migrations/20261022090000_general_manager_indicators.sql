@@ -69,6 +69,11 @@ begin
   if aldo_email is null then
     raise notice 'No se encontró a Aldo Pedraglio de Cossio en organization_people. Asigna el rol cuando su cuenta esté registrada.';
   else
+    update public.role_assignments
+      set role = 'usuario'
+    where role = 'gerente_general'
+      and lower(trim(email)) <> aldo_email;
+
     insert into public.role_assignments (email, role)
     values (aldo_email, 'gerente_general')
     on conflict (email) do update set role = excluded.role;

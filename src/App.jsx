@@ -307,7 +307,7 @@ export default function App() {
     setReports((reportsResult.data || []).map(toReport));
     setSites(sitesResult.data || []);
     setSiteAssignments(assignmentsResult.data || []);
-    setCoreIndicatorRows(coreResult.data || []);
+    if (!coreResult.error) setCoreIndicatorRows(coreResult.data || []);
     setDashboardMessages(messagesResult.data || []);
     setDataError('');
     await corrective.reload();
@@ -1188,7 +1188,7 @@ export default function App() {
         <div className="app-content p-4 md:p-6 flex-1 relative z-0">
           {dataError && <div className="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-center justify-between gap-3"><span>{dataError}</span><button onClick={() => setDataError('')} className="font-semibold shrink-0">Cerrar</button></div>}
           {currentView === 'dashboard' && (bscVisible ? <StrategicMap objectives={objectivesWithProjectProgress} indicators={indicators} reports={reports} users={availableUsers} onClose={() => setBscVisible(false)} onSelectIndicator={indicator => { setBscVisible(false); navigateTo('indicator-detail', indicator.name, { indicatorId: indicator.id }); }} /> : <MonitorView />)}
-          {currentView === 'bio-indicators' && <BioIndicatorsView coreRows={coreIndicatorRows} workflow={corrective} objectives={objectivesWithProjectProgress} indicators={isManagerScoped ? scopedIndicators : indicators} reports={isManagerScoped ? scopedReports : reports} users={availableUsers} sites={sites} assignments={siteAssignments} filters={indicatorFilters} onChange={changeIndicatorFilters} year={bioIndicatorYear} isGcg={isGcg} session={session} onReload={loadOperationalData} onError={setDataError} onNotify={notify} />}
+          {currentView === 'bio-indicators' && <BioIndicatorsView coreRows={coreIndicatorRows} workflow={corrective} objectives={objectivesWithProjectProgress} indicators={isManagerScoped ? scopedIndicators : indicators} reports={isManagerScoped ? scopedReports : reports} users={availableUsers} sites={sites} assignments={siteAssignments} filters={indicatorFilters} onChange={changeIndicatorFilters} year={bioIndicatorYear} isGcg={isGcg} session={session} onReload={loadOperationalData} onError={setDataError} onNotify={notify} onCoreSaved={ids => setCoreIndicatorRows(ids.map((indicator_id, index) => ({ indicator_id, position: index + 1 })))} />}
           {currentView === 'change-requests' && <ChangeRequests isGcg={isGcg} indicators={indicators} users={organizationPeople} onReload={loadOperationalData} onError={setDataError} />}
           {currentView === 'indicator-request-history' && <ChangeRequests isGcg={isGcg} indicators={indicators} users={organizationPeople} reports={reports} onReload={loadOperationalData} onError={setDataError} indicatorId={selectedIndicatorId} initialHistory onBack={goBack} />}
           {currentView === 'objectives' && <ObjectivesView />}

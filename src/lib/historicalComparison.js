@@ -1,9 +1,9 @@
 import { MONTHS, parseReportPeriod } from './reporting.js';
 
 // Each month has its own slot. Missing reports never become zero or shift years.
-export function historicalComparisonSeries(reports, year) {
+export function historicalComparisonSeries(reports, year, compareWithYear = null) {
   const currentYear = String(year);
-  const previousYear = String(Number(year) - 1);
+  const previousYear = String(compareWithYear || (Number(year) - 1));
   const byPeriod = new Map();
   const sorted = [...reports].sort((a, b) =>
     String(a.created_at || '').localeCompare(String(b.created_at || '')) ||

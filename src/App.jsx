@@ -697,7 +697,7 @@ export default function App() {
         objActions.length ? `${objActions.length} acción(es)` : '',
       ].filter(Boolean).join(', ');
       if (!window.confirm(`¿Eliminar el objetivo “${obj.name}”? Esta acción también eliminará la información vinculada${relatedMessage ? `: ${relatedMessage}` : ''}.`)) return;
-      const { error } = await supabase.from('objectives').delete().eq('id', obj.id);
+      const { error } = await supabase.rpc('delete_objective', { objective: obj.id });
       if (error) {
         setDataError(`No se pudo eliminar el objetivo: ${error.message}`);
         return;

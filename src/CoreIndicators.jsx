@@ -4,7 +4,7 @@ import { CheckCircle2, Search, Star, X } from 'lucide-react';
 import { supabase } from './lib/supabase';
 import { displayUnit } from './lib/units';
 
-export default function CoreIndicators({ open, onClose, indicators = [], objectives = [], coreRows = [], onReload, onNotify, onError, onSaved }) {
+export default function CoreIndicators({ open, onClose, indicators = [], objectives = [], coreRows = [], onReload, onNotify, onError, onSaved, title = 'Indicadores GCG', description = 'Selecciona hasta cuatro indicadores prioritarios para el seguimiento ejecutivo.', rpcName = 'set_core_indicators' }) {
   const initial = useMemo(() => coreRows.map(row => String(row.indicator_id)), [coreRows]);
   const [selected, setSelected] = useState(initial);
   const [query, setQuery] = useState('');
@@ -22,12 +22,12 @@ export default function CoreIndicators({ open, onClose, indicators = [], objecti
   const cancel = () => { setSelected(initial); onClose(); };
   const save = async () => {
     setBusy(true);
-    const { error } = await supabase.rpc('set_core_indicators', { selected_indicator_ids: selected.map(Number) });
+    const { error } = await supabase.rpc(rpcName, { selected_indicator_ids: selected.map(Number) });
     setBusy(false);
-    if (error) { onError(`No se pudieron guardar los indicadores core: ${error.message}`); return; }
+    if (error) { onError(`No se pudieron guardar los indicadores seleccionados: ${error.message}`); return; }
     await onReload();
     onSaved?.(selected.map(Number));
-    onNotify('Indicadores core actualizados.');
+    onNotify(`${title} actualizados.`);
     onClose();
   };
   const normalizedQuery = query.trim().toLocaleLowerCase('es');

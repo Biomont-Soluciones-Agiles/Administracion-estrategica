@@ -4,6 +4,7 @@ import { displayUnit } from './lib/units';
 import { personName } from './lib/personNames';
 import { parseReportPeriod } from './lib/reporting';
 import { portfolioCounts, portfolioRows } from './lib/indicatorPortfolio';
+import { measurementComplianceBand } from './lib/complianceBand';
 
 const statusColor = status => status === 'Fuera de meta' ? '#dc2626' : status === 'En meta' ? '#16a34a' : '#94a3b8';
 export function PortfolioStatus({ status }) {
@@ -21,13 +22,19 @@ export function MiniTrend({ reports, status, compact = false }) {
   return <svg viewBox="0 0 200 60" preserveAspectRatio="none" className={`${compact ? 'h-8 w-24' : 'h-12 w-full'}`} role="img" aria-label="Tendencia de las últimas mediciones"><path d="M8 54 H192" stroke="#e2e8f0" strokeWidth="1" />{segments.map((segment, index) => <polyline key={index} points={segment.map(point => point.join(',')).join(' ')} fill="none" stroke={statusColor(status)} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />)}{points.filter(Boolean).map(([x, y], index) => <circle key={index} cx={x} cy={y} r="2" fill={statusColor(status)} />)}</svg>;
 }
 
+const ExecutiveDonut = ({ title, value, caption, entries, color = '#16a34a' }) => <section className="rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm"><div className="flex items-center gap-2"><Activity className="h-5 w-5 text-blue-600" /><h2 className="text-sm font-semibold text-slate-900">{title}</h2></div><div className="mt-4 flex items-center gap-4"><div className="relative h-20 w-20 shrink-0 rounded-full" style={{ background: `conic-gradient(${color} 0 ${value}%, #e2e8f0 ${value}% 100%)` }}><div className="absolute inset-2.5 flex flex-col items-center justify-center rounded-full bg-white"><span className="text-xl font-bold text-slate-900">{value}%</span><span className="text-[9px] text-slate-500">{caption}</span></div></div><dl className="min-w-0 flex-1 space-y-1.5 text-xs">{entries.map(([label, count, textColor = 'text-slate-800']) => <div key={label} className="flex justify-between gap-3"><dt className="text-slate-500">{label}</dt><dd className={`font-semibold ${textColor}`}>{count}</dd></div>)}</dl></div></section>;
+
 export function PortfolioSummary({ rows, assigned = false }) {
   const counts = portfolioCounts(rows);
-  return <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">{[
-    { label: assigned ? 'Asignados' : 'Indicadores', value: counts.total, Icon: BarChart3, color: 'text-blue-700', background: 'bg-blue-50/60 border-blue-100' },
-    { label: 'En meta', value: counts.inTarget, Icon: CheckCircle2, color: 'text-green-700', background: 'bg-green-50/60 border-green-100' },
-    { label: 'Fuera de meta', value: counts.outOfTarget, Icon: AlertTriangle, color: 'text-red-700', background: 'bg-red-50/60 border-red-100' },
-  ].map(({ label, value, Icon, color, background }) => <div key={label} className={`flex items-center gap-4 rounded-xl border px-5 py-4 ${background}`}><div className={`rounded-xl bg-white/80 p-3 ${color}`}><Icon className="h-5 w-5" /></div><div><p className="text-xs font-medium text-slate-500">{label}</p><p className={`mt-1 text-3xl font-bold ${color}`}>{value}</p></div></div>)}</div>;
+  const bands = rows.reduce((total, row) => {
+    const band = measurementComplianceBand(row.latest?.result, row.indicator.target, row.indicator.comparator).band;
+    if (band) total[band] += 1;
+    return total;
+  }, { pesimista: 0, optimista: 0, excepcional: 0 });
+  const classified = bands.pesimista + bands.optimista + bands.excepcional;
+  const compliance = counts.total ? Math.round(counts.inTarget * 100 / counts.total) : 0;
+  const favorable = classified ? Math.round((bands.optimista + bands.excepcional) * 100 / classified) : 0;
+  return <div className="grid grid-cols-1 gap-3 xl:grid-cols-3"><div className="flex items-center gap-4 rounded-xl border border-blue-100 bg-blue-50/60 px-5 py-4"><div className="rounded-xl bg-white/80 p-3 text-blue-700"><BarChart3 className="h-5 w-5" /></div><div><p className="text-xs font-medium text-slate-500">{assigned ? 'Asignados' : 'Indicadores'}</p><p className="mt-1 text-3xl font-bold text-blue-700">{counts.total}</p></div></div><ExecutiveDonut title="Cumplimiento general" value={compliance} caption="En meta" entries={[['En meta', counts.inTarget, 'text-green-700'], ['Fuera de meta', counts.outOfTarget, 'text-red-700'], ['Sin datos', counts.noData], ['Sin reporte', counts.unreported]]} /><ExecutiveDonut title="Condición general" value={favorable} caption="Favorable" color="#2563eb" entries={[['Pesimista', bands.pesimista, 'text-red-700'], ['Optimista', bands.optimista, 'text-amber-700'], ['Excepcional', bands.excepcional, 'text-green-700']]} /></div>;
 }
 
 export function AttentionPanel({ rows, objectives, onSelect, assigned = false }) {

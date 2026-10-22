@@ -690,6 +690,22 @@ export default function App() {
     const objProjects = projects.filter(p => p.objectiveId === obj.id);
     const objActions = tasks.filter(task => task.objectiveId === obj.id);
     const objIndicators = indicators.filter(i => i.objectiveId === obj.id);
+    const deleteObjective = async () => {
+      const relatedMessage = [
+        objIndicators.length ? `${objIndicators.length} indicador(es)` : '',
+        objProjects.length ? `${objProjects.length} proyecto(s)` : '',
+        objActions.length ? `${objActions.length} acción(es)` : '',
+      ].filter(Boolean).join(', ');
+      if (!window.confirm(`¿Eliminar el objetivo “${obj.name}”? Esta acción también eliminará la información vinculada${relatedMessage ? `: ${relatedMessage}` : ''}.`)) return;
+      const { error } = await supabase.from('objectives').delete().eq('id', obj.id);
+      if (error) {
+        setDataError(`No se pudo eliminar el objetivo: ${error.message}`);
+        return;
+      }
+      await loadOperationalData();
+      notify('Objetivo eliminado.');
+      navigateTo('objectives', 'Objetivos');
+    };
 
     return (
       <div className="fade-in space-y-6">
@@ -701,9 +717,12 @@ export default function App() {
                 <p className="text-xs font-semibold text-blue-700 mb-2">{obj.code}</p><h1 className="text-2xl font-bold text-[#0F172A]">{obj.name}</h1>
                 <p className="text-slate-500 mt-1 max-w-3xl">{obj.description}</p>
               </div>
-              <div className="text-right shrink-0">
-                <div className="text-3xl font-bold text-[#1D4ED8]">{obj.progress}%</div>
-                <p className="text-sm text-slate-500 font-medium">Avance general</p>
+              <div className="flex shrink-0 flex-col items-end gap-3">
+                <div className="text-right">
+                  <div className="text-3xl font-bold text-[#1D4ED8]">{obj.progress}%</div>
+                  <p className="text-sm text-slate-500 font-medium">Avance general</p>
+                </div>
+                {isGcg && <Button type="button" variant="danger" onClick={deleteObjective} className="px-3 py-2"><Trash2 className="w-4 h-4" />Eliminar objetivo</Button>}
               </div>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-4 border-t border-slate-100">

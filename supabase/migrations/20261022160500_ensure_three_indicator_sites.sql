@@ -21,15 +21,16 @@ begin
   -- Conserva las asignaciones existentes si había una sede con el nombre anterior.
   if v_kuntur_pharma_id is not null and v_legacy_kuntur_id is not null
      and v_kuntur_pharma_id <> v_legacy_kuntur_id then
+    -- Si una asignación ya existe en la sede destino, se conserva esa fila.
+    delete from public.indicator_site_assignments legacy_assignment
+    using public.indicator_site_assignments current_assignment
+    where legacy_assignment.site_id = v_legacy_kuntur_id
+      and current_assignment.site_id = v_kuntur_pharma_id
+      and current_assignment.indicator_id = legacy_assignment.indicator_id;
+
     update public.indicator_site_assignments
     set site_id = v_kuntur_pharma_id, updated_at = now()
-    where site_id = v_legacy_kuntur_id
-      and not exists (
-        select 1
-        from public.indicator_site_assignments current_assignment
-        where current_assignment.indicator_id = public.indicator_site_assignments.indicator_id
-          and current_assignment.site_id = v_kuntur_pharma_id
-      );
+    where site_id = v_legacy_kuntur_id;
 
     delete from public.sites where id = v_legacy_kuntur_id;
   elsif v_kuntur_pharma_id is null and v_legacy_kuntur_id is not null then

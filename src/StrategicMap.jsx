@@ -44,7 +44,7 @@ function InfoRow({ label, value }) {
   </div>;
 }
 
-function ObjectiveDetail({ objective, indicators, reports, projects = [], actions = [], users = [], close, openIndicator, canSelectIndicator }) {
+function ObjectiveDetail({ objective, indicators, reports, projects = [], actions = [], users = [], isGeneralManager = false, close, openIndicator, canSelectIndicator }) {
   if (!objective) return null;
   const rows = indicators.filter(i => String(i.objectiveId) === String(objective.id));
   const objectiveProjects = projects.filter(project => String(project.objectiveId) === String(objective.id));
@@ -60,9 +60,12 @@ function ObjectiveDetail({ objective, indicators, reports, projects = [], action
         {objective.description && <p className="text-sm leading-6 text-slate-600">{objective.description}</p>}
         <section aria-label="Información del objetivo" className="border-y border-slate-200"><dl className="grid gap-x-8 sm:grid-cols-2"><InfoRow label="Código" value={objective.code} /><InfoRow label="Responsable" value={personName(objective.ownerId)} /><InfoRow label="Avance" value={`${Number(objective.progress || 0)}%`} /><InfoRow label="Vigencia" value={objective.validityStartYear && objective.validityEndYear ? `${objective.validityStartYear} – ${objective.validityEndYear}` : null} /><InfoRow label="Indicadores medidos" value={`${measured} de ${rows.length}`} /></dl></section>
         <section><h3 className="mb-1 font-bold">Indicadores del objetivo <span className="text-xs font-normal text-slate-500">{rows.length}</span></h3><div className="divide-y divide-slate-200">{rows.map(i => { const latest = reports.filter(r => String(r.indicatorId) === String(i.id)).sort((a, b) => reportTime(a) - reportTime(b)).at(-1); return <article key={i.id} className="py-3"><h4 className="font-semibold text-slate-900">{i.name}</h4><dl className="mt-1"><InfoRow label="Medición actual" value={latest?.result == null ? 'Sin medición' : `${latest.result} ${displayUnit(i.unit)}`} /><InfoRow label="Meta" value={`${i.comparator || ''} ${i.target ?? ''} ${displayUnit(i.unit)}`.trim()} /></dl>{canSelectIndicator(i) && <button onClick={() => openIndicator(i)} className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-blue-700 hover:text-blue-900">Ver indicador <ChevronRight className="h-4 w-4" /></button>}</article>; })}{!rows.length && <p className="rounded-xl border border-dashed p-5 text-center text-sm text-slate-500">Este objetivo aún no tiene indicadores.</p>}</div></section>
+        {isGeneralManager && <>
         <section><div className="mb-2 flex items-center justify-between"><h3 className="font-bold">Proyectos</h3><span className="text-xs text-slate-500">{objectiveProjects.length}</span></div><div className="space-y-2">{objectiveProjects.map(project => <article key={project.id} className="rounded-xl border border-slate-200 p-3"><div className="flex items-start justify-between gap-3"><div><h4 className="font-semibold text-slate-900">{project.name}</h4>{project.description && <p className="mt-1 text-xs leading-5 text-slate-500">{project.description}</p>}<p className="mt-2 text-xs text-slate-500">Responsable: {personName(project.ownerId)}</p></div>{statusPill(project.status)}</div></article>)}{!objectiveProjects.length && <p className="rounded-xl border border-dashed p-4 text-center text-sm text-slate-500">No hay proyectos vinculados.</p>}</div></section>
         <section><div className="mb-2 flex items-center justify-between"><h3 className="font-bold">Acciones estratégicas</h3><span className="text-xs text-slate-500">{objectiveActions.length}</span></div><div className="space-y-2">{objectiveActions.map(action => <article key={action.id} className="rounded-xl border border-slate-200 p-3"><div className="flex items-start justify-between gap-3"><div><h4 className="font-semibold text-slate-900">{action.name}</h4>{action.description && <p className="mt-1 text-xs leading-5 text-slate-500">{action.description}</p>}<p className="mt-2 text-xs text-slate-500">Responsable: {personName(action.ownerId)}{action.dueDate ? ` · Término: ${action.dueDate}` : ''}</p></div>{statusPill(action.status)}</div></article>)}{!objectiveActions.length && <p className="rounded-xl border border-dashed p-4 text-center text-sm text-slate-500">No hay acciones estratégicas registradas.</p>}</div></section>
+        </>}
       </div>
+      {!isGeneralManager && <footer className="sticky bottom-0 border-t bg-white p-4"><button onClick={close} className="w-full rounded-xl bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-800 hover:bg-blue-100">Volver al mapa BSC</button></footer>}
     </section>
   </div>, document.body);
 }
@@ -81,7 +84,7 @@ function RelationshipArrows() {
   </svg>;
 }
 
-export default function StrategicMap({ objectives = [], indicators = [], reports = [], users = [], onSelectIndicator, canSelectIndicator = () => true }) {
+export default function StrategicMap({ objectives = [], indicators = [], reports = [], projects = [], actions = [], users = [], isGeneralManager = false, onSelectIndicator, canSelectIndicator = () => true }) {
   const [selected, setSelected] = React.useState(null);
   return <section className="flex min-h-[calc(100vh-7rem)] flex-col" aria-label="Mapa estratégico BSC">
     <header className="mb-5"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#D71920]">Gestión Estratégica</p><h1 className="mt-1 text-2xl font-bold text-slate-950 md:text-3xl">Mapa estratégico BSC</h1><p className="mt-1 text-sm text-slate-500">Objetivos organizados por foco estratégico</p></header>
@@ -96,6 +99,6 @@ export default function StrategicMap({ objectives = [], indicators = [], reports
         })}{!rows.length && <div className="flex min-h-28 items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white/50 px-4 text-center text-sm text-slate-500">No hay objetivos en este foco.</div>}</div>
       </section>;
     })}</div>
-    <ObjectiveDetail objective={selected} indicators={indicators} reports={reports} users={users} close={() => setSelected(null)} openIndicator={onSelectIndicator} canSelectIndicator={canSelectIndicator} />
+    <ObjectiveDetail objective={selected} indicators={indicators} reports={reports} projects={projects} actions={actions} users={users} isGeneralManager={isGeneralManager} close={() => setSelected(null)} openIndicator={onSelectIndicator} canSelectIndicator={canSelectIndicator} />
   </section>;
 }

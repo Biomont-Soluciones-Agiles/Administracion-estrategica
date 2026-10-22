@@ -25,10 +25,14 @@ export default function CoreIndicators({ open, onClose, indicators = [], objecti
     const { error } = await supabase.rpc(rpcName, { selected_indicator_ids: selected.map(Number) });
     setBusy(false);
     if (error) { onError(`No se pudieron guardar los indicadores seleccionados: ${error.message}`); return; }
-    await onReload();
     onSaved?.(selected.map(Number));
     onNotify(`${title} actualizados.`);
     onClose();
+    try {
+      await onReload?.();
+    } catch {
+      // La selección ya se confirmó localmente; la próxima carga reconciliará los datos.
+    }
   };
   const normalizedQuery = query.trim().toLocaleLowerCase('es');
   const matches = indicators.filter(indicator => {

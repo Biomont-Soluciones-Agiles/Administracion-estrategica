@@ -191,6 +191,7 @@ export default function App() {
   const [organizationPeople, setOrganizationPeople] = useState([]);
   const [sites, setSites] = useState([]);
   const [siteAssignments, setSiteAssignments] = useState([]);
+  const [siteResponsibleRows, setSiteResponsibleRows] = useState([]);
   const [microsoftPeople, setMicrosoftPeople] = useState([]);
   const [dashboardMessages, setDashboardMessages] = useState([]);
   const [coreIndicatorRows, setCoreIndicatorRows] = useState([]);
@@ -276,7 +277,7 @@ export default function App() {
 
   const loadOperationalData = async () => {
     if (!supabase) return;
-    const [profilesResult, peopleResult, objectivesResult, projectsResult, actionsResult, indicatorsResult, reportsResult, messagesResult, catalogResult, directoryResult, sitesResult, assignmentsResult, coreResult, generalManagerResult] = await Promise.all([
+    const [profilesResult, peopleResult, objectivesResult, projectsResult, actionsResult, indicatorsResult, reportsResult, messagesResult, catalogResult, directoryResult, sitesResult, assignmentsResult, coreResult, generalManagerResult, siteResponsiblesResult] = await Promise.all([
       supabase.from('profiles').select('email, role').order('email'),
       supabase.from('organization_people').select('id, full_name, email, role').eq('active', true).order('full_name'),
       supabase.from('objectives').select('*').order('created_at', { ascending: false }),
@@ -291,6 +292,7 @@ export default function App() {
       supabase.from('indicator_site_assignments').select('*').eq('active', true),
       supabase.from('core_indicators').select('*').order('created_at'),
       supabase.from('general_manager_indicators').select('*').order('position'),
+      supabase.from('site_responsibles').select('*').eq('active', true),
     ]);
     const firstError = [profilesResult, peopleResult, objectivesResult, projectsResult, actionsResult, indicatorsResult, reportsResult].find(result => result.error)?.error;
     if (firstError) {
@@ -310,6 +312,7 @@ export default function App() {
     setReports((reportsResult.data || []).map(toReport));
     setSites(sitesResult.data || []);
     setSiteAssignments(assignmentsResult.data || []);
+    if (!siteResponsiblesResult.error) setSiteResponsibleRows(siteResponsiblesResult.data || []);
     if (!coreResult.error) setCoreIndicatorRows(coreResult.data || []);
     if (!generalManagerResult.error) setGeneralManagerIndicatorRows(generalManagerResult.data || []);
     setDashboardMessages(messagesResult.data || []);
@@ -844,6 +847,16 @@ export default function App() {
     const obj = objectives.find(o => String(o.id) === String(selectedObjectiveId));
     const [formData, setFormData] = useState({ name: '', formula: '', target: '', unit: '%', comparator: '>=', frequency: 'Mensual', reviewFrequency: 'Mensual', ownerId: '', siteAssignments: sites.map(site => ({ siteId: String(site.id), responsibleEmail: '', weight: '1' })) });
     const [openSiteIndex, setOpenSiteIndex] = useState(0);
+    const responsibleOptionsForSite = siteId => {
+      const configuredEmails = siteResponsibleRows
+        .filter(row => String(row.site_id) === String(siteId))
+        .map(row => String(row.email || '').trim().toLowerCase())
+        .filter(Boolean);
+      const people = configuredEmails.length
+        ? availableUsers.filter(user => configuredEmails.includes(String(user.email || '').trim().toLowerCase()))
+        : availableUsers.filter(user => user.role === 'gerente_responsable');
+      return people.map(user => ({ value: user.email || user.id, label: user.name }));
+    };
 
     const handleSubmit = async (e) => {
       e.preventDefault();
@@ -917,7 +930,7 @@ export default function App() {
               <Select label="Plazo *" required options={['Mensual', 'Bimestral', 'Trimestral', 'Semestral', 'Anual']} value={formData.frequency} onChange={e => setFormData({...formData, frequency: e.target.value})} />
               <Select label="Frecuencia de revisión *" required options={['Mensual', 'Bimestral', 'Trimestral', 'Semestral', 'Anual']} value={formData.reviewFrequency} onChange={e => setFormData({...formData, reviewFrequency: e.target.value})} />
             </div>
-            <div className="mt-5 rounded-2xl border border-slate-200 p-5"><div className="mb-5"><h4 className="font-semibold text-slate-900">Asignación por sede</h4><p className="mt-1 text-sm text-slate-500">Selecciona el responsable de cada sede. Biomont es obligatorio; Kuntur Pharma y Biomont Ecuador son opcionales.</p></div><div className="space-y-4">{formData.siteAssignments.map((assignment, index) => { const site = sites.find(candidate => String(candidate.id) === String(assignment.siteId)); const siteName = site?.name || 'Sede'; const isBiomont = siteName.trim().toLocaleLowerCase('es') === 'biomont'; const isOpen = openSiteIndex === index; return <section key={assignment.siteId || index} className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50"><button type="button" onClick={() => setOpenSiteIndex(isOpen ? -1 : index)} aria-expanded={isOpen} className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left"><span className="text-lg font-semibold text-slate-900">{siteName}</span><span className={`rounded-full px-3 py-1.5 text-xs font-medium ${isBiomont ? 'bg-blue-100 text-blue-700' : 'bg-slate-200 text-slate-600'}`}>{isBiomont ? 'Responsable obligatorio' : 'Opcional'}</span></button>{isOpen && <div className="grid grid-cols-1 gap-4 border-t border-slate-200 bg-white p-5 md:grid-cols-[minmax(0,1fr)_240px]"><Select label={isBiomont ? 'Responsable *' : 'Responsable'} required={isBiomont} options={[{ value: '', label: isBiomont ? 'Seleccionar responsable...' : 'Sin asignar (opcional)' }, ...availableUsers.filter(user => user.role === 'gerente_responsable').map(user => ({ value: user.email || user.id, label: user.name }))]} value={assignment.responsibleEmail} onChange={event => setFormData({ ...formData, siteAssignments: formData.siteAssignments.map((item, itemIndex) => itemIndex === index ? { ...item, responsibleEmail: event.target.value } : item) })} /><Input label="Ponderación *" required min="0.01" step="0.01" type="number" value={assignment.weight} onChange={event => setFormData({ ...formData, siteAssignments: formData.siteAssignments.map((item, itemIndex) => itemIndex === index ? { ...item, weight: event.target.value } : item) })} /></div>}</section>; })}</div></div>
+            <div className="mt-5 rounded-2xl border border-slate-200 p-5"><div className="mb-5"><h4 className="font-semibold text-slate-900">Asignación por sede</h4><p className="mt-1 text-sm text-slate-500">Selecciona el responsable de cada sede. Biomont es obligatorio; Kuntur Pharma y Biomont Ecuador son opcionales.</p></div><div className="space-y-4">{formData.siteAssignments.map((assignment, index) => { const site = sites.find(candidate => String(candidate.id) === String(assignment.siteId)); const siteName = site?.name || 'Sede'; const isBiomont = siteName.trim().toLocaleLowerCase('es') === 'biomont'; const isOpen = openSiteIndex === index; return <section key={assignment.siteId || index} className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50"><button type="button" onClick={() => setOpenSiteIndex(isOpen ? -1 : index)} aria-expanded={isOpen} className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left"><span className="text-lg font-semibold text-slate-900">{siteName}</span><span className={`rounded-full px-3 py-1.5 text-xs font-medium ${isBiomont ? 'bg-blue-100 text-blue-700' : 'bg-slate-200 text-slate-600'}`}>{isBiomont ? 'Responsable obligatorio' : 'Opcional'}</span></button>{isOpen && <div className="grid grid-cols-1 gap-4 border-t border-slate-200 bg-white p-5 md:grid-cols-[minmax(0,1fr)_240px]"><Select label={isBiomont ? 'Responsable *' : 'Responsable'} required={isBiomont} options={[{ value: '', label: isBiomont ? 'Seleccionar responsable...' : 'Sin asignar (opcional)' }, ...responsibleOptionsForSite(assignment.siteId)]} value={assignment.responsibleEmail} onChange={event => setFormData({ ...formData, siteAssignments: formData.siteAssignments.map((item, itemIndex) => itemIndex === index ? { ...item, responsibleEmail: event.target.value } : item) })} /><Input label="Ponderación *" required min="0.01" step="0.01" type="number" value={assignment.weight} onChange={event => setFormData({ ...formData, siteAssignments: formData.siteAssignments.map((item, itemIndex) => itemIndex === index ? { ...item, weight: event.target.value } : item) })} /></div>}</section>; })}</div></div>
           </Card>
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="ghost" onClick={() => obj ? navigateTo('objective-detail', obj.name, { objectiveId: obj.id, objectiveTab: 'summary' }) : navigateTo('objectives', 'Objetivos')}>Cancelar</Button>

@@ -244,7 +244,7 @@ export default function App() {
   const MOCK_USERS = availableUsers;
   const currentAccountIds = accountIdentities(session?.user?.email, organizationPeople);
   const signedInEmail = session?.user?.email?.trim().toLowerCase();
-  const isKunturAccount = /@kunturpharma\.pe$/i.test(signedInEmail || '');
+  const isKunturAccount = /@kunturpharma\.pe$/i.test(signedInEmail || '') || ['jcardenas@biomont.com.pe', 'jcardenas@kunturpharma.pe'].includes(signedInEmail || '');
   const signedInPerson = organizationPeople.find(person => person.email?.trim().toLowerCase() === signedInEmail)
     || microsoftPeople.find(person => person.email?.trim().toLowerCase() === signedInEmail);
   const signedInName = signedInPerson?.full_name || session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || 'Usuario';

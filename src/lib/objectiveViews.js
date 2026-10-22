@@ -29,26 +29,3 @@ export function objectiveActivityStatus(objective, now = new Date()) {
 export function activeObjectives(objectives, now = new Date()) {
   return objectives.filter(objective => objectiveActivityStatus(objective, now) === 'Activo');
 }
-
-
-export function withIndicatorSiteProgress(objectives = [], indicators = [], reports = []) {
-  const id = value => String(value ?? '');
-  const reportTime = report => new Date(report.date || report.registered_date || report.created_at || 0).getTime();
-  const valueFor = (indicator, report) => {
-    const result = Number(report?.result), target = Number(indicator.target);
-    if (!Number.isFinite(result) || !Number.isFinite(target) || !target || (result === 0 && ['<=', '<'].includes(indicator.comparator))) return null;
-    const raw = ['<=', '<'].includes(indicator.comparator || '>=') ? (target / result) * 100 : (result / target) * 100;
-    return Math.max(0, Math.min(100, raw));
-  };
-  return objectives.map(objective => {
-    const values = indicators.filter(indicator => id(indicator.objectiveId ?? indicator.objective_id) === id(objective.id)).flatMap(indicator => {
-      const latest = new Map();
-      reports.filter(report => id(report.indicatorId ?? report.indicator_id) === id(indicator.id)).forEach(report => {
-        const key = id(report.assignmentId ?? report.site_assignment_id) || 'general';
-        if (!latest.has(key) || reportTime(report) >= reportTime(latest.get(key))) latest.set(key, report);
-      });
-      return [...latest.values()].map(report => valueFor(indicator, report)).filter(value => value !== null);
-    });
-    return { ...objective, progress: values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length) : 0 };
-  });
-};

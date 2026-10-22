@@ -57,7 +57,7 @@ function SimpleMeasurementHistory({ rows, indicator }) {
   return <section className="rounded-2xl border border-slate-200 bg-white overflow-hidden"><div className="p-5 border-b"><h3 className="font-semibold">Historial de mediciones · modelo simple</h3><p className="mt-1 text-xs text-slate-500">La condición consolida el estándar de cumplimiento de cada medición.</p></div><div className="overflow-x-auto"><table className="w-full text-center text-sm"><thead className="bg-slate-50 text-slate-500"><tr><th className="p-3">Periodo</th><th className="p-3">Resultado</th><th className="p-3">Condición</th><th className="p-3">Estado</th></tr></thead><tbody>{rows.map(row => <tr key={row.id} className="border-t"><td className="p-3">{row.period}</td><td className="p-3 font-medium">{row.result == null ? 'Sin datos' : row.result + ' ' + displayUnit(indicator.unit)}</td><td className="p-3">{condition(row)}</td><td className="p-3"><div className="flex justify-center"><PortfolioStatus status={row.status} /></div></td></tr>)}{!rows.length && <tr><td colSpan={4} className="p-8 text-center text-slate-500">Sin mediciones.</td></tr>}</tbody></table></div></section>;
 }
 
-export default function BioIndicatorsView({ objectives, indicators, reports, users = [], sites = [], assignments = [], filters, onChange, year = '', isGcg = false, workflow, session, onReload, onError, onNotify, coreRows = [] }) {
+export default function BioIndicatorsView({ objectives, indicators, reports, users = [], sites = [], assignments = [], filters, onChange, year = '', isGcg = false, workflow, session, onReload, onError, onNotify, coreRows = [], onCoreSaved }) {
   const [historyMode, setHistoryMode] = useState('detail');
   const [coreModalOpen, setCoreModalOpen] = useState(false);
   const scopedIndicatorIds = filters.siteId ? new Set(assignments.filter(assignment => String(assignment.site_id) === String(filters.siteId) && assignment.active).map(assignment => String(assignment.indicator_id))) : null;
@@ -82,7 +82,7 @@ export default function BioIndicatorsView({ objectives, indicators, reports, use
     {!indicator && <PortfolioSummary rows={portfolio} />}
     {!list.length && <p className="rounded-xl bg-white border p-8 text-center text-slate-500">No hay indicadores que coincidan con estos filtros.</p>}
     {indicator ? <div className="space-y-6">
-      {isGcg && <IndicatorManagement indicator={indicator} reports={reports.filter(report => report.indicatorId === indicator.id)} users={users} session={session} onReload={onReload} onError={onError} onNotify={onNotify} />}
+      {isGcg && <IndicatorManagement indicator={indicator} reports={reports.filter(report => report.indicatorId === indicator.id)} users={users} session={session} onReload={onReload} onError={onError} onNotify={onNotify} onSaved={onCoreSaved} />}
       <section className="bg-white border border-slate-200 rounded-2xl p-6 grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_minmax(0,480px)] gap-6">
         <div><p className="text-sm text-slate-500">{objective?.code} · {objective?.name}</p><p className="text-xs font-semibold text-blue-700 mt-4">{indicator.code}</p><h2 className="text-2xl font-bold text-slate-900 mt-1">{indicator.name}</h2><p className="text-slate-500 mt-3 break-words">Fórmula: {indicator.formula || '—'}</p><p className="text-sm text-slate-500 mt-2">Frecuencia: {indicator.frequency}</p></div>
         <div className="grid gap-3 sm:grid-cols-2">

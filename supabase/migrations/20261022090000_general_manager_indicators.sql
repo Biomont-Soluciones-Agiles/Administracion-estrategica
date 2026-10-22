@@ -51,6 +51,14 @@ $$;
 
 grant execute on function public.set_general_manager_indicators(bigint[]) to authenticated;
 
+-- Habilita el nuevo rol en la restricción existente.
+alter table public.role_assignments
+  drop constraint if exists role_assignments_role_check;
+
+alter table public.role_assignments
+  add constraint role_assignments_role_check
+  check (role in ('super_admin', 'gcg', 'gerente_responsable', 'usuario', 'gerente_general'));
+
 -- Asigna el perfil de solo lectura a Aldo Pedraglio de Cossio si ya figura
 -- en el directorio organizacional. No se crea una cuenta ni se inventa un correo.
 do $$

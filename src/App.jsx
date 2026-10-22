@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   LayoutDashboard, Target, FolderKanban, Settings, User, Plus, 
-  ChevronRight, AlertCircle, CheckCircle2, Clock, ArrowRight, ArrowLeft, BarChart3, Calendar, Users, Activity, LogOut, FilePenLine, History, Trash2, Star
+  ChevronRight, AlertCircle, CheckCircle2, Clock, ArrowRight, ArrowLeft, BarChart3, Calendar, Users, Activity, LogOut, FilePenLine, History, Trash2, Star, Filter, Search, X
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, BarChart, Bar, PieChart, Pie, Cell, Legend } from 'recharts';
 import biomontLogo from './assets/biomont-logo.png';
@@ -200,6 +200,8 @@ export default function App() {
   const [selectedObjectiveId, setSelectedObjectiveId] = useState(null);
   const [selectedObjectiveTab, setSelectedObjectiveTab] = useState('summary');
   const [objectiveStatusFilter, setObjectiveStatusFilter] = useState('');
+  const [objectiveFilterOpen, setObjectiveFilterOpen] = useState(false);
+  const [objectiveFilters, setObjectiveFilters] = useState({ query: '', owner: '', status: '' });
   const [selectedIndicatorId, setSelectedIndicatorId] = useState(null);
   const [indicatorRequestFlyout, setIndicatorRequestFlyout] = useState(null);
   const [indicatorRequestForm, setIndicatorRequestForm] = useState(false);
@@ -242,6 +244,7 @@ export default function App() {
     })),
   ];
   const MOCK_USERS = availableUsers;
+  const objectiveOwnerOptions = availableUsers.filter((user, index, items) => user.email && items.findIndex(item => item.email === user.email) === index);
   const currentAccountIds = accountIdentities(session?.user?.email, organizationPeople);
   const signedInEmail = session?.user?.email?.trim().toLowerCase();
   const isKunturAccount = /@kunturpharma\.pe$/i.test(signedInEmail || '') || ['jcardenas@biomont.com.pe', 'jcardenas@kunturpharma.pe'].includes(signedInEmail || '');
@@ -515,7 +518,13 @@ export default function App() {
   };
 
   const ObjectivesView = () => {
-    const visibleObjectives = scopedObjectives.filter(objective => !objectiveStatusFilter || objectiveActivityStatus(objective) === objectiveStatusFilter);
+    const visibleObjectives = scopedObjectives.filter(objective => {
+      const matchesLegacyStatus = !objectiveStatusFilter || objectiveActivityStatus(objective) === objectiveStatusFilter;
+      const matchesName = !objectiveFilters.query || objective.name.toLowerCase().includes(objectiveFilters.query.trim().toLowerCase());
+      const matchesOwner = !objectiveFilters.owner || String(objective.ownerId || '') === objectiveFilters.owner;
+      const matchesStatus = !objectiveFilters.status || objectiveActivityStatus(objective) === objectiveFilters.status;
+      return matchesLegacyStatus && matchesName && matchesOwner && matchesStatus;
+    });
     const changeObjectiveStatus = async (objective, status) => {
       if (!(isGcg || isResponsibleManager) || !['Activo', 'No activo'].includes(status) || !scopedObjectives.some(item => item.id === objective.id)) throw new Error('No puedes cambiar el estatus de este objetivo.');
       const { data, error } = await supabase.from('objectives').update({ status, updated_at: new Date().toISOString() }).eq('id', objective.id).select().single();
@@ -535,7 +544,7 @@ export default function App() {
             <h1 className="text-2xl font-bold text-[#0F172A] tracking-tight">Buenos días, {signedInName}</h1>
             <p className="mt-1 whitespace-pre-line text-slate-500">{dashboardIntroduction}</p>
           </div>
-          <div className="flex flex-wrap items-end gap-3"><label className="text-xs font-medium text-slate-500">Estatus de objetivos<select aria-label="Filtrar objetivos por estatus" value={objectiveStatusFilter} onChange={event => setObjectiveStatusFilter(event.target.value)} className="mt-1 block rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"><option value="">Todos los objetivos</option><option value="Activo">Activos</option><option value="No activo">No activos</option></select></label>
+          <div className="flex flex-wrap items-end gap-3">
           {isGcg && <Button onClick={() => navigateTo('new-objective', 'Nuevo Objetivo')}>
             <Plus className="w-4 h-4" /> Nuevo Objetivo
           </Button>}</div>
@@ -1206,6 +1215,16 @@ export default function App() {
         <header className="h-14 min-h-14 shrink-0 bg-white border-b border-slate-200 flex items-center px-4 md:px-5 sticky top-0 z-50 isolate overflow-visible shadow-sm gap-3">
            {(navHistory.length > 1 || (currentView === 'bio-indicators' && indicatorFilters.indicatorId)) && <button onClick={goBack} className="shrink-0 flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900" aria-label="Retroceder"><ArrowLeft className="w-4 h-4" /> <span>Atrás</span></button>}
            {currentView === 'bio-indicators' && (indicatorFilters.indicatorId ? <IndicatorYearFilter reports={reports.filter(report => String(report.indicatorId) === String(indicatorFilters.indicatorId))} year={bioIndicatorYear} onChange={setBioIndicatorYear} /> : <IndicatorFilterMenu reports={reports} isGcg={isGcg} objectives={objectivesWithProjectProgress} indicators={indicators} users={availableUsers} sites={sites} assignments={siteAssignments} filters={indicatorFilters} onChange={changeIndicatorFilters} />)}
+           {currentView === 'objectives' && <div className="relative ml-auto">
+             <button type="button" onClick={() => setObjectiveFilterOpen(open => !open)} aria-label="Filtrar objetivos" aria-expanded={objectiveFilterOpen} className={`rounded-lg p-2 text-slate-600 transition-colors hover:bg-slate-100 hover:text-[#1D4ED8] ${objectiveFilterOpen ? 'bg-blue-50 text-[#1D4ED8]' : ''}`}><Filter className="h-6 w-6" /></button>
+             {objectiveFilterOpen && <div className="absolute right-0 top-full z-[70] mt-2 w-[min(22rem,calc(100vw-2rem))] rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
+               <div className="mb-4 flex items-center justify-between"><h2 className="font-semibold text-slate-900">Filtrar objetivos</h2><button type="button" onClick={() => setObjectiveFilterOpen(false)} aria-label="Cerrar filtros" className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"><X className="h-4 w-4" /></button></div>
+               <label className="mb-3 block text-xs font-medium text-slate-600">Buscar por nombre<div className="relative mt-1"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input value={objectiveFilters.query} onChange={event => setObjectiveFilters(filters => ({ ...filters, query: event.target.value }))} placeholder="Nombre del objetivo" className="w-full rounded-lg border border-slate-200 py-2 pl-9 pr-3 text-sm text-slate-800 outline-none focus:border-transparent focus:ring-2 focus:ring-[#3B82F6]" /></div></label>
+               <label className="mb-3 block text-xs font-medium text-slate-600">Responsable<select value={objectiveFilters.owner} onChange={event => setObjectiveFilters(filters => ({ ...filters, owner: event.target.value }))} className="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800"><option value="">Todos los responsables</option>{objectiveOwnerOptions.map(user => <option key={user.email} value={user.email}>{user.name}</option>)}</select></label>
+               <label className="block text-xs font-medium text-slate-600">Estatus<select value={objectiveFilters.status} onChange={event => setObjectiveFilters(filters => ({ ...filters, status: event.target.value }))} className="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800"><option value="">Todos los estatus</option><option value="Activo">Activo</option><option value="No activo">No activo</option></select></label>
+               <button type="button" onClick={() => setObjectiveFilters({ query: '', owner: '', status: '' })} className="mt-4 text-sm font-semibold text-[#1D4ED8] hover:underline">Limpiar filtros</button>
+             </div>}
+           </div>
         </header>
         <div className="app-content p-4 md:p-6 flex-1 relative z-0">
           {dataError && <div className="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-center justify-between gap-3"><span>{dataError}</span><button onClick={() => setDataError('')} className="font-semibold shrink-0">Cerrar</button></div>}

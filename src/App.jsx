@@ -18,7 +18,7 @@ import { IndicatorControls, AssignedIndicators } from './Governance';
 import ChangeRequests, { IndicatorRequestFlyout } from './ChangeRequestsView';
 import MeasurementChart from './MeasurementChart';
 import { reportedProgress, weightedMeasurementValue } from './lib/indicatorViews';
-import { activeObjectives, objectiveActivityStatus, withIndicatorSiteProgress } from './lib/objectiveViews';
+import { activeObjectives, objectiveActivityStatus, withLinkedProjectProgress } from './lib/objectiveViews';
 import ObjectiveStatusControl from './ObjectiveStatusControl';
 import BioIndicatorsView, { IndicatorFilterMenu, IndicatorYearFilter } from './BioIndicatorsView';
 import ObjectiveProgressList from './ObjectiveProgressList';
@@ -253,7 +253,7 @@ export default function App() {
   const dashboardIntroduction = personalizedMessage || 'Aquí está el resumen estratégico de tu organización.';
   const accountOwns = value => currentAccountIds.some(id => String(id).trim().toLowerCase() === String(value ?? '').trim().toLowerCase());
   const isManagerScoped = isResponsibleManager && !isSuperAdmin;
-  const objectivesWithProjectProgress = withIndicatorSiteProgress(objectives, indicators, reports);
+  const objectivesWithProjectProgress = withLinkedProjectProgress(objectives, projects);
   const scopedObjectives = isManagerScoped ? objectivesWithProjectProgress.filter(objective => accountOwns(objective.ownerId)) : objectivesWithProjectProgress;
   const managerAssignments = siteAssignments.filter(assignment => assignment.active && accountOwns(assignment.responsible_email));
   const scopedIndicators = isManagerScoped

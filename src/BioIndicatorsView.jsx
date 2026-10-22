@@ -78,7 +78,11 @@ export default function BioIndicatorsView({ objectives, indicators, reports, use
   const coreIds = new Set(coreRows.map(row => String(row.indicator_id)));
   const corePortfolio = isGcg && !featuredOnly ? portfolio.filter(row => coreIds.has(String(row.indicator.id))) : [];
   const generalManagerPortfolio = isGeneralManager && !featuredOnly ? portfolio.filter(row => generalManagerIds.has(String(row.indicator.id))) : [];
-  const generalPortfolio = isGeneralManager && !featuredOnly ? portfolio.filter(row => !generalManagerIds.has(String(row.indicator.id)) : isGcg && !featuredOnly ? portfolio.filter(row => !coreIds.has(String(row.indicator.id))) : portfolio;
+  const generalPortfolio = isGeneralManager && !featuredOnly
+    ? portfolio.filter(row => !generalManagerIds.has(String(row.indicator.id)))
+    : isGcg && !featuredOnly
+      ? portfolio.filter(row => !coreIds.has(String(row.indicator.id)))
+      : portfolio;
   const select = item => onChange({ ...filters, indicatorId: String(item.id) });
   return <div className="fade-in space-y-6">
     <header className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-medium text-slate-500">Reportería / Indicadores</p><h1 className="text-3xl font-bold tracking-tight text-slate-900 mt-2">{featuredOnly ? featuredTitle : 'Indicadores'}</h1><p className="text-sm text-slate-500 mt-2">{featuredOnly ? 'Indicadores priorizados para Gerencia General.' : 'Seguimiento integral del portafolio'}</p></div>{isGcg && !featuredOnly && <div className="flex flex-wrap gap-2"><button type="button" onClick={() => setSelectionMode('gcg')} className="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-800 hover:bg-amber-100"><Star className="h-4 w-4" />Indicadores GCG</button><button type="button" onClick={() => setSelectionMode('gg')} className="inline-flex items-center gap-2 rounded-lg border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm font-semibold text-violet-800 hover:bg-violet-100"><Star className="h-4 w-4" />Indicadores GG</button></div>}</header>

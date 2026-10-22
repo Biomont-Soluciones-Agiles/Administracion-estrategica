@@ -842,13 +842,13 @@ export default function App() {
 
   const IndicatorFormView = () => {
     const obj = objectives.find(o => String(o.id) === String(selectedObjectiveId));
-    const [formData, setFormData] = useState({ name: '', formula: '', target: '', unit: '%', comparator: '>=', frequency: 'Mensual', reviewFrequency: 'Mensual', ownerId: '', siteAssignments: [{ siteId: '', responsibleEmail: '', weight: '1' }] });
+    const [formData, setFormData] = useState({ name: '', formula: '', target: '', unit: '%', comparator: '>=', frequency: 'Mensual', reviewFrequency: 'Mensual', ownerId: '', siteAssignments: sites.map(site => ({ siteId: String(site.id), responsibleEmail: '', weight: '1' })) });
 
     const handleSubmit = async (e) => {
       e.preventDefault();
       if (!isGcg || !obj) { setDataError('Solo GCG puede crear indicadores desde un objetivo válido.'); return; }
       if (indicators.some(item => String(item.objectiveId) === String(obj.id))) { setDataError('Este objetivo ya tiene un indicador. Cada objetivo admite solo uno.'); return; }
-      const invalidAssignment = formData.siteAssignments.some(item => !item.siteId || !item.responsibleEmail || !Number(item.weight));
+      const invalidAssignment = formData.siteAssignments.some(item => !item.siteId || !Number(item.weight));
       const duplicateSites = new Set(formData.siteAssignments.map(item => item.siteId)).size !== formData.siteAssignments.length;
       if (invalidAssignment || duplicateSites) { setDataError(duplicateSites ? 'Cada sede puede registrarse una sola vez.' : 'Completa sede, responsable y ponderación para cada asignación.'); return; }
       const { data, error } = await supabase.from('indicators').insert({
@@ -867,7 +867,7 @@ export default function App() {
         setDataError(`No se pudo guardar el indicador: ${error.message}`);
         return;
       }
-      const { data: assignmentRows, error: assignmentError } = await supabase.from('indicator_site_assignments').insert(formData.siteAssignments.map(item => ({ indicator_id: data.id, site_id: Number(item.siteId), responsible_email: item.responsibleEmail, weight: Number(item.weight), active: true }))).select();
+      const { data: assignmentRows, error: assignmentError } = await supabase.from('indicator_site_assignments').insert(formData.siteAssignments.map(item => ({ indicator_id: data.id, site_id: Number(item.siteId), responsible_email: item.responsibleEmail || null, weight: Number(item.weight), active: true }))).select();
       if (assignmentError) {
         await supabase.from('indicators').delete().eq('id', data.id);
         setDataError(`No se pudo guardar las sedes del indicador: ${assignmentError.message}`);
@@ -921,7 +921,7 @@ export default function App() {
   };
 
   const IndicatorDetailView = () => {
-    const [historyView, setHistoryView] = useState('detailed');
+    const historyView = 'simple';
     const ind = indicators.find(i => i.id === selectedIndicatorId);
     const obj = objectives.find(o => o.id === ind?.objectiveId);
     if (!ind) return null;
@@ -988,11 +988,11 @@ export default function App() {
           <MeasurementChart indicator={ind} reports={indReports} headerAction={isResponsibleManager && canReport ? <Button onClick={() => navigateTo('report-indicator', 'Registrar Resultado', { indicatorId: ind.id })} variant="secondary">Registrar resultado</Button> : null} />
         </Card>
         <Card className="overflow-hidden">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 p-5"><div><h3 className="font-semibold text-slate-900">Historial de Mediciones</h3><p className="mt-1 text-xs text-slate-500">{historyView === 'detailed' ? 'Vista detallada por estándar de cumplimiento.' : 'Vista simple con una condición consolidada.'}</p></div><button type="button" onClick={() => setHistoryView(view => view === 'detailed' ? 'simple' : 'detailed')} className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-100">{historyView === 'detailed' ? 'Ver modelo simple' : 'Ver modelo detallado'}</button></div>
+          <div className="border-b border-slate-200 p-5"><h3 className="font-semibold text-slate-900">Historial de Mediciones</h3><p className="mt-1 text-xs text-slate-500">Vista simple con una condición consolidada.</p></div>
           <div className="overflow-x-auto">
             <table className="w-full table-fixed text-center text-sm">
               <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
-                <tr><th className="w-[13%] px-3 py-3 text-center">Periodo</th><th className="w-[12%] px-3 py-3 text-center">Fecha Reporte</th><th className="w-[11%] px-3 py-3 text-center">Resultado</th><th className="w-[13%] px-3 py-3 text-center">Estado</th>{historyView === 'detailed' ? <><th className="w-[8%] px-2 py-3 text-center">Pesimista</th><th className="w-[8%] px-2 py-3 text-center">Optimista</th><th className="w-[9%] px-2 py-3 text-center">Excepcional</th></> : <th className="w-[18%] px-3 py-3 text-center">Condición</th>}<th className="w-[16%] px-3 py-3 text-center">Análisis de causa</th><th className="w-[10%] px-3 py-3 text-center">Acciones</th></tr>
+                <tr><th className="w-[13%] px-3 py-3 text-center">Periodo</th><th className="w-[12%] px-3 py-3 text-center">Fecha Reporte</th><th className="w-[11%] px-3 py-3 text-center">Resultado</th><th className="w-[13%] px-3 py-3 text-center">Estado</th><th className="w-[18%] px-3 py-3 text-center">Condición</th><th className="w-[16%] px-3 py-3 text-center">Análisis de causa</th><th className="w-[10%] px-3 py-3 text-center">Acciones</th></tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {indReports.length === 0 && <tr><td colSpan="9" className="px-6 py-8 text-center text-slate-500">Aún no existen resultados registrados para este indicador.</td></tr>}
@@ -1002,7 +1002,7 @@ export default function App() {
                     <td className="px-3 py-4 text-slate-500">{r.registeredDate || r.date}</td>
                     <td className="px-3 py-4 font-bold text-slate-900">{r.result == null ? 'Sin datos' : `${r.result} ${displayUnit(ind.unit)}`}</td>
                     <td className="px-3 py-4"><div className="flex justify-center"><Badge status={r.status}>{r.status}</Badge></div></td>
-                    {historyView === 'detailed' ? <><td className="px-4 py-4 text-center font-bold text-red-700">{complianceMark(r.result, ind.target, ind.comparator, 'pesimista')}</td><td className="px-4 py-4 text-center font-bold text-amber-700">{complianceMark(r.result, ind.target, ind.comparator, 'optimista')}</td><td className="px-4 py-4 text-center font-bold text-green-700">{complianceMark(r.result, ind.target, ind.comparator, 'excepcional')}</td></> : <td className="px-3 py-4 text-center font-semibold text-slate-700">{historyCondition(r)}</td>}
+                    <td className={`px-3 py-4 text-center font-semibold ${({ Pesimista: 'text-amber-700', Optimista: 'text-blue-700', Excepcional: 'text-green-700' })[historyCondition(r)] || 'text-slate-700'}`}>{historyCondition(r)}</td>
                     <td className="px-3 py-4"><div className="flex justify-center"><AnalysisHistoryButton report={r} indicator={ind} objective={obj} workflow={corrective} users={availableUsers} canManage={isResponsibleManager && canManage} /></div></td>
                     <td className="px-3 py-4"><div className="flex justify-center"><ActionsHistoryButton report={r} workflow={corrective} users={availableUsers} canManage={isResponsibleManager && canManage} /></div></td>
                   </tr>

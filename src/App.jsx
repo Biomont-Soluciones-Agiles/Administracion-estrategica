@@ -244,6 +244,7 @@ export default function App() {
     })),
   ];
   const MOCK_USERS = availableUsers;
+  const objectiveOwnerOptions = availableUsers.filter((user, index, items) => user.email && items.findIndex(item => item.email === user.email) === index);
   const currentAccountIds = accountIdentities(session?.user?.email, organizationPeople);
   const signedInEmail = session?.user?.email?.trim().toLowerCase();
   const isKunturAccount = /@kunturpharma\.pe$/i.test(signedInEmail || '') || ['jcardenas@biomont.com.pe', 'jcardenas@kunturpharma.pe'].includes(signedInEmail || '');
@@ -517,7 +518,6 @@ export default function App() {
   };
 
   const ObjectivesView = () => {
-    const objectiveOwnerOptions = availableUsers.filter((user, index, items) => user.email && items.findIndex(item => item.email === user.email) === index);
     const visibleObjectives = scopedObjectives.filter(objective => {
       const matchesLegacyStatus = !objectiveStatusFilter || objectiveActivityStatus(objective) === objectiveStatusFilter;
       const matchesName = !objectiveFilters.query || objective.name.toLowerCase().includes(objectiveFilters.query.trim().toLowerCase());

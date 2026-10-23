@@ -180,6 +180,7 @@ const ProgressBar = ({ progress, status }) => {
 export default function App() {
   const [currentView, setCurrentView] = useState('dashboard');
   const [navHistory, setNavHistory] = useState([{ id: 'dashboard', name: 'Gráfica BSC' }]);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   
   const [objectives, setObjectives] = useState(INITIAL_OBJECTIVES);
   const [projects, setProjects] = useState(INITIAL_PROJECTS);
@@ -1199,10 +1200,11 @@ export default function App() {
   }
 
   return (
-    <div className="biomet-app min-h-screen bg-[#F8FAFC] flex font-sans text-slate-900">
+    <div className={`biomet-app ${sidebarCollapsed ? "sidebar-collapsed" : ""} min-h-screen bg-[#F8FAFC] flex font-sans text-slate-900`}>
       <aside className="app-sidebar bg-[#0F172A] text-slate-300 flex-col hidden md:flex fixed h-full z-20">
-        <div className="h-14 flex items-center px-4 border-b border-slate-800">
-          <div className="flex items-center gap-2"><img src={isKunturAccount ? kunturLogo : biomontLogo} alt={isKunturAccount ? "Kuntur Pharma" : "Biomont"} className={`${isKunturAccount ? "w-28 h-10 rounded-md bg-white px-2 py-1 shadow-sm" : "w-12 h-9"} object-contain`} /><span className="text-white font-bold text-lg tracking-tight">{APP_TITLE}</span></div>
+        <div className="h-14 flex items-center px-3 border-b border-slate-800 gap-2">
+          <div className="sidebar-brand flex min-w-0 flex-1 items-center gap-2"><img src={isKunturAccount ? kunturLogo : biomontLogo} alt={isKunturAccount ? "Kuntur Pharma" : "Biomont"} className={`${isKunturAccount ? "w-28 h-10 rounded-md bg-white px-2 py-1 shadow-sm" : "w-12 h-9"} object-contain`} /><span className="brand-title text-white font-bold text-lg tracking-tight">{APP_TITLE}</span></div>
+          <button type="button" aria-label={sidebarCollapsed ? "Expandir barra lateral" : "Contraer barra lateral"} title={sidebarCollapsed ? "Expandir barra lateral" : "Contraer barra lateral"} onClick={() => setSidebarCollapsed(value => !value)} className="sidebar-toggle rounded-md p-1.5 text-slate-300 hover:bg-slate-800 hover:text-white"><ChevronRight className={`h-4 w-4 transition-transform ${sidebarCollapsed ? "" : "rotate-180"}`} /></button>
         </div>
         <div className="flex-1 overflow-y-auto py-4">
           <nav className="px-3 space-y-1">

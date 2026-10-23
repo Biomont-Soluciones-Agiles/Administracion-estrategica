@@ -18,7 +18,7 @@ import { IndicatorControls, AssignedIndicators } from './Governance';
 import ChangeRequests, { IndicatorRequestFlyout } from './ChangeRequestsView';
 import MeasurementChart from './MeasurementChart';
 import { reportedProgress, weightedMeasurementValue } from './lib/indicatorViews';
-import { activeObjectives, objectiveActivityStatus, withLinkedProjectProgress } from './lib/objectiveViews';
+import { activeObjectives, objectiveActivityStatus, withIndicatorMeasurementProgress } from './lib/objectiveViews';
 import ObjectiveStatusControl from './ObjectiveStatusControl';
 import BioIndicatorsView, { IndicatorFilterMenu, IndicatorYearFilter } from './BioIndicatorsView';
 import ObjectiveProgressList from './ObjectiveProgressList';
@@ -254,15 +254,15 @@ export default function App() {
   const dashboardIntroduction = personalizedMessage || 'Aquí está el resumen estratégico de tu organización.';
   const accountOwns = value => currentAccountIds.some(id => String(id).trim().toLowerCase() === String(value ?? '').trim().toLowerCase());
   const isManagerScoped = isResponsibleManager && !isSuperAdmin;
-  const objectivesWithProjectProgress = withLinkedProjectProgress(objectives, projects);
-  const scopedObjectives = isManagerScoped ? objectivesWithProjectProgress.filter(objective => accountOwns(objective.ownerId)) : objectivesWithProjectProgress;
+  const objectivesWithIndicatorProgress = withIndicatorMeasurementProgress(objectives, indicators, reports);
+  const scopedObjectives = isManagerScoped ? objectivesWithIndicatorProgress.filter(objective => accountOwns(objective.ownerId)) : objectivesWithIndicatorProgress;
   const managerAssignments = siteAssignments.filter(assignment => assignment.active && accountOwns(assignment.responsible_email));
   const scopedIndicators = isManagerScoped
     ? indicators.filter(indicator => {
       const assignments = siteAssignments.filter(item => String(item.indicator_id) === String(indicator.id) && item.active);
       return assignments.length
         ? managerAssignments.some(item => String(item.indicator_id) === String(indicator.id))
-        : indicatorAccess(indicator, objectivesWithProjectProgress.find(objective => objective.id === indicator.objectiveId), currentAccountIds).canReport;
+        : indicatorAccess(indicator, objectivesWithIndicatorProgress.find(objective => objective.id === indicator.objectiveId), currentAccountIds).canReport;
     })
     : indicators;
   const scopedProjects = isManagerScoped
@@ -703,7 +703,7 @@ export default function App() {
   };
 
   const ObjectiveDetailView = () => {
-    const obj = objectivesWithProjectProgress.find(o => o.id === selectedObjectiveId);
+    const obj = objectivesWithIndicatorProgress.find(o => o.id === selectedObjectiveId);
     const [activeTab, setActiveTab] = useState(selectedObjectiveTab);
     useEffect(() => setActiveTab(selectedObjectiveTab), [selectedObjectiveTab]);
     if (!obj || (isManagerScoped && !scopedObjectives.some(objective => objective.id === obj.id))) {
@@ -753,7 +753,7 @@ export default function App() {
               <div><p className="text-xs text-slate-400 mb-1">Foco estratégico</p><p className="text-sm font-medium text-slate-900">{obj.focus || 'Sin foco definido'}</p></div>
               <div><p className="text-xs text-slate-400 mb-1">Periodo de vigencia</p><p className="text-sm font-medium text-slate-900 flex items-center gap-1"><Calendar className="w-4 h-4 text-slate-400" /> {obj.validityStartYear} - {obj.validityEndYear}</p></div>
               <div><p className="text-xs text-slate-400 mb-1">Proyectos activos</p><p className="text-sm font-medium text-slate-900">{objProjects.length}</p></div>
-              <div><p className="text-xs text-slate-400 mb-1">Indicadores medidos</p><p className="text-sm font-medium text-slate-900">{reportedProgress(objIndicators, reports).reported}</p></div>
+              <div><p className="text-xs text-slate-400 mb-1">Avance por indicadores</p><p className="text-sm font-medium text-slate-900">{obj.progress || 0}%</p></div>
             </div>
           </div>
         </div>
@@ -1187,7 +1187,7 @@ export default function App() {
 
   if (!assignedRole || authError) return <AuthShell><div className="mx-auto max-w-md rounded-2xl border bg-white p-8 text-center"><h1 className="text-xl font-bold">Acceso no autorizado</h1><p className="mt-3 text-sm text-slate-600">{authError || `Tu cuenta no tiene un rol asignado en ${APP_TITLE}. Contacta al administrador.`}</p><Button className="mt-5 w-full" variant="secondary" onClick={signOut}>Cerrar sesión</Button></div></AuthShell>;
 
-  if (selectedRole?.key === 'usuario') return <UserWorkspace session={session} objectives={objectivesWithProjectProgress} indicators={indicators} reports={reports} users={availableUsers} organizationPeople={organizationPeople} onReload={loadOperationalData} onSignOut={signOut} />;
+  if (selectedRole?.key === 'usuario') return <UserWorkspace session={session} objectives={objectivesWithIndicatorProgress} indicators={indicators} reports={reports} users={availableUsers} organizationPeople={organizationPeople} onReload={loadOperationalData} onSignOut={signOut} />;
 
   if (!selectedRole && assignedRole === 'super_admin') {
     const roles = [
@@ -1224,14 +1224,14 @@ export default function App() {
       <main className="app-main min-w-0 flex-1 flex flex-col min-h-screen">
         <header className="h-14 min-h-14 shrink-0 bg-white border-b border-slate-200 flex items-center px-4 md:px-5 sticky top-0 z-50 isolate overflow-visible shadow-sm gap-3">
            {(navHistory.length > 1 || (currentView === 'bio-indicators' && indicatorFilters.indicatorId)) && <button onClick={goBack} className="shrink-0 flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900" aria-label="Retroceder"><ArrowLeft className="w-4 h-4" /> <span>Atrás</span></button>}
-           {currentView === 'bio-indicators' && (indicatorFilters.indicatorId ? <IndicatorYearFilter reports={reports.filter(report => String(report.indicatorId) === String(indicatorFilters.indicatorId))} year={bioIndicatorYear} onChange={setBioIndicatorYear} /> : <IndicatorFilterMenu reports={reports} isGcg={isGcg} objectives={objectivesWithProjectProgress} indicators={indicators} users={availableUsers} sites={sites} assignments={siteAssignments} filters={indicatorFilters} onChange={changeIndicatorFilters} />)}
+           {currentView === 'bio-indicators' && (indicatorFilters.indicatorId ? <IndicatorYearFilter reports={reports.filter(report => String(report.indicatorId) === String(indicatorFilters.indicatorId))} year={bioIndicatorYear} onChange={setBioIndicatorYear} /> : <IndicatorFilterMenu reports={reports} isGcg={isGcg} objectives={objectivesWithIndicatorProgress} indicators={indicators} users={availableUsers} sites={sites} assignments={siteAssignments} filters={indicatorFilters} onChange={changeIndicatorFilters} />)}
            {currentView === 'objectives' && <ObjectiveFilterControl />}
 
         </header>
         <div className="app-content p-4 md:p-6 flex-1 relative z-0">
           {dataError && <div className="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-center justify-between gap-3"><span>{dataError}</span><button onClick={() => setDataError('')} className="font-semibold shrink-0">Cerrar</button></div>}
-          {currentView === 'dashboard' && <StrategicMap objectives={isManagerScoped ? scopedObjectives : objectivesWithProjectProgress} indicators={isManagerScoped ? scopedIndicators : indicators} reports={isManagerScoped ? scopedReports : reports} projects={scopedProjects} actions={scopedTasks} users={availableUsers} isGeneralManager={isGeneralManager} onSelectIndicator={indicator => navigateTo('indicator-detail', indicator.name, { indicatorId: indicator.id })} />}
-          {(currentView === 'bio-indicators' || currentView === 'general-manager-indicators') && <BioIndicatorsView coreRows={coreIndicatorRows} generalManagerRows={generalManagerIndicatorRows} workflow={corrective} objectives={objectivesWithProjectProgress} indicators={isManagerScoped ? scopedIndicators : indicators} reports={isManagerScoped ? scopedReports : reports} users={availableUsers} sites={sites} assignments={siteAssignments} filters={indicatorFilters} onChange={changeIndicatorFilters} year={bioIndicatorYear} isGcg={isGcg} isGeneralManager={isGeneralManager} featuredOnly={currentView === 'general-manager-indicators'} featuredTitle="Indicadores para Gerencia General" session={session} onReload={loadOperationalData} onError={setDataError} onNotify={notify} onCoreSaved={ids => setCoreIndicatorRows(ids.map((indicator_id, index) => ({ indicator_id, position: index + 1 })))} onGeneralManagerSaved={ids => setGeneralManagerIndicatorRows(ids.map((indicator_id, index) => ({ indicator_id, position: index + 1 })))} />}
+          {currentView === 'dashboard' && <StrategicMap objectives={isManagerScoped ? scopedObjectives : objectivesWithIndicatorProgress} indicators={isManagerScoped ? scopedIndicators : indicators} reports={isManagerScoped ? scopedReports : reports} projects={scopedProjects} actions={scopedTasks} users={availableUsers} isGeneralManager={isGeneralManager} onSelectIndicator={indicator => navigateTo('indicator-detail', indicator.name, { indicatorId: indicator.id })} />}
+          {(currentView === 'bio-indicators' || currentView === 'general-manager-indicators') && <BioIndicatorsView coreRows={coreIndicatorRows} generalManagerRows={generalManagerIndicatorRows} workflow={corrective} objectives={objectivesWithIndicatorProgress} indicators={isManagerScoped ? scopedIndicators : indicators} reports={isManagerScoped ? scopedReports : reports} users={availableUsers} sites={sites} assignments={siteAssignments} filters={indicatorFilters} onChange={changeIndicatorFilters} year={bioIndicatorYear} isGcg={isGcg} isGeneralManager={isGeneralManager} featuredOnly={currentView === 'general-manager-indicators'} featuredTitle="Indicadores para Gerencia General" session={session} onReload={loadOperationalData} onError={setDataError} onNotify={notify} onCoreSaved={ids => setCoreIndicatorRows(ids.map((indicator_id, index) => ({ indicator_id, position: index + 1 })))} onGeneralManagerSaved={ids => setGeneralManagerIndicatorRows(ids.map((indicator_id, index) => ({ indicator_id, position: index + 1 })))} />}
           {currentView === 'change-requests' && <ChangeRequests isGcg={isGcg} indicators={indicators} users={organizationPeople} onReload={loadOperationalData} onError={setDataError} />}
           {currentView === 'indicator-request-history' && <ChangeRequests isGcg={isGcg} indicators={indicators} users={organizationPeople} reports={reports} onReload={loadOperationalData} onError={setDataError} indicatorId={selectedIndicatorId} initialHistory onBack={goBack} />}
           {currentView === 'objectives' && <ObjectivesView />}
@@ -1240,7 +1240,7 @@ export default function App() {
           {currentView === 'new-project' && <ProjectFormView />}
           {currentView === 'edit-action' && <EditActionView />}
           {currentView === 'new-indicator' && <IndicatorFormView />}
-          {currentView === 'indicator-status' && <AssignedIndicators indicators={indicators} objectives={objectivesWithProjectProgress} reports={reports} users={availableUsers} ownIds={accountIdentities(session.user.email, organizationPeople)} isSuperAdmin={isSuperAdmin} onSelect={i => navigateTo('indicator-detail', i.name, { indicatorId: i.id })} />}
+          {currentView === 'indicator-status' && <AssignedIndicators indicators={indicators} objectives={objectivesWithIndicatorProgress} reports={reports} users={availableUsers} ownIds={accountIdentities(session.user.email, organizationPeople)} isSuperAdmin={isSuperAdmin} onSelect={i => navigateTo('indicator-detail', i.name, { indicatorId: i.id })} />}
           {currentView === 'edit-indicator' && <EditIndicatorView />}
           {currentView === 'edit-target' && <EditTargetView />}
           {currentView === 'gcg-review' && isGcg && <ChangeRequests isGcg indicators={indicators} users={organizationPeople} onReload={loadOperationalData} onError={setDataError} />}

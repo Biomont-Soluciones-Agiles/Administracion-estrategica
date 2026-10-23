@@ -75,3 +75,16 @@ body {
   padding: 0.75rem 1rem;
   font-weight: 600;
 }
+
+
+/* Compact navigation keeps only the brand mark and actionable icons. */
+.biomet-app.sidebar-collapsed { --sidebar-width: 68px; }
+.sidebar-collapsed .app-sidebar nav { padding-left: 0.625rem; padding-right: 0.625rem; }
+.sidebar-collapsed .app-sidebar nav button { justify-content: center; gap: 0; font-size: 0; }
+.sidebar-collapsed .app-sidebar nav button > svg { width: 20px; height: 20px; }
+.sidebar-collapsed .app-sidebar nav p,
+.sidebar-collapsed .app-sidebar .brand-title,
+.sidebar-collapsed .app-sidebar .sidebar-toggle + * { display: none; }
+.sidebar-collapsed .app-sidebar .sidebar-brand { justify-content: center; }
+.sidebar-collapsed .app-sidebar .sidebar-brand img { width: 36px; height: 36px; padding: 0.25rem; }
+.sidebar-collapsed .app-sidebar .sidebar-toggle { position: absolute; left: 58px; top: 16px; background: #1e293b; }

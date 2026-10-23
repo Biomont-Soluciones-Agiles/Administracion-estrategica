@@ -91,10 +91,10 @@ export default function MeasurementChart({ indicator, reports, year: controlledY
   const lastTargetIndex = data.findLastIndex(row => row.meta != null);
   const unit = displayUnit(indicator.unit);
   const currentDot = props => <MeasurementDot {...props} comparison={comparison} indicator={indicator} />;
-  const controlStyle = 'rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:border-blue-300 hover:bg-blue-50';
+  const controlStyle = 'rounded-lg border border-slate-200 bg-white min-w-36 px-4 py-3 text-sm font-semibold text-slate-600 transition hover:border-blue-300 hover:bg-blue-50';
   return <section aria-label={`Gráfica de medición de ${indicator.name}`}>
     <header className="mb-4 flex flex-wrap items-center justify-between gap-3">
-      <h3 className="font-semibold text-slate-900">{comparison ? 'Gráfica de Comparativa' : 'Tendencia Histórica'}</h3>
+      <h3 className="font-semibold text-slate-900">{comparison ? 'Gráfica de Comparativa' : ('Tendencia histórica' + (year ? ' · ' + year : ''))}</h3>
       <div className="flex flex-wrap items-center gap-2">
         {showYearFilter && !comparison && <select id={yearInputId} aria-label="Año de tendencia histórica" value={year} onChange={event => setYear(event.target.value)} className={controlStyle}>
           {years.map(value => <option key={value} value={value}>{value}</option>)}<option value="">Todos los años</option>

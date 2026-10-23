@@ -61,7 +61,7 @@ export function weightedIndicatorSummary(indicator, reports, year = '') {
   };
 }
 
-export function filterIndicators(indicators, { search = '', objectiveId = '', responsibleId = '', status = '' }) {
+export function filterIndicators(indicators, { search = '', objectiveId = '', responsibleId = '', status = '', condition = '' }) {
   const query = normalizeSearch(search);
   return indicators.filter(indicator => {
     const searchable = normalizeSearch(`${indicator.code || ''} ${indicator.name || ''}`);
@@ -69,7 +69,8 @@ export function filterIndicators(indicators, { search = '', objectiveId = '', re
     return searchable.includes(query)
       && (!objectiveId || String(indicator.objectiveId) === String(objectiveId))
       && (!responsibleId || String(responsible) === String(responsibleId))
-      && (!status || indicator.status === (status === 'No reportado' ? 'Sin reporte' : status));
+      && (!status || indicator.status === (status === 'No reportado' ? 'Sin reporte' : status))
+      && (!condition || indicator.condition === condition);
   });
 }
 

@@ -999,7 +999,7 @@ export default function App() {
     if (!ind) return null;
     const indAssignments = siteAssignments.filter(assignment => String(assignment.indicator_id) === String(ind.id) && assignment.active);
     const visibleAssignmentIds = isManagerScoped ? managerAssignments.filter(assignment => String(assignment.indicator_id) === String(ind.id)).map(assignment => String(assignment.id)) : null;
-    const indReports = sortReportsByPeriod(reports.filter(r => r.indicatorId === ind.id && (!visibleAssignmentIds || !r.assignmentId || visibleAssignmentIds.includes(String(r.assignmentId)))));
+    const indReports = sortReportsByPeriod(reports.filter(r => r.indicatorId === ind.id && (!visibleAssignmentIds || !r.assignmentId || visibleAssignmentIds.includes(String(r.assignmentId))) && (!bioIndicatorYear || String(new Date(reportPeriodTime(r)).getUTCFullYear()) === String(bioIndicatorYear))));
     const latestReport = indReports[indReports.length - 1];
     const reportYears = [...new Set(indReports.map(report => reportPeriodTime(report) ? String(new Date(reportPeriodTime(report)).getUTCFullYear()) : '').filter(Boolean))].sort((a, b) => Number(b) - Number(a));
     const activeWeightedYear = reportYears[0] || '';
@@ -1074,7 +1074,7 @@ export default function App() {
                     <td className="px-3 py-4 text-slate-500">{r.registeredDate || r.date}</td>
                     <td className="px-3 py-4 font-bold text-slate-900">{r.result == null ? 'Sin datos' : `${r.result} ${displayUnit(ind.unit)}`}</td>
                     <td className="px-3 py-4"><div className="flex justify-center"><Badge status={r.status}>{r.status}</Badge></div></td>
-                    <td className={`px-3 py-4 text-center font-semibold ${({ Pesimista: 'text-amber-700', Optimista: 'text-blue-700', Excepcional: 'text-green-700' })[historyCondition(r)] || 'text-slate-700'}`}>{historyCondition(r)}</td>
+                    <td className={`px-3 py-4 text-center font-semibold ${({ Pesimista: 'text-amber-700', Optimista: 'text-green-700', Excepcional: 'text-blue-700' })[historyCondition(r)] || 'text-slate-700'}`}>{historyCondition(r)}</td>
                     <td className="px-3 py-4"><div className="flex justify-center"><AnalysisHistoryButton report={r} indicator={ind} objective={obj} workflow={corrective} users={availableUsers} canManage={isResponsibleManager && canManage} /></div></td>
                     <td className="px-3 py-4"><div className="flex justify-center"><ActionsHistoryButton report={r} workflow={corrective} users={availableUsers} canManage={isResponsibleManager && canManage} /></div></td>
                   </tr>

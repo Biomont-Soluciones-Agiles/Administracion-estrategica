@@ -1202,7 +1202,7 @@ export default function App() {
   return (
     <div className={`biomet-app ${sidebarCollapsed ? "sidebar-collapsed" : ""} min-h-screen bg-[#F8FAFC] flex font-sans text-slate-900`}>
       <aside className="app-sidebar bg-[#0F172A] text-slate-300 flex-col hidden md:flex fixed h-full z-20">
-        <div className="h-14 flex items-center px-3 border-b border-slate-800 gap-2">
+        <div className="sidebar-header h-14 flex items-center px-3 border-b border-slate-800 gap-2">
           <div className="sidebar-brand flex min-w-0 flex-1 items-center gap-2"><img src={isKunturAccount ? kunturLogo : biomontLogo} alt={isKunturAccount ? "Kuntur Pharma" : "Biomont"} className={`${isKunturAccount ? "w-28 h-10 rounded-md bg-white px-2 py-1 shadow-sm" : "w-12 h-9"} object-contain`} /><span className="brand-title text-white font-bold text-lg tracking-tight">{APP_TITLE}</span></div>
           <button type="button" aria-label={sidebarCollapsed ? "Expandir barra lateral" : "Contraer barra lateral"} title={sidebarCollapsed ? "Expandir barra lateral" : "Contraer barra lateral"} onClick={() => setSidebarCollapsed(value => !value)} className="sidebar-toggle rounded-md p-1.5 text-slate-300 hover:bg-slate-800 hover:text-white"><ChevronRight className={`h-4 w-4 transition-transform ${sidebarCollapsed ? "" : "rotate-180"}`} /></button>
         </div>
@@ -1217,7 +1217,7 @@ export default function App() {
             {isGcg && <button onClick={() => navigateTo('gcg-review', 'Solicitudes')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${currentView === 'gcg-review' ? 'bg-[#1e293b] text-white' : 'hover:bg-slate-800 hover:text-white'}`}><CheckCircle2 className="w-5 h-5" /> Solicitudes</button>}
           </nav>
         </div>
-        <div className="p-4 border-t border-slate-800">
+        <div className="sidebar-user p-4 border-t border-slate-800">
           <div className="flex items-center gap-3 px-3 py-2"><div className="w-9 h-9 shrink-0 rounded-full bg-slate-700 flex items-center justify-center text-sm font-medium text-white">{signedInName.split(' ').map(part => part[0]).join('').slice(0, 2).toUpperCase()}</div><div className="flex-1 overflow-hidden"><p className="text-sm font-medium text-white truncate">{signedInName}</p><p className="text-xs text-slate-500 truncate">{selectedRole.name}</p></div><button onClick={() => navigateTo('settings', 'Configuración')} aria-label="Abrir configuración" className="p-1 rounded hover:bg-slate-700"><Settings className="w-4 h-4 text-slate-400 hover:text-white" /></button></div>
         </div>
       </aside>

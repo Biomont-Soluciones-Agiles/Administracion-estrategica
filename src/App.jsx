@@ -204,6 +204,7 @@ export default function App() {
   const [selectedIndicatorId, setSelectedIndicatorId] = useState(null);
   const [indicatorRequestFlyout, setIndicatorRequestFlyout] = useState(null);
   const [indicatorRequestForm, setIndicatorRequestForm] = useState(false);
+  const [indicatorActionsOpen, setIndicatorActionsOpen] = useState(false);
   const [indicatorFilters, setIndicatorFilters] = useState({ search: '', objectiveId: '', responsibleId: '', siteId: '', indicatorId: '' });
   const [bioIndicatorYear, setBioIndicatorYear] = useState(String(new Date().getFullYear()));
   const changeIndicatorFilters = next => {
@@ -1008,7 +1009,7 @@ export default function App() {
     const weightedStatus = weighted.value === null ? 'Sin reporte' : calculateIndicatorStatus(weighted.value, ind.target, ind.comparator);
     const ownIds = accountIdentities(session.user.email, organizationPeople);
     const { canManage, canReport: legacyCanReport } = indicatorAccess(ind, obj, ownIds, isSuperAdmin);
-    const canReport = !isGeneralManager && (legacyCanReport || managerAssignments.some(assignment => String(assignment.indicator_id) === String(ind.id)));
+    const canReport = isGcg || (!isGeneralManager && (legacyCanReport || managerAssignments.some(assignment => String(assignment.indicator_id) === String(ind.id))));
     const reporter = ind.reporter_email ? personName(ind.reporter_email, availableUsers) : 'Sin asignar';
     const historyCondition = report => {
       if (report.result == null) return 'Sin datos';
@@ -1034,12 +1035,6 @@ export default function App() {
             <p className="mt-3 flex items-center gap-2 text-sm text-slate-600"><User className="h-4 w-4 text-blue-600" /><span>Responsable de reporte:</span><span className="font-semibold text-slate-800">{reporter}</span></p>
           </div>
           <div className="md:col-span-2">
-            <div className="mb-4 flex flex-wrap justify-end gap-2">
-              {!isGeneralManager && (isGcg || canReport) && <button type="button" onClick={() => setIndicatorRequestForm(true)} className="inline-flex items-center gap-2 rounded-lg bg-[#1D4ED8] px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800"><FilePenLine className="h-4 w-4" />{isGcg ? 'Realizar modificación' : 'Solicitar modificación'}</button>}
-              {isGcg && <button type="button" onClick={async () => { if (!window.confirm(`¿Eliminar el indicador “${ind.name}”? También se eliminarán sus mediciones y análisis asociados.`)) return; const { error } = await supabase.rpc('delete_indicator', { indicator: ind.id }); if (error) { setDataError(`No se pudo eliminar el indicador: ${error.message}`); return; } await loadOperationalData(); corrective.reload(); notify('Indicador eliminado.'); navigateTo('objective-detail', obj?.name || 'Objetivo', { objectiveId: obj?.id, objectiveTab: 'summary' }); }} className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-white px-3.5 py-2 text-sm font-semibold text-red-700 shadow-sm transition hover:bg-red-50"><Trash2 className="h-4 w-4" />Eliminar indicador</button>}
-              {!isGcg && !isGeneralManager && <button type="button" onClick={() => setIndicatorRequestFlyout('pending')} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"><Clock className="h-4 w-4 text-amber-600" />En revisión</button>}
-              {!isGeneralManager && <button type="button" onClick={() => setIndicatorRequestFlyout('history')} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"><History className="h-4 w-4 text-slate-500" />Historial</button>}
-            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Card className={`p-6 flex flex-col justify-center items-center text-center border-t-4 ${latestReport?.status === 'En meta' ? 'border-t-green-500' : latestReport?.status === 'Fuera de meta' ? 'border-t-red-500' : 'border-t-slate-300'}`}>
               <p className="text-sm font-medium text-slate-500 mb-2">Último reporte</p>
@@ -1057,7 +1052,7 @@ export default function App() {
           </div>
         </div>
         <Card className="p-6">
-          <MeasurementChart indicator={ind} reports={indReports} headerAction={isResponsibleManager && canReport ? <Button onClick={() => navigateTo('report-indicator', 'Registrar Resultado', { indicatorId: ind.id })} variant="secondary">Registrar resultado</Button> : null} />
+          <MeasurementChart indicator={ind} reports={indReports} headerAction={(isResponsibleManager || isGcg) && canReport ? <Button onClick={() => navigateTo('report-indicator', 'Registrar Resultado', { indicatorId: ind.id })} variant="secondary">Registrar resultado</Button> : null} />
         </Card>
         <Card className="overflow-hidden">
           <div className="border-b border-slate-200 p-5"><h3 className="font-semibold text-slate-900">Historial de Mediciones</h3><p className="mt-1 text-xs text-slate-500">Vista simple con una condición consolidada.</p></div>
@@ -1179,6 +1174,29 @@ export default function App() {
     return <div className="max-w-3xl fade-in space-y-6"><div><h1 className="text-2xl font-bold text-slate-900">Configuración</h1><p className="text-slate-500 mt-1">Administra las preferencias generales de {APP_TITLE}.</p></div>{isGcg && <MicrosoftDirectory session={session} onReload={loadOperationalData} />}<Card className="p-6"><h2 className="font-semibold text-slate-900">Preferencias de visualización</h2><div className="mt-5 space-y-4"><label className="flex items-center justify-between gap-4 py-3 border-b border-slate-100"><span><span className="block text-sm font-medium text-slate-800">Alertas estratégicas</span><span className="block text-xs text-slate-500 mt-1">Muestra objetivos retrasados en el Monitor.</span></span><input type="checkbox" defaultChecked className="w-4 h-4 accent-[#D71920]" /></label><label className="flex items-center justify-between gap-4 py-3"><span><span className="block text-sm font-medium text-slate-800">Vista compacta</span><span className="block text-xs text-slate-500 mt-1">Reduce el espacio entre elementos del dashboard.</span></span><input type="checkbox" className="w-4 h-4 accent-[#D71920]" /></label></div></Card>{isGcg && <Card className="p-6"><div><h2 className="font-semibold text-slate-900">Mensaje personalizado del monitor</h2><p className="mt-1 text-sm text-slate-500">Selecciona una persona y escribe el texto que verá debajo de su saludo en Objetivos.</p></div><form onSubmit={saveMessage} className="mt-5 space-y-4"><Select label="Persona destinataria *" required options={availableUsers.filter(user => user.email).map(user => ({ value: String(user.email).toLowerCase(), label: user.name }))} value={recipientEmail} onChange={event => setRecipientEmail(event.target.value)} /><div className="flex flex-col gap-1.5"><label className="text-sm font-medium text-slate-700">Texto personalizado *</label><textarea required maxLength={600} rows={4} value={message} onChange={event => setMessage(event.target.value)} placeholder="Ej.: Recuerda registrar la medición de este mes antes del cierre." className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#3B82F6]" /><p className="text-right text-xs text-slate-400">{message.length}/600</p></div><div className="flex flex-wrap justify-end gap-3"><Button type="submit" disabled={!recipientEmail || !message.trim() || busy}>{busy ? 'Guardando…' : existingMessage ? 'Actualizar mensaje' : 'Guardar mensaje'}</Button></div></form></Card>}<Card className="p-6"><h2 className="font-semibold text-slate-900">Sesión</h2><p className="text-sm text-slate-500 mt-2">Correo: {session?.user?.email}</p><p className="text-sm text-slate-500 mt-1">Rol actual: {selectedRole?.name || ROLE_LABELS[assignedRole]}</p><div className="mt-4 flex flex-wrap gap-3">{isSuperAdmin && <Button variant="secondary" onClick={() => { setSelectedRole(null); setCurrentView('dashboard'); }}>Cambiar rol</Button>}<Button variant="secondary" onClick={signOut}><LogOut className="w-4 h-4" />Cerrar sesión</Button></div></Card><Card className="p-6"><h2 className="font-semibold text-slate-900">Información de la plataforma</h2><p className="text-sm text-slate-500 mt-2">{APP_TITLE} · Plataforma estratégica de Biomont</p></Card></div>;
   };
 
+  const headerIndicator = currentView === 'bio-indicators' && indicatorFilters.indicatorId
+    ? indicators.find(item => String(item.id) === String(indicatorFilters.indicatorId))
+    : null;
+  const openHeaderIndicatorAction = action => {
+    if (!headerIndicator) return;
+    setIndicatorActionsOpen(false);
+    if (action === 'report') return navigateTo('report-indicator', 'Registrar Resultado', { indicatorId: headerIndicator.id });
+    navigateTo('indicator-detail', headerIndicator.name, { indicatorId: headerIndicator.id });
+    if (action === 'modify') setIndicatorRequestForm(true);
+    if (action === 'history') setIndicatorRequestFlyout('history');
+  };
+  const deleteHeaderIndicator = async () => {
+    if (!headerIndicator || !isGcg) return;
+    setIndicatorActionsOpen(false);
+    if (!window.confirm(`¿Eliminar el indicador “${headerIndicator.name}”? También se eliminarán sus mediciones y análisis asociados.`)) return;
+    const { error } = await supabase.rpc('delete_indicator', { indicator: headerIndicator.id });
+    if (error) { setDataError(`No se pudo eliminar el indicador: ${error.message}`); return; }
+    await loadOperationalData();
+    corrective.reload();
+    notify('Indicador eliminado.');
+    changeIndicatorFilters({ ...indicatorFilters, indicatorId: '' });
+  };
+
   const AuthShell = ({ children }) => <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#06265a] p-5" style={{ backgroundImage: `linear-gradient(90deg, rgba(3, 31, 91, 0.94) 0%, rgba(10, 71, 157, 0.74) 52%, rgba(16, 113, 185, 0.35) 100%), url(${strategicLoginHero})`, backgroundSize: 'cover', backgroundPosition: 'center' }}><div className="absolute inset-0 bg-gradient-to-b from-blue-950/20 via-transparent to-slate-950/45" /><div className="relative w-full max-w-[1200px]">{children}</div></main>;
 
   if (authLoading) return <AuthShell><div className="max-w-md mx-auto bg-white border border-slate-200 rounded-2xl p-8 text-center shadow-sm"><img src={biomontLogo} alt="Biomont" className="h-16 w-auto object-contain mx-auto mb-5" /><p className="text-slate-600">Verificando tu acceso…</p></div></AuthShell>;
@@ -1224,7 +1242,7 @@ export default function App() {
       <main className="app-main min-w-0 flex-1 flex flex-col min-h-screen">
         <header className="h-14 min-h-14 shrink-0 bg-white border-b border-slate-200 flex items-center px-4 md:px-5 sticky top-0 z-50 isolate overflow-visible shadow-sm gap-3">
            {(navHistory.length > 1 || (currentView === 'bio-indicators' && indicatorFilters.indicatorId)) && <button onClick={goBack} className="shrink-0 flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900" aria-label="Retroceder"><ArrowLeft className="w-4 h-4" /> <span>Atrás</span></button>}
-           {currentView === 'bio-indicators' && (indicatorFilters.indicatorId ? <IndicatorYearFilter reports={reports.filter(report => String(report.indicatorId) === String(indicatorFilters.indicatorId))} year={bioIndicatorYear} onChange={setBioIndicatorYear} /> : <IndicatorFilterMenu reports={reports} isGcg={isGcg} objectives={objectivesWithIndicatorProgress} indicators={indicators} users={availableUsers} sites={sites} assignments={siteAssignments} filters={indicatorFilters} onChange={changeIndicatorFilters} />)}
+           {currentView === 'bio-indicators' && (indicatorFilters.indicatorId ? <div className="ml-auto flex items-center gap-1.5"><IndicatorYearFilter reports={reports.filter(report => String(report.indicatorId) === String(indicatorFilters.indicatorId))} year={bioIndicatorYear} onChange={setBioIndicatorYear} />{!isGeneralManager && <div className="relative"><button type="button" aria-label="Acciones del indicador" title="Acciones del indicador" aria-expanded={indicatorActionsOpen} onClick={() => setIndicatorActionsOpen(value => !value)} className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900"><Settings className="h-5 w-5" /></button>{indicatorActionsOpen && <div className="absolute right-0 top-full z-[60] mt-2 w-56 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl"><button type="button" onClick={() => openHeaderIndicatorAction('report')} className="w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-800">Registrar resultado</button><button type="button" onClick={() => openHeaderIndicatorAction('modify')} className="w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-800">{isGcg ? 'Realizar modificación' : 'Solicitar modificación'}</button><button type="button" onClick={() => openHeaderIndicatorAction('history')} className="w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-800">Historial</button>{isGcg && <button type="button" onClick={deleteHeaderIndicator} className="w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-red-700 hover:bg-red-50">Eliminar indicador</button>}</div>}</div>}</div> : <IndicatorFilterMenu reports={reports} isGcg={isGcg} objectives={objectivesWithIndicatorProgress} indicators={indicators} users={availableUsers} sites={sites} assignments={siteAssignments} filters={indicatorFilters} onChange={changeIndicatorFilters} />)}
            {currentView === 'objectives' && <ObjectiveFilterControl />}
 
         </header>

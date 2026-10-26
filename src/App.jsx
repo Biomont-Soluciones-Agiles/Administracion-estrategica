@@ -192,6 +192,7 @@ export default function App() {
   const [currentView, setCurrentView] = useState('dashboard');
   const [navHistory, setNavHistory] = useState([{ id: 'dashboard', name: 'Gráfica BSC' }]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarTooltip, setSidebarTooltip] = useState(null);
   
   const [objectives, setObjectives] = useState(INITIAL_OBJECTIVES);
   const [projects, setProjects] = useState(INITIAL_PROJECTS);
@@ -242,6 +243,12 @@ export default function App() {
     setNotification({ message, type, id: Date.now() });
     window.setTimeout(() => setNotification(current => current?.message === message ? null : current), 3800);
   };
+  const showSidebarTooltip = event => {
+    if (!sidebarCollapsed) return;
+    const bounds = event.currentTarget.getBoundingClientRect();
+    setSidebarTooltip({ label: event.currentTarget.dataset.sidebarTooltip, top: bounds.top + bounds.height / 2 });
+  };
+  const hideSidebarTooltip = () => setSidebarTooltip(null);
   const isGeneralManager = selectedRole?.key === 'gerente_general';
   const isResponsibleManager = selectedRole?.name === 'Gerente responsable';
   const isGcg = selectedRole?.key === 'gcg' || selectedRole?.name === 'GCG' || assignedRole === 'gcg';
@@ -1284,13 +1291,13 @@ export default function App() {
         </div>
         <div className="flex-1 overflow-y-auto py-4">
           <nav className="px-3 space-y-1">
-            <button onClick={() => navigateTo('dashboard', 'Gráfica BSC')} data-sidebar-tooltip={sidebarCollapsed ? 'Gráfica BSC' : undefined} aria-label="Gráfica BSC" className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${currentView === 'dashboard' ? 'bg-[#1e293b] text-white' : 'hover:bg-slate-800 hover:text-white'}`}><BarChart3 className="w-5 h-5" /> Gráfica BSC</button>
+            <button onClick={() => navigateTo('dashboard', 'Gráfica BSC')} onMouseEnter={showSidebarTooltip} onMouseLeave={hideSidebarTooltip} data-sidebar-tooltip={sidebarCollapsed ? 'Gráfica BSC' : undefined} aria-label="Gráfica BSC" className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${currentView === 'dashboard' ? 'bg-[#1e293b] text-white' : 'hover:bg-slate-800 hover:text-white'}`}><BarChart3 className="w-5 h-5" /> Gráfica BSC</button>
             <div className="pt-4 pb-1"><p className="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Gestión estratégica</p></div>
-            <button onClick={() => navigateTo('bio-indicators', 'Indicadores')} data-sidebar-tooltip={sidebarCollapsed ? 'Indicadores' : undefined} aria-label="Indicadores" className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium ${currentView === 'bio-indicators' ? 'bg-slate-800 text-white' : 'hover:bg-slate-800 hover:text-white'}`}><BarChart3 className="w-5 h-5" />Indicadores</button>
-            {!isGeneralManager && !isGcg && <button onClick={() => navigateTo('change-requests', 'Solicitudes')} data-sidebar-tooltip={sidebarCollapsed ? 'Solicitudes' : undefined} aria-label="Solicitudes" className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium ${currentView === 'change-requests' ? 'bg-slate-800 text-white' : 'hover:bg-slate-800 hover:text-white'}`}><FilePenLine className="w-5 h-5" />Solicitudes</button>}
-            {!isGeneralManager && <button onClick={() => navigateTo('objectives', 'Objetivos')} data-sidebar-tooltip={sidebarCollapsed ? 'Objetivos' : undefined} aria-label="Objetivos" className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${(currentView.includes('objective') && currentView !== 'dashboard') ? 'bg-[#1e293b] text-white' : 'hover:bg-slate-800 hover:text-white'}`}><Target className="w-5 h-5" />Objetivos</button>}
-            {isResponsibleManager && <button onClick={() => navigateTo('indicator-status', 'Mis indicadores')} data-sidebar-tooltip={sidebarCollapsed ? 'Mis indicadores' : undefined} aria-label="Mis indicadores" className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${currentView === 'indicator-status' || currentView === 'edit-indicator' ? 'bg-[#1e293b] text-white' : 'hover:bg-slate-800 hover:text-white'}`}><BarChart3 className="w-5 h-5" /> Mis indicadores</button>}
-            {isGcg && <button onClick={() => navigateTo('gcg-review', 'Solicitudes')} data-sidebar-tooltip={sidebarCollapsed ? 'Solicitudes' : undefined} aria-label="Solicitudes" className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${currentView === 'gcg-review' ? 'bg-[#1e293b] text-white' : 'hover:bg-slate-800 hover:text-white'}`}><CheckCircle2 className="w-5 h-5" /> Solicitudes</button>}
+            <button onClick={() => navigateTo('bio-indicators', 'Indicadores')} onMouseEnter={showSidebarTooltip} onMouseLeave={hideSidebarTooltip} data-sidebar-tooltip={sidebarCollapsed ? 'Indicadores' : undefined} aria-label="Indicadores" className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium ${currentView === 'bio-indicators' ? 'bg-slate-800 text-white' : 'hover:bg-slate-800 hover:text-white'}`}><BarChart3 className="w-5 h-5" />Indicadores</button>
+            {!isGeneralManager && !isGcg && <button onClick={() => navigateTo('change-requests', 'Solicitudes')} onMouseEnter={showSidebarTooltip} onMouseLeave={hideSidebarTooltip} data-sidebar-tooltip={sidebarCollapsed ? 'Solicitudes' : undefined} aria-label="Solicitudes" className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium ${currentView === 'change-requests' ? 'bg-slate-800 text-white' : 'hover:bg-slate-800 hover:text-white'}`}><FilePenLine className="w-5 h-5" />Solicitudes</button>}
+            {!isGeneralManager && <button onClick={() => navigateTo('objectives', 'Objetivos')} onMouseEnter={showSidebarTooltip} onMouseLeave={hideSidebarTooltip} data-sidebar-tooltip={sidebarCollapsed ? 'Objetivos' : undefined} aria-label="Objetivos" className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${(currentView.includes('objective') && currentView !== 'dashboard') ? 'bg-[#1e293b] text-white' : 'hover:bg-slate-800 hover:text-white'}`}><Target className="w-5 h-5" />Objetivos</button>}
+            {isResponsibleManager && <button onClick={() => navigateTo('indicator-status', 'Mis indicadores')} onMouseEnter={showSidebarTooltip} onMouseLeave={hideSidebarTooltip} data-sidebar-tooltip={sidebarCollapsed ? 'Mis indicadores' : undefined} aria-label="Mis indicadores" className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${currentView === 'indicator-status' || currentView === 'edit-indicator' ? 'bg-[#1e293b] text-white' : 'hover:bg-slate-800 hover:text-white'}`}><BarChart3 className="w-5 h-5" /> Mis indicadores</button>}
+            {isGcg && <button onClick={() => navigateTo('gcg-review', 'Solicitudes')} onMouseEnter={showSidebarTooltip} onMouseLeave={hideSidebarTooltip} data-sidebar-tooltip={sidebarCollapsed ? 'Solicitudes' : undefined} aria-label="Solicitudes" className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${currentView === 'gcg-review' ? 'bg-[#1e293b] text-white' : 'hover:bg-slate-800 hover:text-white'}`}><CheckCircle2 className="w-5 h-5" /> Solicitudes</button>}
           </nav>
         </div>
         <div className="sidebar-user p-4 border-t border-slate-800">
@@ -1327,6 +1334,7 @@ export default function App() {
           {currentView === 'report-indicator' && <ReportFormView />}
         </div>
       </main>
+      {sidebarTooltip && sidebarCollapsed && createPortal(<div role="tooltip" className="sidebar-flyout-tooltip" style={{ top: sidebarTooltip.top }}>{sidebarTooltip.label}</div>, document.body)}
       {notification && <div role="status" className={`fixed right-5 top-5 z-[100] flex max-w-sm items-center gap-3 rounded-xl border px-4 py-3 text-sm font-medium shadow-lg fade-in ${notification.type === 'warning' ? 'border-amber-200 bg-amber-50 text-amber-800' : 'border-green-200 bg-white text-slate-800'}`}><div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${notification.type === 'warning' ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'}`}>{notification.type === 'warning' ? <AlertCircle className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}</div><span>{notification.message}</span><button onClick={() => setNotification(null)} aria-label="Cerrar notificación" className="ml-1 text-slate-400 hover:text-slate-700">×</button></div>}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around p-3 z-50">
         <button onClick={() => navigateTo('dashboard', 'Gráfica BSC')} className={`flex flex-col items-center gap-1 ${currentView === 'dashboard' ? 'text-[#D71920]' : 'text-slate-500'}`}><BarChart3 className="w-5 h-5" /><span className="text-[10px] font-medium">BSC</span></button>

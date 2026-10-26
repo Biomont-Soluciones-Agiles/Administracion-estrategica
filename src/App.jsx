@@ -429,6 +429,21 @@ export default function App() {
     }
   };
 
+  const openIndicatorWorkspace = (indicator) => {
+    if (!indicator?.id) return;
+    setIndicatorFilters({
+      search: '',
+      objectiveId: '',
+      responsibleId: '',
+      siteId: '',
+      status: '',
+      condition: '',
+      indicatorId: String(indicator.id),
+    });
+    setBioIndicatorYear(String(new Date().getFullYear()));
+    navigateTo('bio-indicators', indicator.name || 'Indicador', { indicatorId: indicator.id });
+  };
+
   const restoreHistory = (index) => {
     const destination = navHistory[index];
     setCurrentView(destination.id);
@@ -1248,7 +1263,7 @@ export default function App() {
         </header>
         <div className="app-content p-4 md:p-6 flex-1 relative z-0">
           {dataError && <div className="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-center justify-between gap-3"><span>{dataError}</span><button onClick={() => setDataError('')} className="font-semibold shrink-0">Cerrar</button></div>}
-          {currentView === 'dashboard' && <StrategicMap objectives={isManagerScoped ? scopedObjectives : objectivesWithIndicatorProgress} indicators={isManagerScoped ? scopedIndicators : indicators} reports={isManagerScoped ? scopedReports : reports} projects={scopedProjects} actions={scopedTasks} users={availableUsers} isGeneralManager={isGeneralManager} onSelectIndicator={indicator => navigateTo('indicator-detail', indicator.name, { indicatorId: indicator.id })} />}
+          {currentView === 'dashboard' && <StrategicMap objectives={isManagerScoped ? scopedObjectives : objectivesWithIndicatorProgress} indicators={isManagerScoped ? scopedIndicators : indicators} reports={isManagerScoped ? scopedReports : reports} projects={scopedProjects} actions={scopedTasks} users={availableUsers} isGeneralManager={isGeneralManager} onSelectIndicator={openIndicatorWorkspace} />}
           {(currentView === 'bio-indicators' || currentView === 'general-manager-indicators') && <BioIndicatorsView coreRows={coreIndicatorRows} generalManagerRows={generalManagerIndicatorRows} workflow={corrective} objectives={objectivesWithIndicatorProgress} indicators={isManagerScoped ? scopedIndicators : indicators} reports={isManagerScoped ? scopedReports : reports} users={availableUsers} sites={sites} assignments={siteAssignments} filters={indicatorFilters} onChange={changeIndicatorFilters} year={bioIndicatorYear} isGcg={isGcg} isGeneralManager={isGeneralManager} featuredOnly={currentView === 'general-manager-indicators'} featuredTitle="Indicadores para Gerencia General" session={session} onReload={loadOperationalData} onError={setDataError} onNotify={notify} onCoreSaved={ids => setCoreIndicatorRows(ids.map((indicator_id, index) => ({ indicator_id, position: index + 1 })))} onGeneralManagerSaved={ids => setGeneralManagerIndicatorRows(ids.map((indicator_id, index) => ({ indicator_id, position: index + 1 })))} />}
           {currentView === 'change-requests' && <ChangeRequests isGcg={isGcg} indicators={indicators} users={organizationPeople} onReload={loadOperationalData} onError={setDataError} />}
           {currentView === 'indicator-request-history' && <ChangeRequests isGcg={isGcg} indicators={indicators} users={organizationPeople} reports={reports} onReload={loadOperationalData} onError={setDataError} indicatorId={selectedIndicatorId} initialHistory onBack={goBack} />}
@@ -1258,7 +1273,7 @@ export default function App() {
           {currentView === 'new-project' && <ProjectFormView />}
           {currentView === 'edit-action' && <EditActionView />}
           {currentView === 'new-indicator' && <IndicatorFormView />}
-          {currentView === 'indicator-status' && <AssignedIndicators indicators={indicators} objectives={objectivesWithIndicatorProgress} reports={reports} users={availableUsers} ownIds={accountIdentities(session.user.email, organizationPeople)} isSuperAdmin={isSuperAdmin} onSelect={i => navigateTo('indicator-detail', i.name, { indicatorId: i.id })} />}
+          {currentView === 'indicator-status' && <AssignedIndicators indicators={indicators} objectives={objectivesWithIndicatorProgress} reports={reports} users={availableUsers} ownIds={accountIdentities(session.user.email, organizationPeople)} isSuperAdmin={isSuperAdmin} onSelect={openIndicatorWorkspace} />}
           {currentView === 'edit-indicator' && <EditIndicatorView />}
           {currentView === 'edit-target' && <EditTargetView />}
           {currentView === 'gcg-review' && isGcg && <ChangeRequests isGcg indicators={indicators} users={organizationPeople} onReload={loadOperationalData} onError={setDataError} />}

@@ -51,9 +51,19 @@ function EndLabel({ x, y, index, lastIndex, text, color, offset = -10 }) {
   return <text x={x + 12} y={y + offset} fill={color} fontSize={12} fontWeight={600}>{text}</text>;
 }
 
-function ValueLabel({ x, y, value, unit, color = NAVY, offset = -14 }) {
+function ValueLabel({ x, y, value, unit, color = NAVY, index = 0, offset }) {
   if (value == null || !Number.isFinite(x) || !Number.isFinite(y)) return null;
-  return <text className="hidden sm:block" x={x} y={y + offset} textAnchor="middle" fill={color} fontSize={11} fontWeight={600}>{valueWithUnit(value, unit)}</text>;
+  const text = valueWithUnit(value, unit);
+  const below = offset == null ? index % 2 === 1 : offset > 0;
+  const labelY = y + (offset == null ? (below ? 31 : -27) : offset);
+  const width = Math.max(46, text.length * 6.5 + 16);
+  const tagTop = labelY - 13;
+  const guideEnd = below ? tagTop : tagTop + 22;
+  return <g className="hidden sm:block">
+    <line x1={x} y1={y + (below ? 7 : -7)} x2={x} y2={guideEnd} stroke={color} strokeOpacity="0.35" strokeWidth="1.25" />
+    <rect x={x - width / 2} y={tagTop} width={width} height="22" rx="5" fill="#ffffff" fillOpacity="0.94" stroke={color} strokeOpacity="0.22" />
+    <text x={x} y={labelY + 2} textAnchor="middle" fill={color} fontSize="11" fontWeight="700">{text}</text>
+  </g>;
 }
 
 export default function MeasurementChart({ indicator, reports, year: controlledYear, showYearFilter = true, headerAction, onComparisonChange }) {

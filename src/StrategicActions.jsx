@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Calendar, CheckCircle2, ChevronDown, FilePenLine, History, Trash2, User, X } from 'lucide-react';
+import { Calendar, CheckCircle2, ChevronDown, FilePenLine, Trash2, User, X } from 'lucide-react';
 import { personName } from './lib/personNames';
 
 const endDate = value => value ? new Intl.DateTimeFormat('es-PE', { dateStyle: 'medium', timeZone: 'UTC' }).format(new Date(`${value}T12:00:00Z`)) : 'Sin fecha de término';

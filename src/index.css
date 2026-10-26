@@ -142,16 +142,11 @@ body {
 .sidebar-collapsed .app-sidebar .sidebar-brand img { width: 34px; height: 34px; padding: 0.2rem; }
 .sidebar-collapsed .app-sidebar .sidebar-toggle { position: static; display: inline-flex; flex-shrink: 0; background: #1e293b; }
 
-/* Las ayudas de navegación aparecen de inmediato al pasar sobre un icono. */
-.sidebar-collapsed .app-sidebar nav button[data-sidebar-tooltip] {
-  position: relative;
-}
-.sidebar-collapsed .app-sidebar nav button[data-sidebar-tooltip]::after {
-  content: attr(data-sidebar-tooltip);
-  position: absolute;
-  left: calc(100% + 0.75rem);
-  top: 50%;
-  z-index: 70;
+
+.sidebar-flyout-tooltip {
+  position: fixed;
+  left: 88px;
+  z-index: 200;
   width: max-content;
   max-width: 14rem;
   transform: translateY(-50%);
@@ -164,28 +159,13 @@ body {
   font-weight: 600;
   line-height: 1rem;
   pointer-events: none;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 80ms ease, visibility 80ms ease;
 }
-.sidebar-collapsed .app-sidebar nav button[data-sidebar-tooltip]::before {
+.sidebar-flyout-tooltip::before {
   content: '';
   position: absolute;
-  left: calc(100% + 0.35rem);
+  right: 100%;
   top: 50%;
-  z-index: 71;
   transform: translateY(-50%);
   border: 0.35rem solid transparent;
   border-right-color: #0f172a;
-  pointer-events: none;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 80ms ease, visibility 80ms ease;
-}
-.sidebar-collapsed .app-sidebar nav button[data-sidebar-tooltip]:hover::after,
-.sidebar-collapsed .app-sidebar nav button[data-sidebar-tooltip]:hover::before,
-.sidebar-collapsed .app-sidebar nav button[data-sidebar-tooltip]:focus-visible::after,
-.sidebar-collapsed .app-sidebar nav button[data-sidebar-tooltip]:focus-visible::before {
-  opacity: 1;
-  visibility: visible;
 }

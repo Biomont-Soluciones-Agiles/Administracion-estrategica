@@ -664,7 +664,7 @@ export default function App() {
                         <span className="font-medium text-slate-700">Avance</span>
                         <span className="font-bold text-slate-900">{obj.progress}%</span>
                       </div>
-                      <ProgressBar progress={obj.progress} status={obj.status} target={objIndicator?.target} comparator={objIndicator?.comparator} unit={objIndicator?.unit} />
+                      <div className="w-[72%] min-w-[12rem] max-w-full"><ProgressBar progress={obj.progress} status={obj.status} target={objIndicator?.target} comparator={objIndicator?.comparator} unit={objIndicator?.unit} /></div>
                     </div>
 
                     <div className="mt-auto flex items-center justify-between border-t border-slate-100 pt-4">

@@ -70,20 +70,6 @@ function ObjectiveDetail({ objective, indicators, reports, projects = [], action
   </div>, document.body);
 }
 
-function RelationshipArrows() {
-  const columns = [320, 590, 860];
-  const rows = [105, 305, 505, 705];
-  return <svg aria-hidden="true" viewBox="0 0 1000 800" preserveAspectRatio="none" className="pointer-events-none absolute inset-0 z-0 hidden h-full w-full xl:block">
-    <defs><marker id="bsc-arrow" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L0,9 L8,4.5 z" fill="#64748b" /></marker></defs>
-    {columns.map((x, index) => <React.Fragment key={x}>
-      <path d={`M ${x} ${rows[3] - 40} L ${x} ${rows[2] + 38}`} fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" markerEnd="url(#bsc-arrow)" opacity=".7" />
-      <path d={`M ${x} ${rows[2] - 40} L ${x} ${rows[1] + 38}`} fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" markerEnd="url(#bsc-arrow)" opacity=".7" />
-      <path d={`M ${x} ${rows[1] - 40} L ${x} ${rows[0] + 38}`} fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" markerEnd="url(#bsc-arrow)" opacity=".7" />
-      {index < columns.length - 1 && <><path d={`M ${x + 85} ${rows[3]} L ${columns[index + 1] - 90} ${rows[3]}`} fill="none" stroke="#7c3aed" strokeWidth="1.8" strokeLinecap="round" markerEnd="url(#bsc-arrow)" opacity=".45" /><path d={`M ${x + 85} ${rows[1]} L ${columns[index + 1] - 90} ${rows[1]}`} fill="none" stroke="#0f766e" strokeWidth="1.8" strokeLinecap="round" markerEnd="url(#bsc-arrow)" opacity=".45" /></>}
-    </React.Fragment>)}
-  </svg>;
-}
-
 export default function StrategicMap({ objectives = [], indicators = [], reports = [], projects = [], actions = [], users = [], isGeneralManager = false, onSelectIndicator, canSelectIndicator = () => true }) {
   const [selected, setSelected] = React.useState(null);
   return <section className="flex min-h-[calc(100vh-7rem)] flex-col" aria-label="Mapa estratégico BSC">

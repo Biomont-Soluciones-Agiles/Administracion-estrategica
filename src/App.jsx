@@ -165,16 +165,25 @@ const reportPeriodTime = (report) => {
 };
 const sortReportsByPeriod = (items, direction = 'asc') => [...items].sort((a, b) => direction === 'asc' ? reportPeriodTime(a) - reportPeriodTime(b) : reportPeriodTime(b) - reportPeriodTime(a));
 
-const ProgressBar = ({ progress, status }) => {
+const ProgressBar = ({ progress, status, target, comparator, unit = '%' }) => {
+  const safeProgress = Number.isFinite(Number(progress)) ? Math.max(0, Math.min(100, Number(progress))) : 0;
+  const numericTarget = Number(target);
+  const hasTarget = Number.isFinite(numericTarget) && comparator;
+  const targetPosition = Math.max(0, Math.min(100, numericTarget));
+  const meetsTarget = hasTarget && ({ '>': safeProgress > numericTarget, '>=': safeProgress >= numericTarget, '=': safeProgress === numericTarget, '<=': safeProgress <= numericTarget, '<': safeProgress < numericTarget })[comparator];
   let color = 'bg-[#3B82F6]';
-  if (status === 'Cumplido' || status === 'En meta') color = 'bg-green-500';
-  if (status === 'Fuera de meta') color = 'bg-red-500';
-  if (status === 'En riesgo') color = 'bg-yellow-500';
-  return (
-    <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-      <div className={`h-2 rounded-full ${color} transition-all duration-500`} style={{ width: `${progress}%` }}></div>
+  if (hasTarget) color = meetsTarget ? 'bg-[#2563EB]' : 'bg-red-500';
+  else if (status === 'Cumplido' || status === 'En meta') color = 'bg-green-500';
+  else if (status === 'Fuera de meta') color = 'bg-red-500';
+  else if (status === 'En riesgo') color = 'bg-yellow-500';
+  const targetText = hasTarget ? `Meta ${comparator} ${numericTarget} ${displayUnit(unit)}`.trim() : '';
+  return <div className="relative w-full pt-5">
+    {hasTarget && <span className="absolute top-0 z-10 -translate-x-1/2 whitespace-nowrap text-[10px] font-semibold text-slate-800" style={{ left: `${targetPosition}%` }}>{targetText}</span>}
+    <div className="relative h-2 overflow-visible rounded-full bg-slate-100">
+      <div className={`h-2 rounded-full ${color} transition-all duration-500`} style={{ width: `${safeProgress}%` }} />
+      {hasTarget && <span aria-label={targetText} className="absolute -top-2.5 h-7 w-0.5 -translate-x-1/2 rounded-full bg-slate-950" style={{ left: `${targetPosition}%` }} />}
     </div>
-  );
+  </div>;
 }
 
 export default function App() {
@@ -636,6 +645,7 @@ export default function App() {
                 const objProjects = projects.filter(p => p.objectiveId === obj.id);
                 const objActions = tasks.filter(task => task.objectiveId === obj.id);
                 const objIndicators = indicators.filter(i => i.objectiveId === obj.id);
+                const objIndicator = objIndicators[0];
                 
                 return (
                   <Card key={obj.id} className="group flex min-h-[272px] flex-col p-5 transition-transform duration-200 hover:-translate-y-0.5" onClick={() => navigateTo('objective-detail', obj.name, { objectiveId: obj.id })}>
@@ -652,7 +662,7 @@ export default function App() {
                         <span className="font-medium text-slate-700">Avance</span>
                         <span className="font-bold text-slate-900">{obj.progress}%</span>
                       </div>
-                      <ProgressBar progress={obj.progress} status={obj.status} />
+                      <ProgressBar progress={obj.progress} status={obj.status} target={objIndicator?.target} comparator={objIndicator?.comparator} unit={objIndicator?.unit} />
                     </div>
 
                     <div className="mt-auto flex items-center justify-between border-t border-slate-100 pt-4">

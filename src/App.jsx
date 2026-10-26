@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   LayoutDashboard, Target, FolderKanban, Settings, User, Plus, 
-  ChevronRight, AlertCircle, CheckCircle2, Clock, ArrowRight, ArrowLeft, BarChart3, Calendar, Users, Activity, LogOut, FilePenLine, History, Trash2, Star, Filter, Search, X
+  ChevronRight, AlertCircle, CheckCircle2, Clock, ArrowRight, ArrowLeft, BarChart3, Calendar, Users, Activity, LogOut, FilePenLine, History, Trash2, Star, Filter, Search, X, Hammer
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, BarChart, Bar, PieChart, Pie, Cell, Legend } from 'recharts';
 import biomontLogo from './assets/biomont-logo.png';
@@ -200,7 +200,8 @@ export default function App() {
   const [selectedObjectiveId, setSelectedObjectiveId] = useState(null);
   const [selectedObjectiveTab, setSelectedObjectiveTab] = useState('summary');
   const [objectiveFilterOpen, setObjectiveFilterOpen] = useState(false);
-  const [objectiveFilters, setObjectiveFilters] = useState({ query: '', owner: '', status: '' });
+  const [objectiveFilters, setObjectiveFilters] = useState({ query: '', owner: '', status: '', focus: '', indicator: '' });
+  const [objectiveActionsOpen, setObjectiveActionsOpen] = useState(false);
   const [selectedIndicatorId, setSelectedIndicatorId] = useState(null);
   const [indicatorRequestFlyout, setIndicatorRequestFlyout] = useState(null);
   const [indicatorRequestForm, setIndicatorRequestForm] = useState(false);
@@ -409,7 +410,7 @@ export default function App() {
   const navigateTo = (view, name, params = {}) => {
     setIndicatorRequestFlyout(null);
     setIndicatorRequestForm(false);
-    if ((['new-objective', 'new-indicator', 'edit-indicator', 'gcg-review'].includes(view) && !isGcg)
+    if ((['new-objective', 'edit-objective', 'new-indicator', 'edit-indicator', 'gcg-review'].includes(view) && !isGcg)
       || (['edit-target', 'report-indicator', 'indicator-status'].includes(view) && !isResponsibleManager)
       || (['new-project', 'edit-action', 'link-project'].includes(view) && !isGcg)) return;
     setCurrentView(view);
@@ -535,12 +536,16 @@ export default function App() {
   const ObjectiveFilterControl = () => (
     <div className="relative ml-auto">
       <button type="button" onClick={() => setObjectiveFilterOpen(open => !open)} aria-label="Filtrar objetivos" aria-expanded={objectiveFilterOpen} className={`rounded-lg p-2 text-slate-600 transition-colors hover:bg-slate-100 hover:text-[#1D4ED8] ${objectiveFilterOpen ? 'bg-blue-50 text-[#1D4ED8]' : ''}`}><Filter className="h-6 w-6" /></button>
-      {objectiveFilterOpen && <div className="absolute right-0 top-full z-[70] mt-2 w-80 rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
+      {objectiveFilterOpen && <div className="absolute right-0 top-full z-[70] mt-2 w-[min(92vw,34rem)] rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
         <div className="mb-4 flex items-center justify-between"><h2 className="font-semibold text-slate-900">Filtrar objetivos</h2><button type="button" onClick={() => setObjectiveFilterOpen(false)} aria-label="Cerrar filtros" className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"><X className="h-4 w-4" /></button></div>
-        <label className="mb-3 block text-xs font-medium text-slate-600">Buscar por nombre<div className="relative mt-1"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input value={objectiveFilters.query} onChange={event => setObjectiveFilters(filters => ({ ...filters, query: event.target.value }))} placeholder="Nombre del objetivo" className="w-full rounded-lg border border-slate-200 py-2 pl-9 pr-3 text-sm text-slate-800 outline-none focus:border-transparent focus:ring-2 focus:ring-[#3B82F6]" /></div></label>
-        <label className="mb-3 block text-xs font-medium text-slate-600">Responsable<select value={objectiveFilters.owner} onChange={event => setObjectiveFilters(filters => ({ ...filters, owner: event.target.value }))} className="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800"><option value="">Todos los responsables</option>{objectiveOwnerOptions.map(user => <option key={user.email} value={user.email}>{user.name}</option>)}</select></label>
-        <label className="block text-xs font-medium text-slate-600">Estatus<select value={objectiveFilters.status} onChange={event => setObjectiveFilters(filters => ({ ...filters, status: event.target.value }))} className="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800"><option value="">Todos los estatus</option><option value="Activo">Activo</option><option value="No activo">No activo</option></select></label>
-        <button type="button" onClick={() => setObjectiveFilters({ query: '', owner: '', status: '' })} className="mt-4 text-sm font-semibold text-[#1D4ED8] hover:underline">Limpiar filtros</button>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="block text-xs font-medium text-slate-600 sm:col-span-2">Buscar por nombre<div className="relative mt-1"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input value={objectiveFilters.query} onChange={event => setObjectiveFilters(filters => ({ ...filters, query: event.target.value }))} placeholder="Nombre del objetivo" className="w-full rounded-lg border border-slate-200 py-2.5 pl-9 pr-3 text-sm text-slate-800 outline-none focus:border-transparent focus:ring-2 focus:ring-[#3B82F6]" /></div></label>
+          <label className="block text-xs font-medium text-slate-600">Responsable<select value={objectiveFilters.owner} onChange={event => setObjectiveFilters(filters => ({ ...filters, owner: event.target.value }))} className="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800"><option value="">Todos</option>{objectiveOwnerOptions.map(user => <option key={user.email} value={user.email}>{user.name}</option>)}</select></label>
+          <label className="block text-xs font-medium text-slate-600">Estatus<select value={objectiveFilters.status} onChange={event => setObjectiveFilters(filters => ({ ...filters, status: event.target.value }))} className="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800"><option value="">Todos</option><option value="Activo">Activo</option><option value="No activo">No activo</option></select></label>
+          <label className="block text-xs font-medium text-slate-600">Foco estratégico<select value={objectiveFilters.focus} onChange={event => setObjectiveFilters(filters => ({ ...filters, focus: event.target.value }))} className="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800"><option value="">Todos</option><option value="Financiero">Financiero</option><option value="Cliente">Cliente</option><option value="Procesos">Procesos</option><option value="Personas/Aprendizaje">Personas/Aprendizaje</option></select></label>
+          <label className="block text-xs font-medium text-slate-600">Indicador<select value={objectiveFilters.indicator} onChange={event => setObjectiveFilters(filters => ({ ...filters, indicator: event.target.value }))} className="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800"><option value="">Todos</option><option value="with">Con indicador</option><option value="without">Pendiente de indicador</option></select></label>
+        </div>
+        <button type="button" onClick={() => setObjectiveFilters({ query: '', owner: '', status: '', focus: '', indicator: '' })} className="mt-4 text-sm font-semibold text-[#1D4ED8] hover:underline">Limpiar filtros</button>
       </div>}
     </div>
   );
@@ -550,7 +555,10 @@ export default function App() {
       const matchesName = !objectiveFilters.query || objective.name.toLowerCase().includes(objectiveFilters.query.trim().toLowerCase());
       const matchesOwner = !objectiveFilters.owner || String(objective.ownerId || '') === objectiveFilters.owner;
       const matchesStatus = !objectiveFilters.status || objectiveActivityStatus(objective) === objectiveFilters.status;
-      return matchesName && matchesOwner && matchesStatus;
+      const matchesFocus = !objectiveFilters.focus || objective.focus === objectiveFilters.focus;
+      const hasIndicator = indicators.some(indicator => String(indicator.objectiveId) === String(objective.id));
+      const matchesIndicator = !objectiveFilters.indicator || (objectiveFilters.indicator === 'with' ? hasIndicator : !hasIndicator);
+      return matchesName && matchesOwner && matchesStatus && matchesFocus && matchesIndicator;
     });
     const changeObjectiveStatus = async (objective, status) => {
       if (!(isGcg || isResponsibleManager) || !['Activo', 'No activo'].includes(status) || !scopedObjectives.some(item => item.id === objective.id)) throw new Error('No puedes cambiar el estatus de este objetivo.');
@@ -620,15 +628,16 @@ export default function App() {
           <div className="space-y-6">
             <h2 className="text-lg font-semibold text-[#0F172A]">Objetivos Estratégicos</h2>
             
-            <div className="grid gap-4">
+            <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
               {!visibleObjectives.length && <p className="rounded-xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-500">No hay objetivos con este estatus.</p>}
               {visibleObjectives.map(obj => {
                 const owner = availableUsers.find(u => u.id === obj.ownerId);
                 const objProjects = projects.filter(p => p.objectiveId === obj.id);
+                const objActions = tasks.filter(task => task.objectiveId === obj.id);
                 const objIndicators = indicators.filter(i => i.objectiveId === obj.id);
                 
                 return (
-                  <Card key={obj.id} className="p-5 hover:-translate-y-0.5 transition-transform duration-200 group" onClick={() => navigateTo('objective-detail', obj.name, { objectiveId: obj.id })}>
+                  <Card key={obj.id} className="group flex min-h-[272px] flex-col p-5 transition-transform duration-200 hover:-translate-y-0.5" onClick={() => navigateTo('objective-detail', obj.name, { objectiveId: obj.id })}>
                     <div className="flex justify-between items-start gap-3 mb-4">
                       <div className="min-w-0 flex-1">
                         <p className="text-xs font-semibold text-blue-700 mb-1">{obj.code}</p><h3 className="break-words text-lg font-semibold text-slate-900 group-hover:text-[#1D4ED8] transition-colors">{obj.name}</h3>
@@ -645,10 +654,11 @@ export default function App() {
                       <ProgressBar progress={obj.progress} status={obj.status} />
                     </div>
 
-                    <div className="flex items-center justify-between pt-4 border-t border-slate-100">
-                      <div className="flex items-center gap-4 text-sm text-slate-600">
-                        <div className="flex items-center gap-1.5" title="Proyectos"><FolderKanban className="w-4 h-4 text-slate-400" /> {objProjects.length}</div>
-                        <div className="flex items-center gap-1.5" title="Indicadores"><BarChart3 className="w-4 h-4 text-slate-400" /> {objIndicators.length}</div>
+                    <div className="mt-auto flex items-center justify-between border-t border-slate-100 pt-4">
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-600">
+                        <div className="flex items-center gap-1.5" title="Proyectos vinculados"><FolderKanban className="h-4 w-4 text-slate-400" /> {objProjects.length}</div>
+                        <div className="flex items-center gap-1.5" title="Acciones estratégicas"><Hammer className="h-4 w-4 text-slate-400" /> {objActions.length}</div>
+                        <div className="flex items-center gap-1.5" title="Indicador"><BarChart3 className="h-4 w-4 text-slate-400" /><span>{objIndicators.length ? 'Con indicador' : 'Pendiente de indicador'}</span></div>
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-xs font-medium text-slate-600" title={owner?.name}>{owner?.avatar}</div>
@@ -718,6 +728,14 @@ export default function App() {
     );
   };
 
+  const EditObjectiveView = () => {
+    const objective = objectives.find(item => item.id === selectedObjectiveId);
+    const [formData, setFormData] = useState(() => objective ? { name: objective.name || '', description: objective.description || '', focus: objective.focus || '', ownerId: objective.ownerId || '', validityStartYear: objective.validityStartYear || '', validityEndYear: objective.validityEndYear || '' } : null);
+    if (!objective || !formData) return <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-slate-500">No se encontró el objetivo.</div>;
+    const handleSubmit = async (event) => { event.preventDefault(); const { data, error } = await supabase.from('objectives').update({ name: formData.name, description: formData.description, focus: formData.focus, owner_email: formData.ownerId || null, target_date: `${formData.validityEndYear}-12-31`, validity_start_year: Number(formData.validityStartYear), validity_end_year: Number(formData.validityEndYear), updated_at: new Date().toISOString() }).eq('id', objective.id).select().single(); if (error) { setDataError('No se pudo actualizar el objetivo. Inténtalo nuevamente.'); return; } setObjectives(items => items.map(item => item.id === objective.id ? toObjective(data) : item)); notify('Objetivo actualizado correctamente.'); navigateTo('objective-detail', data.name, { objectiveId: objective.id, objectiveTab: selectedObjectiveTab }); };
+    return <div className="mx-auto max-w-2xl fade-in"><div className="mb-6"><h1 className="text-2xl font-bold text-[#0F172A]">Modificar objetivo</h1><p className="text-slate-500">Actualiza los datos y características del objetivo.</p></div><Card className="p-6"><form onSubmit={handleSubmit} className="space-y-5"><Input label="Nombre del objetivo *" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} /><div className="flex flex-col gap-1.5"><label className="text-sm font-medium text-slate-700">Descripción</label><textarea className="min-h-[100px] rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6]" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} /></div><Select label="Foco estratégico *" required options={['Financiero', 'Cliente', 'Procesos', 'Personas/Aprendizaje']} value={formData.focus} onChange={e => setFormData({ ...formData, focus: e.target.value })} /><SearchablePeopleSelect label="Responsable principal" required options={availableUsers.filter(user => user.role === 'gerente_responsable')} value={formData.ownerId} onChange={ownerId => setFormData({ ...formData, ownerId })} /><div className="grid grid-cols-1 gap-5 md:grid-cols-2"><Input label="Inicio de vigencia *" type="number" min="2020" max="2100" required value={formData.validityStartYear} onChange={e => setFormData({ ...formData, validityStartYear: e.target.value })} /><Input label="Fin de vigencia *" type="number" min="2020" max="2100" required value={formData.validityEndYear} onChange={e => setFormData({ ...formData, validityEndYear: e.target.value })} /></div><div className="flex justify-end gap-3 border-t border-slate-100 pt-6"><Button type="button" variant="ghost" onClick={() => navigateTo('objective-detail', objective.name, { objectiveId: objective.id, objectiveTab: selectedObjectiveTab })}>Cancelar</Button><Button type="submit">Guardar cambios</Button></div></form></Card></div>;
+  };
+
   const ObjectiveDetailView = () => {
     const obj = objectivesWithIndicatorProgress.find(o => o.id === selectedObjectiveId);
     const [activeTab, setActiveTab] = useState(selectedObjectiveTab);
@@ -761,7 +779,7 @@ export default function App() {
                   <div className="text-3xl font-bold text-[#1D4ED8]">{obj.progress}%</div>
                   <p className="text-sm text-slate-500 font-medium">Avance general</p>
                 </div>
-                {isGcg && <Button type="button" variant="danger" onClick={deleteObjective} className="px-3 py-2"><Trash2 className="w-4 h-4" />Eliminar objetivo</Button>}
+                {isGcg && <div className="relative"><button type="button" onClick={() => setObjectiveActionsOpen(open => !open)} aria-label="Acciones del objetivo" aria-expanded={objectiveActionsOpen} className={`rounded-lg border p-2 text-slate-600 transition hover:bg-slate-50 ${objectiveActionsOpen ? 'border-blue-200 bg-blue-50 text-[#1D4ED8]' : 'border-slate-200'}`}><Settings className="h-5 w-5" /></button>{objectiveActionsOpen && <div className="absolute right-0 top-full z-30 mt-2 w-52 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 text-left shadow-xl"><button type="button" onClick={() => { setObjectiveActionsOpen(false); navigateTo('edit-objective', 'Modificar objetivo', { objectiveId: obj.id, objectiveTab: activeTab }); }} className="flex w-full items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"><FilePenLine className="h-4 w-4 text-[#1D4ED8]" />Modificar objetivo</button><button type="button" onClick={() => { setObjectiveActionsOpen(false); deleteObjective(); }} className="flex w-full items-center gap-2 px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50"><Trash2 className="h-4 w-4" />Eliminar objetivo</button></div>}</div>}
               </div>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-4 border-t border-slate-100">
@@ -776,7 +794,7 @@ export default function App() {
 
         <div className="border-b border-slate-200">
           <div className="flex gap-6 overflow-x-auto whitespace-nowrap pr-2">
-            {[ { id: 'summary', label: 'Resumen', icon: Activity, visible: true }, { id: 'projects', label: 'Proyectos', icon: FolderKanban, visible: isResponsibleManager || isGcg }].filter(tab => tab.visible).map(tab => (
+            {[ { id: 'summary', label: 'Resumen', icon: Activity, visible: true }, { id: 'projects', label: 'Proyectos y Acciones', icon: FolderKanban, visible: isResponsibleManager || isGcg }].filter(tab => tab.visible).map(tab => (
               <button key={tab.id} onClick={() => { setActiveTab(tab.id); setSelectedObjectiveTab(tab.id); setNavHistory(history => history.map((entry, index) => index === history.length - 1 && entry.id === 'objective-detail' ? { ...entry, objectiveTab: tab.id } : entry)); }} className={`pb-3 flex items-center gap-2 text-sm font-medium border-b-2 transition-colors ${activeTab === tab.id ? 'border-[#1D4ED8] text-[#1D4ED8]' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}`}>
                 <tab.icon className="w-4 h-4" /> {tab.label}
               </button>
@@ -801,7 +819,7 @@ export default function App() {
                  )}
                </Card>
                <Card className="p-5">
-                 <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2"><BarChart3 className="w-5 h-5 text-slate-400"/> Indicadores Clave</h3>
+                 <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2"><BarChart3 className="w-5 h-5 text-slate-400"/> Indicador</h3>
                  {objIndicators.length === 0 ? <div className="space-y-3"><p className="text-sm text-slate-500 italic">No hay indicadores definidos.</p>{isGcg && <Button onClick={() => navigateTo('new-indicator', 'Nuevo Indicador', { objectiveId: obj.id, objectiveTab: 'summary' })} className="w-fit text-xs py-1.5"><Plus className="w-4 h-4"/> Crear indicador</Button>}</div> : (
                    <div className="space-y-3">
                      {objIndicators.map(ind => {
@@ -820,10 +838,9 @@ export default function App() {
           )}
 
           {activeTab === 'projects' && (
-            <div className="space-y-4">
+            <div className="space-y-5 rounded-2xl border border-slate-200 bg-slate-100/80 p-4 md:p-5">
               <PmoProjects objective={obj} projects={objProjects} canManage={isGcg} canSync={isGcg} accessToken={session?.access_token} onReload={loadOperationalData} onNotify={notify} />
-              <div className="flex flex-wrap items-center justify-between gap-3"><div><h3 className="text-lg font-bold text-slate-900">Acciones estratégicas</h3>{isResponsibleManager && <p className="mt-1 text-sm text-slate-500">Solo consulta: la creación y vinculación se gestionan por GCG.</p>}</div>{isGcg && <Button onClick={() => navigateTo('new-project', 'Añadir acción stratégique', { objectiveId: obj.id, objectiveTab: 'projects' })}><Plus className="h-4 w-4" />Añadir acción estratégica</Button>}</div>
-              <StrategicActions actions={objActions} users={availableUsers} onDelete={async action => { if (!isGcg) throw new Error('Solo GCG puede eliminar esta acción.'); const { error } = await supabase.from('strategic_actions').delete().eq('id', action.id).select('id').single(); if (error) throw new Error('No se pudo eliminar la acción. Inténtalo nuevamente.'); setTasks(items => items.filter(item => item.id !== action.id)); notify('Acción estratégica eliminada.'); }} onStatusChange={async (action, status) => { if (!isGcg || !['Cerrado', 'En progreso'].includes(status)) throw new Error('Solo GCG puede cambiar el estatus.'); const now = new Date().toISOString(); const { data, error } = await supabase.from('strategic_actions').update({ status, completed_at: status === 'Cerrado' ? now : null, updated_at: now }).eq('id', action.id).select().single(); if (error) throw new Error('No se pudo guardar el estatus.'); setTasks(items => items.map(item => item.id === action.id ? toAction(data) : item)); notify(status === 'Cerrado' ? 'Acción cerrada; se registró la fecha de término real.' : 'Acción reabierta.'); }} canEdit={isGcg} onEdit={action => navigateTo('edit-action', 'Editar acción estratégica', { objectiveId: obj.id, actionId: action.id, objectiveTab: 'projects' })} />
+              <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"><div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4"><div><h3 className="text-lg font-bold text-slate-900">Acciones estratégicas</h3>{isResponsibleManager && <p className="mt-1 text-sm text-slate-500">Solo consulta: la creación y vinculación se gestionan por GCG.</p>}</div>{isGcg && <Button onClick={() => navigateTo('new-project', 'Añadir acción stratégique', { objectiveId: obj.id, objectiveTab: 'projects' })}><Plus className="h-4 w-4" />Añadir acción estratégica</Button>}</div><div className="p-4"><StrategicActions actions={objActions} users={availableUsers} onDelete={async action => { if (!isGcg) throw new Error('Solo GCG puede eliminar esta acción.'); const { error } = await supabase.from('strategic_actions').delete().eq('id', action.id).select('id').single(); if (error) throw new Error('No se pudo eliminar la acción. Inténtalo nuevamente.'); setTasks(items => items.filter(item => item.id !== action.id)); notify('Acción estratégica eliminada.'); }} onStatusChange={async (action, status) => { if (!isGcg || !['Cerrado', 'En progreso'].includes(status)) throw new Error('Solo GCG puede cambiar el estatus.'); const now = new Date().toISOString(); const { data, error } = await supabase.from('strategic_actions').update({ status, completed_at: status === 'Cerrado' ? now : null, updated_at: now }).eq('id', action.id).select().single(); if (error) throw new Error('No se pudo guardar el estatus.'); setTasks(items => items.map(item => item.id === action.id ? toAction(data) : item)); notify(status === 'Cerrado' ? 'Acción cerrada; se registró la fecha de término real.' : 'Acción reabierta.'); }} canEdit={isGcg} onEdit={action => navigateTo('edit-action', 'Editar acción estratégica', { objectiveId: obj.id, actionId: action.id, objectiveTab: 'projects' })} /></div></section>
             </div>
           )}
 
@@ -1258,7 +1275,7 @@ export default function App() {
         <header className="h-14 min-h-14 shrink-0 bg-white border-b border-slate-200 flex items-center px-4 md:px-5 sticky top-0 z-50 isolate overflow-visible shadow-sm gap-3">
            {(navHistory.length > 1 || (currentView === 'bio-indicators' && indicatorFilters.indicatorId)) && <button onClick={goBack} className="shrink-0 flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900" aria-label="Retroceder"><ArrowLeft className="w-4 h-4" /> <span>Atrás</span></button>}
            {currentView === 'bio-indicators' && (indicatorFilters.indicatorId ? <div className="ml-auto flex items-center gap-1.5"><IndicatorYearFilter reports={reports.filter(report => String(report.indicatorId) === String(indicatorFilters.indicatorId))} year={bioIndicatorYear} onChange={setBioIndicatorYear} />{!isGeneralManager && <div className="relative"><button type="button" aria-label="Acciones del indicador" title="Acciones del indicador" aria-expanded={indicatorActionsOpen} onClick={() => setIndicatorActionsOpen(value => !value)} className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900"><Settings className="h-5 w-5" /></button>{indicatorActionsOpen && <div className="absolute right-0 top-full z-[60] mt-2 w-56 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl"><button type="button" onClick={() => openHeaderIndicatorAction('report')} className="w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-800">Registrar resultado</button><button type="button" onClick={() => openHeaderIndicatorAction('modify')} className="w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-800">{isGcg ? 'Realizar modificación' : 'Solicitar modificación'}</button><button type="button" onClick={() => openHeaderIndicatorAction('history')} className="w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-800">Historial</button>{isGcg && <button type="button" onClick={deleteHeaderIndicator} className="w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-red-700 hover:bg-red-50">Eliminar indicador</button>}</div>}</div>}</div> : <IndicatorFilterMenu reports={reports} isGcg={isGcg} objectives={objectivesWithIndicatorProgress} indicators={indicators} users={availableUsers} sites={sites} assignments={siteAssignments} filters={indicatorFilters} onChange={changeIndicatorFilters} />)}
-           {currentView === 'objectives' && <ObjectiveFilterControl />}
+           {currentView === 'objectives' && ObjectiveFilterControl()}
 
         </header>
         <div className="app-content p-4 md:p-6 flex-1 relative z-0">
@@ -1270,6 +1287,7 @@ export default function App() {
           {currentView === 'objectives' && <ObjectivesView />}
           {currentView === 'new-objective' && <ObjectiveFormView />}
           {currentView === 'objective-detail' && <ObjectiveDetailView />}
+          {currentView === 'edit-objective' && <EditObjectiveView />}
           {currentView === 'new-project' && <ProjectFormView />}
           {currentView === 'edit-action' && <EditActionView />}
           {currentView === 'new-indicator' && <IndicatorFormView />}

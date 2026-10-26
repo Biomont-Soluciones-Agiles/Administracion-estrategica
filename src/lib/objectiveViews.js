@@ -1,3 +1,5 @@
+import { parseReportPeriod } from './reporting.js';
+
 export function rankedObjectives(objectives) {
   return objectives.map(objective => ({ ...objective, progress: Number.isFinite(Number(objective.progress)) ? Math.min(100, Math.max(0, Number(objective.progress))) : 0 })).sort((a, b) => b.progress - a.progress);
 }
@@ -31,21 +33,21 @@ export function activeObjectives(objectives, now = new Date()) {
 }
 
 
-// Objective progress is the mean advancement of its latest indicator measurements.
-export function withIndicatorMeasurementProgress(objectives = [], indicators = [], reports = []) {
+// Objective progress is the consolidated measurement of its indicator for the current year.
+export function withIndicatorMeasurementProgress(objectives = [], indicators = [], reports = [], now = new Date()) {
+  const currentYear = String(new Intl.DateTimeFormat('en', { timeZone: 'America/Lima', year: 'numeric' }).format(now));
   return objectives.map(objective => {
-    const indicatorIds = new Set(indicators.filter(indicator => String(indicator.objectiveId ?? indicator.objective_id) === String(objective.id)).map(indicator => String(indicator.id)));
-    const values = [...indicatorIds].map(id => {
-      const history = reports.filter(report => String(report.indicatorId ?? report.indicator_id) === id && report.result != null && report.status !== 'Sin datos')
-        .sort((a, b) => String(a.period || '').localeCompare(String(b.period || '')) || String(a.created_at || '').localeCompare(String(b.created_at || '')));
-      const latest = history.at(-1);
-      if (!latest) return null;
-      const result = Number(latest.result), target = Number(latest.measurement_target ?? latest.target);
-      if (!Number.isFinite(result) || !Number.isFinite(target) || target === 0) return null;
-      const comparator = latest.measurement_comparator || latest.comparator || '>=';
-      const raw = comparator === '<=' || comparator === '<' ? target / result * 100 : result / target * 100;
-      return Number.isFinite(raw) ? Math.min(100, Math.max(0, raw)) : null;
-    }).filter(value => value != null);
-    return { ...objective, progress: values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length) : 0 };
+    const indicator = indicators.find(item => String(item.objectiveId ?? item.objective_id) === String(objective.id));
+    if (!indicator) return { ...objective, progress: 0 };
+
+    const currentYearReports = reports
+      .filter(report => String(report.indicatorId ?? report.indicator_id) === String(indicator.id) && report.result != null && report.status !== 'Sin datos')
+      .map(report => ({ report, period: parseReportPeriod(report.period) }))
+      .filter(item => item.period?.year === currentYear && Number.isFinite(Number(item.report.result)));
+
+    if (!currentYearReports.length) return { ...objective, progress: 0 };
+
+    const consolidated = currentYearReports.reduce((sum, item) => sum + Number(item.report.result), 0) / currentYearReports.length;
+    return { ...objective, progress: Number(consolidated.toFixed(2)) };
   });
 }

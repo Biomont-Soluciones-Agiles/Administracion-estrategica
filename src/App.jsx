@@ -177,12 +177,14 @@ const ProgressBar = ({ progress, status, target, comparator, unit = '%' }) => {
   else if (status === 'Fuera de meta') color = 'bg-red-500';
   else if (status === 'En riesgo') color = 'bg-yellow-500';
   const targetText = hasTarget ? `Meta ${comparator} ${numericTarget} ${displayUnit(unit)}`.trim() : '';
-  return <div className="relative w-full pb-5">
+  const targetLabelPosition = targetPosition >= 88 ? 'right-0 text-right' : targetPosition <= 12 ? 'left-0 text-left' : '-translate-x-1/2';
+  const targetLabelStyle = targetPosition >= 88 || targetPosition <= 12 ? undefined : { left: `${targetPosition}%` };
+  return <div className="relative w-full pb-8">
     <div className="relative h-2 overflow-visible rounded-full bg-slate-100">
       <div className={`h-2 rounded-full ${color} transition-all duration-500`} style={{ width: `${safeProgress}%` }} />
       {hasTarget && <span aria-label={targetText} className="absolute -top-2.5 h-7 w-0.5 -translate-x-1/2 rounded-full bg-slate-950" style={{ left: `${targetPosition}%` }} />}
     </div>
-    {hasTarget && <span className="absolute bottom-0 z-10 -translate-x-1/2 whitespace-nowrap text-[10px] font-semibold text-slate-800" style={{ left: `${targetPosition}%` }}>{targetText}</span>}
+    {hasTarget && <span className={`absolute bottom-1 z-10 whitespace-nowrap text-[10px] font-semibold leading-none text-slate-800 ${targetLabelPosition}`} style={targetLabelStyle}>{targetText}</span>}
   </div>;
 }
 

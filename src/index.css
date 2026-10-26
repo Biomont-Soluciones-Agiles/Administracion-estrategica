@@ -34,9 +34,61 @@ body {
   .app-main { margin-left: var(--sidebar-width); }
 }
 
-.app-content h1 { font-size: 1.5rem; line-height: 2rem; letter-spacing: -0.025em; }
-.app-content h2 { font-size: 1rem; line-height: 1.5rem; }
-.app-content h3 { font-size: 0.875rem; line-height: 1.375rem; }
+/* A clear, repeatable text hierarchy for every workspace view. */
+.app-content h1 {
+  font-size: clamp(1.875rem, 2.2vw, 2.25rem);
+  line-height: 1.15;
+  font-weight: 750;
+  letter-spacing: -0.035em;
+  color: #0f172a;
+}
+.app-content h2 {
+  font-size: 1.375rem;
+  line-height: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+}
+.app-content h3 {
+  font-size: 1.0625rem;
+  line-height: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.0125em;
+  color: #172554;
+}
+.app-content h4 {
+  font-size: 0.9375rem;
+  line-height: 1.375rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+.app-content .section-heading,
+.detail-section-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+}
+.app-content .section-heading::before,
+.detail-section-heading::before {
+  content: '';
+  width: 0.25rem;
+  height: 1.5rem;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #2563eb;
+}
+.detail-page-title {
+  font-size: clamp(1.75rem, 2.1vw, 2.25rem);
+  line-height: 1.15;
+  font-weight: 750;
+  letter-spacing: -0.035em;
+  color: #0f172a;
+}
 .app-content p { overflow-wrap: anywhere; }
 
 /* Compact the recurring card and section spacing across all views. */

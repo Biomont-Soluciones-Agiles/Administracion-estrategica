@@ -658,7 +658,7 @@ export default function App() {
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-600">
                         <div className="flex items-center gap-1.5" title="Proyectos vinculados"><FolderKanban className="h-4 w-4 text-slate-400" /> {objProjects.length}</div>
                         <div className="flex items-center gap-1.5" title="Acciones estratégicas"><Hammer className="h-4 w-4 text-slate-400" /> {objActions.length}</div>
-                        <div className="flex items-center gap-1.5" title="Indicador"><BarChart3 className="h-4 w-4 text-slate-400" /><span>{objIndicators.length ? 'Con indicador' : 'Pendiente de indicador'}</span></div>
+                        <div className={`flex items-center gap-1.5 font-medium ${objIndicators.length ? 'text-emerald-600' : 'text-red-600'}`} title="Indicador"><BarChart3 className={`h-4 w-4 ${objIndicators.length ? 'text-emerald-500' : 'text-red-500'}`} /><span>{objIndicators.length ? 'Con indicador' : 'Pendiente de indicador'}</span></div>
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-xs font-medium text-slate-600" title={owner?.name}>{owner?.avatar}</div>

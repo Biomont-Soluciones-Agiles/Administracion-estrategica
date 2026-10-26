@@ -1,24 +1,28 @@
 import { MONTHS, parseReportPeriod } from './reporting.js';
 
-// Each month has its own slot. Missing reports never become zero or shift years.
-export function historicalComparisonSeries(reports, year, compareWithYear = null) {
-  const currentYear = String(year);
-  const previousYear = String(compareWithYear || (Number(year) - 1));
-  const byPeriod = new Map();
+export const comparisonKey = year => `year_${year}`;
+
+export function historicalComparisonSeries(reports, selectedYears = []) {
+  const years = [...new Set(selectedYears.map(String))];
+  const values = new Map();
   const sorted = [...reports].sort((a, b) =>
     String(a.created_at || '').localeCompare(String(b.created_at || '')) ||
-    Number(a.id || 0) - Number(b.id || 0));
+    Number(a.id || 0) - Number(b.id || 0)
+  );
+
   for (const report of sorted) {
     const period = parseReportPeriod(report.period);
-    if (!period || ![currentYear, previousYear].includes(period.year)) continue;
-    const value = report.result == null || report.status === 'Sin datos' || !Number.isFinite(Number(report.result))
-      ? null : Number(report.result);
-    byPeriod.set(period.order, value);
+    if (!period || !years.includes(period.year)) continue;
+    values.set(`${period.year}-${period.month}`,
+      report.result == null || report.status === 'Sin datos' || !Number.isFinite(Number(report.result))
+        ? null
+        : Number(report.result)
+    );
   }
-  return MONTHS.map((month, index) => ({
-    period: month.slice(0, 3),
-    monthName: month,
-    resultado: byPeriod.get(Number(currentYear) * 12 + index) ?? null,
-    previous: byPeriod.get(Number(previousYear) * 12 + index) ?? null,
-  }));
+
+  return MONTHS.map(month => {
+    const row = { period: month.slice(0, 3), monthName: month };
+    years.forEach(year => { row[comparisonKey(year)] = values.get(`${year}-${month.toLowerCase()}`) ?? null; });
+    return row;
+  });
 }

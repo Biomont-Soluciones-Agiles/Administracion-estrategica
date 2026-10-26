@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -16,6 +18,18 @@
 body {
   background-color: #F8FAFC;
   font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+}
+
+/* Inter mantiene la lectura de datos; Manrope da presencia a la jerarquía y navegación. */
+.biomet-app {
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+}
+.biomet-app :is(button, h1, h2, h3, h4, .detail-page-title, .detail-section-heading, .section-heading) {
+  font-family: 'Manrope', 'Segoe UI', Arial, sans-serif;
+}
+.app-sidebar,
+.app-sidebar button {
+  font-family: 'Manrope', 'Segoe UI', Arial, sans-serif;
 }
 
 /* Shared shell dimensions keep the content aligned with the navigation. */

@@ -244,7 +244,7 @@ export default function App() {
   };
   const isGeneralManager = selectedRole?.key === 'gerente_general';
   const isResponsibleManager = selectedRole?.name === 'Gerente responsable';
-  const isGcg = selectedRole?.name === 'GCG';
+  const isGcg = selectedRole?.key === 'gcg' || selectedRole?.name === 'GCG' || assignedRole === 'gcg';
   const isSuperAdmin = assignedRole === 'super_admin';
   const availableUsers = [
     ...organizationPeople.map(person => ({ id: person.id, email: person.email, name: microsoftPeople.find(item => item.email === person.email?.toLowerCase())?.full_name || person.full_name, role: person.role, avatar: person.full_name.slice(0, 2).toUpperCase() })),
@@ -779,7 +779,6 @@ export default function App() {
 
     return (
       <div className="fade-in space-y-6">
-        {isGcg && <div className="fixed right-4 top-2 z-[70]"><button type="button" onClick={() => setObjectiveActionsOpen(open => !open)} aria-label="Acciones del objetivo" title="Acciones del objetivo" aria-expanded={objectiveActionsOpen} className={`rounded-lg border p-2 text-slate-600 transition hover:bg-slate-50 ${objectiveActionsOpen ? 'border-blue-200 bg-blue-50 text-[#1D4ED8]' : 'border-slate-200 bg-white shadow-sm'}`}><Settings className="h-5 w-5" /></button>{objectiveActionsOpen && <div className="absolute right-0 top-full z-[80] mt-2 w-52 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 text-left shadow-xl"><button type="button" onClick={() => { setObjectiveActionsOpen(false); navigateTo('edit-objective', 'Modificar objetivo', { objectiveId: obj.id, objectiveTab: activeTab }); }} className="flex w-full items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"><FilePenLine className="h-4 w-4 text-[#1D4ED8]" />Modificar objetivo</button><button type="button" onClick={() => { setObjectiveActionsOpen(false); deleteObjective(); }} className="flex w-full items-center gap-2 px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50"><Trash2 className="h-4 w-4" />Eliminar objetivo</button></div>}</div>}
         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-[#f0f9ff] rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none opacity-60"></div>
           <div className="relative z-10">
@@ -1223,6 +1222,19 @@ export default function App() {
   const headerIndicator = currentView === 'bio-indicators' && indicatorFilters.indicatorId
     ? indicators.find(item => String(item.id) === String(indicatorFilters.indicatorId))
     : null;
+  const headerObjective = currentView === 'objective-detail'
+    ? objectivesWithIndicatorProgress.find(item => String(item.id) === String(selectedObjectiveId))
+    : null;
+  const deleteHeaderObjective = async () => {
+    if (!headerObjective || !isGcg) return;
+    setObjectiveActionsOpen(false);
+    if (!window.confirm(`¿Eliminar el objetivo “${headerObjective.name}”? Esta acción también eliminará su información vinculada.`)) return;
+    const { error } = await supabase.rpc('delete_objective', { objective: headerObjective.id });
+    if (error) { setDataError(`No se pudo eliminar el objetivo: ${error.message}`); return; }
+    await loadOperationalData();
+    notify('Objetivo eliminado.');
+    navigateTo('objectives', 'Objetivos');
+  };
   const openHeaderIndicatorAction = action => {
     if (!headerIndicator) return;
     setIndicatorActionsOpen(false);
@@ -1290,6 +1302,7 @@ export default function App() {
            {(navHistory.length > 1 || (currentView === 'bio-indicators' && indicatorFilters.indicatorId)) && <button onClick={goBack} className="shrink-0 flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900" aria-label="Retroceder"><ArrowLeft className="w-4 h-4" /> <span>Atrás</span></button>}
            {currentView === 'bio-indicators' && (indicatorFilters.indicatorId ? <div className="ml-auto flex items-center gap-1.5"><IndicatorYearFilter reports={reports.filter(report => String(report.indicatorId) === String(indicatorFilters.indicatorId))} year={bioIndicatorYear} onChange={setBioIndicatorYear} />{!isGeneralManager && <div className="relative"><button type="button" aria-label="Acciones del indicador" title="Acciones del indicador" aria-expanded={indicatorActionsOpen} onClick={() => setIndicatorActionsOpen(value => !value)} className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900"><Settings className="h-5 w-5" /></button>{indicatorActionsOpen && <div className="absolute right-0 top-full z-[60] mt-2 w-56 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl"><button type="button" onClick={() => openHeaderIndicatorAction('report')} className="w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-800">Registrar resultado</button><button type="button" onClick={() => openHeaderIndicatorAction('modify')} className="w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-800">{isGcg ? 'Realizar modificación' : 'Solicitar modificación'}</button><button type="button" onClick={() => openHeaderIndicatorAction('history')} className="w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-800">Historial</button>{isGcg && <button type="button" onClick={deleteHeaderIndicator} className="w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-red-700 hover:bg-red-50">Eliminar indicador</button>}</div>}</div>}</div> : <IndicatorFilterMenu reports={reports} isGcg={isGcg} objectives={objectivesWithIndicatorProgress} indicators={indicators} users={availableUsers} sites={sites} assignments={siteAssignments} filters={indicatorFilters} onChange={changeIndicatorFilters} />)}
            {currentView === 'objectives' && ObjectiveFilterControl()}
+           {currentView === 'objective-detail' && isGcg && headerObjective && <div className="relative ml-auto"><button type="button" onClick={() => setObjectiveActionsOpen(open => !open)} aria-label="Acciones del objetivo" title="Acciones del objetivo" aria-expanded={objectiveActionsOpen} className={`flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 ${objectiveActionsOpen ? 'bg-blue-50 text-[#1D4ED8]' : ''}`}><Settings className="h-5 w-5" /></button>{objectiveActionsOpen && <div className="absolute right-0 top-full z-[80] mt-2 w-52 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 text-left shadow-xl"><button type="button" onClick={() => { setObjectiveActionsOpen(false); navigateTo('edit-objective', 'Modificar objetivo', { objectiveId: headerObjective.id, objectiveTab: selectedObjectiveTab }); }} className="flex w-full items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"><FilePenLine className="h-4 w-4 text-[#1D4ED8]" />Modificar objetivo</button><button type="button" onClick={deleteHeaderObjective} className="flex w-full items-center gap-2 px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50"><Trash2 className="h-4 w-4" />Eliminar objetivo</button></div>}</div>}
 
         </header>
         <div className="app-content p-4 md:p-6 flex-1 relative z-0">

@@ -25,7 +25,7 @@ function MeasurementTooltip({ active, payload, label, unit, defaultComparator, c
       <strong style={{ color: COMPARISON_COLORS[index % COMPARISON_COLORS.length] }}>{valueWithUnit(row[comparisonKey(year)], unit)}</strong>
     </p>)}
   </div>;
-  if (row.resultado == null) return null;
+  if (row.resultado == null) return <div className="min-w-52 rounded-xl border border-slate-200 bg-white p-3.5 shadow-xl"><p className="font-semibold text-slate-900">{label}</p><div className="mt-3 space-y-2 text-sm"><p className="flex justify-between gap-5 text-slate-600"><span>Meta de la medición</span><strong className="text-slate-900">{row.comparator || defaultComparator} {valueWithUnit(row.meta, unit)}</strong></p><p className="flex justify-between gap-5 text-slate-600"><span>Resultado</span><strong className="text-slate-700">Sin datos</strong></p><p className="w-fit rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">Sin datos</p></div></div>;
   const assessment = deviationAssessment(row.resultado, row.meta, row.comparator || defaultComparator);
   const inTarget = assessment.status === 'en_meta';
   const moderate = assessment.status === 'desviacion_moderada';
@@ -40,7 +40,8 @@ function MeasurementTooltip({ active, payload, label, unit, defaultComparator, c
 }
 
 function MeasurementDot({ cx, cy, payload, indicator }) {
-  if (payload?.resultado == null || !Number.isFinite(cx) || !Number.isFinite(cy)) return null;
+  if (!Number.isFinite(cx) || !Number.isFinite(cy)) return null;
+  if (payload?.resultado == null) return <circle cx={cx} cy={cy} r={4.5} fill="#ffffff" stroke="#94a3b8" strokeWidth={2.5} />;
   const status = deviationAssessment(payload.resultado, payload.meta ?? indicator.target, payload.comparator || indicator.comparator).status;
   const color = status === 'en_meta' ? '#16a34a' : status === 'desviacion_moderada' ? '#f59e0b' : '#dc2626';
   return <circle cx={cx} cy={cy} r={5} fill={color} stroke="#ffffff" strokeWidth={2} />;
@@ -51,8 +52,8 @@ function EndLabel({ x, y, index, lastIndex, text, color, offset = -10 }) {
   return <text x={x + 12} y={y + offset} fill={color} fontSize={12} fontWeight={600}>{text}</text>;
 }
 
-function ValueLabel({ x, y, value, unit, color = NAVY, index = 0, offset }) {
-  if (value == null || !Number.isFinite(x) || !Number.isFinite(y)) return null;
+function ValueLabel({ x, y, value, unit, color = NAVY, index = 0, offset, payload }) {
+  if (value == null || payload?.resultado == null || !Number.isFinite(x) || !Number.isFinite(y)) return null;
   const text = valueWithUnit(value, unit);
   const below = offset == null ? index % 2 === 1 : offset > 0;
   const labelY = y + (offset == null ? (below ? 31 : -27) : offset);
@@ -97,8 +98,13 @@ export default function MeasurementChart({ indicator, reports, year: controlledY
     return { ...report, measurement_target: report.measurement_target ?? (nextChange ? nextChange.target : indicator.target), measurement_comparator: report.measurement_comparator || (nextChange && nextChange.comparator) || indicator.comparator };
   });
   const trendData = measurementSeries(resolvedReports).map(row => ({ ...row, ...deviationAssessment(row.resultado, row.meta, row.comparator) }));
+  let lastMeasuredResult = null;
+  const chartTrendData = trendData.map(row => {
+    if (row.resultado != null) lastMeasuredResult = row.resultado;
+    return { ...row, chartResultado: row.resultado == null ? lastMeasuredResult : row.resultado };
+  });
   const comparisonData = historicalComparisonSeries(reports, activeComparisonYears);
-  const data = comparison ? comparisonData : trendData;
+  const data = comparison ? comparisonData : chartTrendData;
   const comparisonValueRows = comparisonData.flatMap(row => activeComparisonYears.map(selectedYear => ({ resultado: row[comparisonKey(selectedYear)] })));
   const hasData = comparison
     ? comparisonData.some(row => activeComparisonYears.some(selectedYear => row[comparisonKey(selectedYear)] != null))
@@ -155,8 +161,8 @@ export default function MeasurementChart({ indicator, reports, year: controlledY
             <Tooltip filterNull={false} cursor={{ stroke: '#94a3b8', strokeWidth: 1 }} content={<MeasurementTooltip unit={unit} defaultComparator={indicator.comparator} comparison={comparison} comparisonYears={activeComparisonYears} />} />
             {comparison ? activeComparisonYears.map((selectedYear, index) => <Line key={selectedYear} type="linear" dataKey={comparisonKey(selectedYear)} name={selectedYear} stroke={COMPARISON_COLORS[index % COMPARISON_COLORS.length]} strokeWidth={index === 0 ? 2.6 : 2.1} dot={{ r: 4, fill: COMPARISON_COLORS[index % COMPARISON_COLORS.length], stroke: '#fff', strokeWidth: 1.5 }} activeDot={{ r: 5, fill: COMPARISON_COLORS[index % COMPARISON_COLORS.length] }} connectNulls={false} isAnimationActive={false}>
             </Line>) : <>
-              <Area type="linear" dataKey="resultado" name="Medición" stroke={NAVY} strokeWidth={2.5} fill={`url(#${gradientId})`} baseValue={0} dot={props => <MeasurementDot {...props} indicator={indicator} />} activeDot={props => <MeasurementDot {...props} indicator={indicator} />} connectNulls={false} isAnimationActive={false}>
-                <LabelList dataKey="resultado" content={props => <ValueLabel {...props} unit={unit} />} />
+              <Area type="linear" dataKey="chartResultado" name="Medición" stroke={NAVY} strokeWidth={2.5} fill={`url(#${gradientId})`} baseValue={0} dot={props => <MeasurementDot {...props} indicator={indicator} />} activeDot={props => <MeasurementDot {...props} indicator={indicator} />} connectNulls={false} isAnimationActive={false}>
+                <LabelList dataKey="chartResultado" content={props => <ValueLabel {...props} unit={unit} />} />
               </Area>
               <Line type="stepAfter" dataKey="meta" name="Meta" stroke={NAVY} strokeDasharray="6 4" strokeWidth={1.6} dot={false} connectNulls={false} isAnimationActive={false}>
                 <LabelList dataKey="meta" content={props => <EndLabel {...props} lastIndex={lastTargetIndex} text={`Meta · ${valueWithUnit(data[lastTargetIndex]?.meta, unit)}`} color={NAVY} />} />

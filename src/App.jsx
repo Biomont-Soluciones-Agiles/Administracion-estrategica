@@ -276,8 +276,8 @@ export default function App() {
   ];
   const MOCK_USERS = availableUsers;
   const objectiveOwnerOptions = availableUsers.filter((user, index, items) => user.email && items.findIndex(item => item.email === user.email) === index);
-  const currentAccountIds = accountIdentities(session?.user?.email, organizationPeople);
   const signedInEmail = session?.user?.email?.trim().toLowerCase();
+  const currentAccountIds = [...new Set([...accountIdentities(session?.user?.email, organizationPeople), ...(signedInEmail === 'jcardenas@biomont.com.pe' ? ['jcardenas@kunturpharma.pe'] : signedInEmail === 'jcardenas@kunturpharma.pe' ? ['jcardenas@biomont.com.pe'] : [])])];
   const isKunturAccount = /@kunturpharma\.pe$/i.test(signedInEmail || '') || ['jcardenas@biomont.com.pe', 'jcardenas@kunturpharma.pe'].includes(signedInEmail || '');
   const signedInPerson = organizationPeople.find(person => person.email?.trim().toLowerCase() === signedInEmail)
     || microsoftPeople.find(person => person.email?.trim().toLowerCase() === signedInEmail);
@@ -287,8 +287,10 @@ export default function App() {
   const accountOwns = value => currentAccountIds.some(id => String(id).trim().toLowerCase() === String(value ?? '').trim().toLowerCase());
   const isManagerScoped = isResponsibleManager && !isSuperAdmin;
   const objectivesWithIndicatorProgress = withIndicatorMeasurementProgress(objectives, indicators, reports);
-  const scopedObjectives = isManagerScoped ? objectivesWithIndicatorProgress.filter(objective => accountOwns(objective.ownerId)) : objectivesWithIndicatorProgress;
   const managerAssignments = siteAssignments.filter(assignment => assignment.active && accountOwns(assignment.responsible_email));
+  const managerSiteIds = new Set(managerAssignments.map(assignment => String(assignment.site_id)));
+  const siteVisibleIndicatorIds = new Set(siteAssignments.filter(assignment => assignment.active && managerSiteIds.has(String(assignment.site_id))).map(assignment => String(assignment.indicator_id)));
+  const scopedObjectives = isManagerScoped ? objectivesWithIndicatorProgress.filter(objective => indicators.some(indicator => String(indicator.objectiveId) === String(objective.id) && siteVisibleIndicatorIds.has(String(indicator.id)))) : objectivesWithIndicatorProgress;
   const hasBiomontAssignment = managerAssignments.some(assignment => String(sites.find(site => String(site.id) === String(assignment.site_id))?.name || '').trim().toLowerCase() === 'biomont');
   const hideBscForSiteProfile = isKunturAccount || (isManagerScoped && managerAssignments.length > 0 && !hasBiomontAssignment);
   const scopedIndicators = isManagerScoped
@@ -1343,7 +1345,7 @@ export default function App() {
           {currentView === 'new-project' && <ProjectFormView />}
           {currentView === 'edit-action' && <EditActionView />}
           {currentView === 'new-indicator' && <IndicatorFormView />}
-          {currentView === 'indicator-status' && <AssignedIndicators indicators={indicators} objectives={objectivesWithIndicatorProgress} reports={isManagerScoped ? scopedReports : reports} users={availableUsers} siteAssignments={siteAssignments} ownIds={accountIdentities(session.user.email, organizationPeople)} isSuperAdmin={isSuperAdmin} onSelect={openIndicatorWorkspace} />}
+          {currentView === 'indicator-status' && <AssignedIndicators indicators={indicators} objectives={objectivesWithIndicatorProgress} reports={isManagerScoped ? scopedReports : reports} users={availableUsers} siteAssignments={siteAssignments} ownIds={currentAccountIds} isSuperAdmin={isSuperAdmin} onSelect={openIndicatorWorkspace} />}
           {currentView === 'edit-indicator' && <EditIndicatorView />}
           {currentView === 'edit-target' && <EditTargetView />}
           {currentView === 'gcg-review' && isGcg && <ChangeRequests isGcg indicators={indicators} users={organizationPeople} onReload={loadOperationalData} onError={setDataError} />}

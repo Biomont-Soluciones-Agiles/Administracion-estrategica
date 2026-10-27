@@ -288,8 +288,9 @@ export default function App() {
   const isManagerScoped = isResponsibleManager && !isSuperAdmin;
   const objectivesWithIndicatorProgress = withIndicatorMeasurementProgress(objectives, indicators, reports);
   const managerAssignments = siteAssignments.filter(assignment => assignment.active && accountOwns(assignment.responsible_email));
-  const managerAssignedIndicatorIds = new Set(managerAssignments.map(assignment => String(assignment.indicator_id)));
-  const scopedObjectives = isManagerScoped ? objectivesWithIndicatorProgress.filter(objective => managerAssignedIndicatorIds.size > 0 && indicators.some(indicator => String(indicator.objectiveId) === String(objective.id) && managerAssignedIndicatorIds.has(String(indicator.id)))) : objectivesWithIndicatorProgress;
+  const managerSiteIds = new Set(managerAssignments.map(assignment => String(assignment.site_id)));
+  const siteVisibleIndicatorIds = new Set(siteAssignments.filter(assignment => assignment.active && managerSiteIds.has(String(assignment.site_id))).map(assignment => String(assignment.indicator_id)));
+  const scopedObjectives = isManagerScoped ? objectivesWithIndicatorProgress.filter(objective => indicators.some(indicator => String(indicator.objectiveId) === String(objective.id) && siteVisibleIndicatorIds.has(String(indicator.id)))) : objectivesWithIndicatorProgress;
   const hasBiomontAssignment = managerAssignments.some(assignment => String(sites.find(site => String(site.id) === String(assignment.site_id))?.name || '').trim().toLowerCase() === 'biomont');
   const hideBscForSiteProfile = isKunturAccount || (isManagerScoped && managerAssignments.length > 0 && !hasBiomontAssignment);
   const scopedIndicators = isManagerScoped

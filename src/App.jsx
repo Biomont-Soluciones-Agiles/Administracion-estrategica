@@ -41,7 +41,7 @@ const ROLE_LABELS = {
   super_admin: 'Super admin',
 };
 
-const toObjective = (row) => ({ ...row, ownerId: row.owner_email, createdDate: row.created_date, targetDate: row.target_date, validityStartYear: row.validity_start_year, validityEndYear: row.validity_end_year, focus: row.focus });
+const toObjective = (row) => ({ ...row, ownerId: row.owner_email, responsibleManagement: row.responsible_management, createdDate: row.created_date, targetDate: row.target_date, validityStartYear: row.validity_start_year, validityEndYear: row.validity_end_year, focus: row.focus });
 const toProject = (row) => ({ ...row, objectiveId: row.objective_id, ownerId: row.owner_email });
 const toAction = (row) => ({ ...row, objectiveId: row.objective_id, projectId: row.project_id, dueDate: row.due_date, completedAt: row.completed_at, ownerId: row.owner_email });
 const toIndicator = (row) => ({ ...row, objectiveId: row.objective_id, ownerId: row.owner_email, approvalStatus: row.approval_status, reviewFrequency: row.review_frequency, target: Number(row.target) });
@@ -265,7 +265,7 @@ export default function App() {
   const isGcg = selectedRole?.key === 'gcg' || selectedRole?.name === 'GCG' || assignedRole === 'gcg';
   const isSuperAdmin = assignedRole === 'super_admin';
   const availableUsers = [
-    ...organizationPeople.map(person => ({ id: person.id, email: person.email, name: microsoftPeople.find(item => item.email === person.email?.toLowerCase())?.full_name || person.full_name, role: person.role, avatar: person.full_name.slice(0, 2).toUpperCase() })),
+    ...organizationPeople.map(person => ({ id: person.id, email: person.email, name: microsoftPeople.find(item => item.email === person.email?.toLowerCase())?.full_name || person.full_name, role: person.role, jobTitle: person.job_title, management: person.management, submanagement: person.submanagement, isManagementLead: person.is_management_lead, avatar: person.full_name.slice(0, 2).toUpperCase() })),
     ...microsoftPeople.filter(person => !organizationPeople.some(item => item.email?.toLowerCase() === person.email)).map(person => ({ id: person.email, email: person.email, name: person.full_name, role: profiles.find(item => item.email?.toLowerCase() === person.email)?.role || 'directory', avatar: person.full_name.slice(0, 2).toUpperCase() })),
     ...profiles.filter(profile => !organizationPeople.some(person => person.email && person.email === profile.email) && !microsoftPeople.some(person => person.email === profile.email?.toLowerCase())).map(profile => ({
     id: profile.email,
@@ -276,6 +276,12 @@ export default function App() {
   ];
   const MOCK_USERS = availableUsers;
   const objectiveOwnerOptions = availableUsers.filter((user, index, items) => user.email && items.findIndex(item => item.email === user.email) === index);
+  const managementLeads = organizationPeople.filter(person => person.active !== false && person.management && person.is_management_lead && person.email);
+  const managementOptions = [...new Map(managementLeads.map(person => [person.management, person])).values()]
+    .sort((a, b) => a.management.localeCompare(b.management, 'es'))
+    .map(person => ({ value: person.management, label: person.management }));
+  const managementLeadFor = management => managementLeads.find(person => String(person.management) === String(management));
+  const managementForOwner = ownerEmail => organizationPeople.find(person => String(person.email || '').trim().toLowerCase() === String(ownerEmail || '').trim().toLowerCase())?.management || '';
   const signedInEmail = session?.user?.email?.trim().toLowerCase();
   const currentAccountIds = [...new Set([...accountIdentities(session?.user?.email, organizationPeople), ...(signedInEmail === 'jcardenas@biomont.com.pe' ? ['jcardenas@kunturpharma.pe'] : signedInEmail === 'jcardenas@kunturpharma.pe' ? ['jcardenas@biomont.com.pe'] : [])])];
   const isKunturAccount = /@kunturpharma\.pe$/i.test(signedInEmail || '') || ['jcardenas@biomont.com.pe', 'jcardenas@kunturpharma.pe'].includes(signedInEmail || '');
@@ -317,7 +323,7 @@ export default function App() {
     if (!supabase) return;
     const [profilesResult, peopleResult, objectivesResult, projectsResult, actionsResult, indicatorsResult, reportsResult, messagesResult, catalogResult, directoryResult, sitesResult, assignmentsResult, coreResult, generalManagerResult, siteResponsiblesResult] = await Promise.all([
       supabase.from('profiles').select('email, role').order('email'),
-      supabase.from('organization_people').select('id, full_name, email, role').eq('active', true).order('full_name'),
+      supabase.from('organization_people').select('id, full_name, email, role, job_title, management, submanagement, is_management_lead, active').eq('active', true).order('full_name'),
       supabase.from('objectives').select('*').order('created_at', { ascending: false }),
       supabase.from('projects').select('*').order('created_at', { ascending: false }),
       supabase.from('strategic_actions').select('*').order('created_at', { ascending: false }),
@@ -672,7 +678,7 @@ export default function App() {
             <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
               {!visibleObjectives.length && <p className="rounded-xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-500">No hay objetivos con este estatus.</p>}
               {visibleObjectives.map(obj => {
-                const owner = availableUsers.find(u => u.id === obj.ownerId);
+                const objectiveManagement = obj.responsibleManagement || managementForOwner(obj.ownerId) || 'Sin gerencia asignada';
                 const objProjects = projects.filter(p => p.objectiveId === obj.id);
                 const objActions = tasks.filter(task => task.objectiveId === obj.id);
                 const objIndicators = indicators.filter(i => i.objectiveId === obj.id);
@@ -702,10 +708,7 @@ export default function App() {
                         <div className="flex items-center gap-1.5" title="Acciones estratégicas"><Hammer className="h-4 w-4 text-slate-400" /> {objActions.length}</div>
                         <div className={`flex items-center gap-1.5 font-medium ${objIndicators.length ? 'text-emerald-600' : 'text-red-600'}`} title="Indicador"><BarChart3 className={`h-4 w-4 ${objIndicators.length ? 'text-emerald-500' : 'text-red-500'}`} /><span>{objIndicators.length ? 'Con indicador' : 'Pendiente de indicador'}</span></div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-xs font-medium text-slate-600" title={owner?.name}>{owner?.avatar}</div>
-                        <span className="text-xs text-slate-500 hidden sm:inline">{owner?.name}</span>
-                      </div>
+                      <span className="max-w-[11rem] truncate text-right text-xs font-medium text-slate-600" title={objectiveManagement}>{objectiveManagement}</span>
                     </div>
                   </Card>
                 );
@@ -718,15 +721,18 @@ export default function App() {
   };
 
   const ObjectiveFormView = () => {
-    const [formData, setFormData] = useState({ name: '', description: '', focus: '', ownerId: '', validityStartYear: '', validityEndYear: '' });
+    const [formData, setFormData] = useState({ name: '', description: '', focus: '', responsibleManagement: '', validityStartYear: '', validityEndYear: '' });
 
     const handleSubmit = async (e) => {
       e.preventDefault();
+      const managementLead = managementLeadFor(formData.responsibleManagement);
+      if (!managementLead?.email) { setDataError('Selecciona una gerencia responsable válida.'); return; }
       const { data, error } = await supabase.from('objectives').insert({
         name: formData.name,
         description: formData.description,
         focus: formData.focus,
-        owner_email: formData.ownerId || null,
+        owner_email: managementLead.email,
+        responsible_management: formData.responsibleManagement,
         target_date: `${formData.validityEndYear}-12-31`,
         validity_start_year: Number(formData.validityStartYear),
         validity_end_year: Number(formData.validityEndYear),
@@ -755,7 +761,7 @@ export default function App() {
               <textarea className="px-3 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3B82F6] min-h-[100px] text-sm" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
             </div>
             <Select label="Foco estratégico *" required options={['Financiero', 'Cliente', 'Procesos', 'Personas/Aprendizaje']} value={formData.focus} onChange={event => setFormData({ ...formData, focus: event.target.value })} />
-            <SearchablePeopleSelect label="Responsable principal" required options={availableUsers.filter(user => user.role === 'gerente_responsable')} value={formData.ownerId} onChange={ownerId => setFormData({ ...formData, ownerId })} />
+            <Select label="Gerencia responsable *" required options={managementOptions} value={formData.responsibleManagement} onChange={event => setFormData({ ...formData, responsibleManagement: event.target.value })} />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                <Input label="Inicio de vigencia *" type="number" min="2020" max="2100" placeholder="2026" required value={formData.validityStartYear} onChange={e => setFormData({...formData, validityStartYear: e.target.value})} />
                <Input label="Fin de vigencia *" type="number" min="2020" max="2100" placeholder="2027" required value={formData.validityEndYear} onChange={e => setFormData({...formData, validityEndYear: e.target.value})} />
@@ -772,10 +778,10 @@ export default function App() {
 
   const EditObjectiveView = () => {
     const objective = objectives.find(item => item.id === selectedObjectiveId);
-    const [formData, setFormData] = useState(() => objective ? { name: objective.name || '', description: objective.description || '', focus: objective.focus || '', ownerId: objective.ownerId || '', validityStartYear: objective.validityStartYear || '', validityEndYear: objective.validityEndYear || '' } : null);
+    const [formData, setFormData] = useState(() => objective ? { name: objective.name || '', description: objective.description || '', focus: objective.focus || '', responsibleManagement: objective.responsibleManagement || managementForOwner(objective.ownerId), validityStartYear: objective.validityStartYear || '', validityEndYear: objective.validityEndYear || '' } : null);
     if (!objective || !formData) return <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-slate-500">No se encontró el objetivo.</div>;
-    const handleSubmit = async (event) => { event.preventDefault(); const { data, error } = await supabase.from('objectives').update({ name: formData.name, description: formData.description, focus: formData.focus, owner_email: formData.ownerId || null, target_date: `${formData.validityEndYear}-12-31`, validity_start_year: Number(formData.validityStartYear), validity_end_year: Number(formData.validityEndYear), updated_at: new Date().toISOString() }).eq('id', objective.id).select().single(); if (error) { setDataError('No se pudo actualizar el objetivo. Inténtalo nuevamente.'); return; } setObjectives(items => items.map(item => item.id === objective.id ? toObjective(data) : item)); notify('Objetivo actualizado correctamente.'); navigateTo('objective-detail', data.name, { objectiveId: objective.id, objectiveTab: selectedObjectiveTab }); };
-    return <div className="mx-auto max-w-2xl fade-in"><div className="mb-6"><h1 className="text-2xl font-bold text-[#0F172A]">Modificar objetivo</h1><p className="text-slate-500">Actualiza los datos y características del objetivo.</p></div><Card className="p-6"><form onSubmit={handleSubmit} className="space-y-5"><Input label="Nombre del objetivo *" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} /><div className="flex flex-col gap-1.5"><label className="text-sm font-medium text-slate-700">Descripción</label><textarea className="min-h-[100px] rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6]" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} /></div><Select label="Foco estratégico *" required options={['Financiero', 'Cliente', 'Procesos', 'Personas/Aprendizaje']} value={formData.focus} onChange={e => setFormData({ ...formData, focus: e.target.value })} /><SearchablePeopleSelect label="Responsable principal" required options={availableUsers.filter(user => user.role === 'gerente_responsable')} value={formData.ownerId} onChange={ownerId => setFormData({ ...formData, ownerId })} /><div className="grid grid-cols-1 gap-5 md:grid-cols-2"><Input label="Inicio de vigencia *" type="number" min="2020" max="2100" required value={formData.validityStartYear} onChange={e => setFormData({ ...formData, validityStartYear: e.target.value })} /><Input label="Fin de vigencia *" type="number" min="2020" max="2100" required value={formData.validityEndYear} onChange={e => setFormData({ ...formData, validityEndYear: e.target.value })} /></div><div className="flex justify-end gap-3 border-t border-slate-100 pt-6"><Button type="button" variant="ghost" onClick={() => navigateTo('objective-detail', objective.name, { objectiveId: objective.id, objectiveTab: selectedObjectiveTab })}>Cancelar</Button><Button type="submit">Guardar cambios</Button></div></form></Card></div>;
+    const handleSubmit = async (event) => { event.preventDefault(); const managementLead = managementLeadFor(formData.responsibleManagement); if (!managementLead?.email) { setDataError('Selecciona una gerencia responsable válida.'); return; } const { data, error } = await supabase.from('objectives').update({ name: formData.name, description: formData.description, focus: formData.focus, owner_email: managementLead.email, responsible_management: formData.responsibleManagement, target_date: `${formData.validityEndYear}-12-31`, validity_start_year: Number(formData.validityStartYear), validity_end_year: Number(formData.validityEndYear), updated_at: new Date().toISOString() }).eq('id', objective.id).select().single(); if (error) { setDataError('No se pudo actualizar el objetivo. Inténtalo nuevamente.'); return; } setObjectives(items => items.map(item => item.id === objective.id ? toObjective(data) : item)); notify('Objetivo actualizado correctamente.'); navigateTo('objective-detail', data.name, { objectiveId: objective.id, objectiveTab: selectedObjectiveTab }); };
+    return <div className="mx-auto max-w-2xl fade-in"><div className="mb-6"><h1 className="text-2xl font-bold text-[#0F172A]">Modificar objetivo</h1><p className="text-slate-500">Actualiza los datos y características del objetivo.</p></div><Card className="p-6"><form onSubmit={handleSubmit} className="space-y-5"><Input label="Nombre del objetivo *" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} /><div className="flex flex-col gap-1.5"><label className="text-sm font-medium text-slate-700">Descripción</label><textarea className="min-h-[100px] rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6]" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} /></div><Select label="Foco estratégico *" required options={['Financiero', 'Cliente', 'Procesos', 'Personas/Aprendizaje']} value={formData.focus} onChange={e => setFormData({ ...formData, focus: e.target.value })} /><Select label="Gerencia responsable *" required options={managementOptions} value={formData.responsibleManagement} onChange={event => setFormData({ ...formData, responsibleManagement: event.target.value })} /><div className="grid grid-cols-1 gap-5 md:grid-cols-2"><Input label="Inicio de vigencia *" type="number" min="2020" max="2100" required value={formData.validityStartYear} onChange={e => setFormData({ ...formData, validityStartYear: e.target.value })} /><Input label="Fin de vigencia *" type="number" min="2020" max="2100" required value={formData.validityEndYear} onChange={e => setFormData({ ...formData, validityEndYear: e.target.value })} /></div><div className="flex justify-end gap-3 border-t border-slate-100 pt-6"><Button type="button" variant="ghost" onClick={() => navigateTo('objective-detail', objective.name, { objectiveId: objective.id, objectiveTab: selectedObjectiveTab })}>Cancelar</Button><Button type="submit">Guardar cambios</Button></div></form></Card></div>;
   };
 
   const ObjectiveDetailView = () => {
@@ -825,7 +831,7 @@ export default function App() {
               </div>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-4 border-t border-slate-100">
-              <div><p className="text-xs text-slate-400 mb-1">Responsable</p><div className="flex items-center gap-2"><div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-xs text-slate-600">{owner?.avatar}</div><span className="text-sm font-medium text-slate-900">{owner?.name}</span></div></div>
+              <div><p className="text-xs text-slate-400 mb-1">Gerencia responsable</p><p className="text-sm font-medium text-slate-900">{obj.responsibleManagement || managementForOwner(obj.ownerId) || 'Sin gerencia asignada'}</p></div>
               <div><p className="text-xs text-slate-400 mb-1">Foco estratégico</p><p className="text-sm font-medium text-slate-900">{obj.focus || 'Sin foco definido'}</p></div>
               <div><p className="text-xs text-slate-400 mb-1">Periodo de vigencia</p><p className="text-sm font-medium text-slate-900 flex items-center gap-1"><Calendar className="w-4 h-4 text-slate-400" /> {obj.validityStartYear} - {obj.validityEndYear}</p></div>
               <div><p className="text-xs text-slate-400 mb-1">Proyectos activos</p><p className="text-sm font-medium text-slate-900">{objProjects.length}</p></div>
@@ -960,6 +966,25 @@ export default function App() {
   const IndicatorFormView = () => {
     const obj = objectives.find(o => String(o.id) === String(selectedObjectiveId));
     const [formData, setFormData] = useState({ name: '', formula: '', target: '', unit: '%', comparator: '>=', frequency: 'Mensual', ownerId: '', siteAssignments: sites.map(site => ({ siteId: String(site.id), responsibleEmail: '' })) });
+    const defaultBiomontReporter = managementLeadFor(obj?.responsibleManagement || managementForOwner(obj?.ownerId))?.email || '';
+    useEffect(() => {
+      if (!defaultBiomontReporter || !sites.length) return;
+      setFormData(current => {
+        const assignments = current.siteAssignments.length
+          ? current.siteAssignments
+          : sites.map(site => ({ siteId: String(site.id), responsibleEmail: '' }));
+        return {
+          ...current,
+          ownerId: current.ownerId || defaultBiomontReporter,
+          siteAssignments: assignments.map(assignment => {
+            const siteName = String(sites.find(site => String(site.id) === String(assignment.siteId))?.name || '').trim().toLowerCase();
+            return siteName === 'biomont' && !assignment.responsibleEmail
+              ? { ...assignment, responsibleEmail: defaultBiomontReporter }
+              : assignment;
+          }),
+        };
+      });
+    }, [obj?.id, defaultBiomontReporter, sites]);
     const responsibleOptionsForSite = siteId => {
       const siteName = String(sites.find(site => String(site.id) === String(siteId))?.name || '')
         .normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();

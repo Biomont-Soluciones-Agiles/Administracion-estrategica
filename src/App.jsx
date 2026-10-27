@@ -678,7 +678,7 @@ export default function App() {
             <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
               {!visibleObjectives.length && <p className="rounded-xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-500">No hay objetivos con este estatus.</p>}
               {visibleObjectives.map(obj => {
-                const owner = availableUsers.find(u => u.id === obj.ownerId);
+                const objectiveManagement = obj.responsibleManagement || managementForOwner(obj.ownerId) || 'Sin gerencia asignada';
                 const objProjects = projects.filter(p => p.objectiveId === obj.id);
                 const objActions = tasks.filter(task => task.objectiveId === obj.id);
                 const objIndicators = indicators.filter(i => i.objectiveId === obj.id);
@@ -708,10 +708,7 @@ export default function App() {
                         <div className="flex items-center gap-1.5" title="Acciones estratégicas"><Hammer className="h-4 w-4 text-slate-400" /> {objActions.length}</div>
                         <div className={`flex items-center gap-1.5 font-medium ${objIndicators.length ? 'text-emerald-600' : 'text-red-600'}`} title="Indicador"><BarChart3 className={`h-4 w-4 ${objIndicators.length ? 'text-emerald-500' : 'text-red-500'}`} /><span>{objIndicators.length ? 'Con indicador' : 'Pendiente de indicador'}</span></div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-xs font-medium text-slate-600" title={owner?.name}>{owner?.avatar}</div>
-                        <span className="text-xs text-slate-500 hidden sm:inline">{owner?.name}</span>
-                      </div>
+                      <span className="max-w-[11rem] truncate text-right text-xs font-medium text-slate-600" title={objectiveManagement}>{objectiveManagement}</span>
                     </div>
                   </Card>
                 );
@@ -972,16 +969,21 @@ export default function App() {
     const defaultBiomontReporter = managementLeadFor(obj?.responsibleManagement || managementForOwner(obj?.ownerId))?.email || '';
     useEffect(() => {
       if (!defaultBiomontReporter || !sites.length) return;
-      setFormData(current => ({
-        ...current,
-        ownerId: current.ownerId || defaultBiomontReporter,
-        siteAssignments: current.siteAssignments.map(assignment => {
-          const siteName = String(sites.find(site => String(site.id) === String(assignment.siteId))?.name || '').trim().toLowerCase();
-          return siteName === 'biomont' && !assignment.responsibleEmail
-            ? { ...assignment, responsibleEmail: defaultBiomontReporter }
-            : assignment;
-        }),
-      }));
+      setFormData(current => {
+        const assignments = current.siteAssignments.length
+          ? current.siteAssignments
+          : sites.map(site => ({ siteId: String(site.id), responsibleEmail: '' }));
+        return {
+          ...current,
+          ownerId: current.ownerId || defaultBiomontReporter,
+          siteAssignments: assignments.map(assignment => {
+            const siteName = String(sites.find(site => String(site.id) === String(assignment.siteId))?.name || '').trim().toLowerCase();
+            return siteName === 'biomont' && !assignment.responsibleEmail
+              ? { ...assignment, responsibleEmail: defaultBiomontReporter }
+              : assignment;
+          }),
+        };
+      });
     }, [obj?.id, defaultBiomontReporter, sites]);
     const responsibleOptionsForSite = siteId => {
       const siteName = String(sites.find(site => String(site.id) === String(siteId))?.name || '')

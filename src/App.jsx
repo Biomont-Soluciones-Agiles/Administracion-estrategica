@@ -1113,7 +1113,7 @@ export default function App() {
           </div>
         </div>
         <Card className="p-6">
-          <MeasurementChart indicator={ind} reports={indReports} headerAction={(isResponsibleManager || isGcg) && canReport ? <Button onClick={() => setHeaderReportForm(true)} variant="secondary">Registrar resultado</Button> : null} />
+          <MeasurementChart indicator={ind} reports={indReports} headerAction={(isResponsibleManager || isGcg) && canReport ? <Button onClick={() => { setSelectedIndicatorId(ind.id); setHeaderReportForm(true); }} variant="secondary">Registrar resultado</Button> : null} />
         </Card>
         <Card className="overflow-hidden">
           <div className="border-b border-slate-200 p-5"><h3 className="font-semibold text-slate-900">Historial de Mediciones</h3><p className="mt-1 text-xs text-slate-500">Vista simple con una condición consolidada.</p></div>

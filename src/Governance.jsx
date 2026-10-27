@@ -11,8 +11,14 @@ const compactDetails = 'bg-white border border-slate-200 rounded-lg px-3 py-2 sh
 
 export { default as ComparisonCharts } from './ComparisonLines';
 
-export function AssignedIndicators({ indicators, objectives, reports = [], users = [], ownIds, isSuperAdmin = false, onSelect }) {
-  const assigned = indicators.filter(i => indicatorAccess(i, objectives.find(o => o.id === i.objectiveId), ownIds, isSuperAdmin).canReport);
+export function AssignedIndicators({ indicators, objectives, reports = [], users = [], siteAssignments = [], ownIds, isSuperAdmin = false, onSelect }) {
+  const owns = value => ownIds.some(id => String(id).trim().toLowerCase() === String(value || '').trim().toLowerCase());
+  const assignedIndicatorIds = new Set(siteAssignments.filter(assignment => assignment.active && owns(assignment.responsible_email)).map(assignment => String(assignment.indicator_id)));
+  const assigned = indicators.filter(indicator => {
+    if (assignedIndicatorIds.has(String(indicator.id))) return true;
+    const hasSiteAssignments = siteAssignments.some(assignment => assignment.active && String(assignment.indicator_id) === String(indicator.id));
+    return !hasSiteAssignments && indicatorAccess(indicator, objectives.find(objective => objective.id === indicator.objectiveId), ownIds, isSuperAdmin).canReport;
+  });
   return <AssignedIndicatorPortfolio indicators={assigned} objectives={objectives} reports={reports} users={users} onSelect={onSelect} />;
 }
 

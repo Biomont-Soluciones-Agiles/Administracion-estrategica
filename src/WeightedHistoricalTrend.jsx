@@ -1,9 +1,10 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { displayUnit } from './lib/units';
 import { MONTHS, parseReportPeriod } from './lib/reporting';
 import { measurementTicks } from './lib/indicatorViews';
 import { measurementComplianceBand } from './lib/complianceBand';
+import WeightedComparison from './WeightedComparison';
 
 const NAVY = '#112B50';
 const SITE_COLORS = ['#2563EB', '#16A34A', '#D97706', '#7C3AED'];
@@ -30,6 +31,7 @@ function weightedValue(reports, assignments) {
 }
 
 export default function WeightedHistoricalTrend({ indicator, reports = [], assignments = [], sites = [], year = '' }) {
+  const [comparison, setComparison] = useState(false);
   const unit = displayUnit(indicator.unit);
   const definitions = assignments.filter(item => item.active !== false).map((assignment, index) => ({
     assignment,
@@ -62,8 +64,10 @@ export default function WeightedHistoricalTrend({ indicator, reports = [], assig
     ...definitions.map(item => ({ name: item.site.name, color: item.color, key: `site_${item.assignment.id}` })),
   ];
 
+  if (comparison) return <WeightedComparison indicator={indicator} reports={reports} assignments={assignments} onClose={() => setComparison(false)} />;
+
   return <section aria-label="Tendencia histórica ponderada">
-    <header className="mb-4"><h3 className="font-semibold text-slate-900">Tendencia histórica ponderada · {year}</h3></header>
+    <header className="mb-4 flex flex-wrap items-center justify-between gap-3"><h3 className="font-semibold text-slate-900">Tendencia histórica ponderada · {year}</h3><button type="button" onClick={() => setComparison(true)} className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-blue-700 hover:border-blue-300 hover:bg-blue-50">Comparativa</button></header>
     {!hasData ? <p className="rounded-xl border border-slate-100 bg-slate-50 py-16 text-center text-sm text-slate-500">Sin mediciones para ponderar en {year}.</p> : <>
       <div className="h-[23rem] rounded-xl border border-slate-100 bg-gradient-to-b from-slate-50/60 to-white p-3">
         <ResponsiveContainer width="100%" height="100%">

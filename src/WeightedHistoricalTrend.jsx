@@ -10,7 +10,7 @@ const NAVY = '#112B50';
 const SITE_COLORS = ['#2563EB', '#16A34A', '#D97706', '#7C3AED'];
 const months = MONTHS.map((name, index) => ({ name, short: name.slice(0, 3), index }));
 
-const formatValue = value => Number(value).toLocaleString('es-PE', { maximumFractionDigits: 4 });
+const formatValue = value => Number(value).toLocaleString('es-PE', { maximumFractionDigits: 2 });
 const valueWithUnit = (value, unit) => value == null ? '—' : `${formatValue(value)} ${unit}`.trim();
 
 function cellClass(value, indicator) {

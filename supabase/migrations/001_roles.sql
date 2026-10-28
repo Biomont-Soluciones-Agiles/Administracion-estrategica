@@ -58,9 +58,9 @@ create trigger on_auth_user_created
   for each row execute procedure public.handle_new_user();
 
 insert into public.role_assignments (email, role) values
-  ('jcardenas@biomont.com.pe', 'gcg'),
-  ('molin@biomont.com.pe', 'gerente_responsable'),
-  ('fleonv@biomont.com.pe', 'gcg'),
-  ('curbina@biomont.com.pe', 'gcg'),
-  ('sig@biomont.com.pe', 'super_admin')
+  ('person-001@example.invalid', 'gcg'),
+  ('person-002@example.invalid', 'gerente_responsable'),
+  ('person-003@example.invalid', 'gcg'),
+  ('person-004@example.invalid', 'gcg'),
+  ('person-005@example.invalid', 'super_admin')
 on conflict (email) do update set role = excluded.role, updated_at = now();

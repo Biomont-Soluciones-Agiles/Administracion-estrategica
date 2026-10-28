@@ -304,6 +304,10 @@ export default function App() {
     .map(person => ({ value: person.management, label: person.management }));
   const managementLeadFor = management => managementLeads.find(person => String(person.management) === String(management));
   const managementForOwner = ownerEmail => organizationPeople.find(person => String(person.email || '').trim().toLowerCase() === String(ownerEmail || '').trim().toLowerCase())?.management || '';
+  const normalizeManagementName = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+  const kunthurManagements = new Set(['central comercial', 'administracion y finanzas']);
+  const isKunturSite = site => normalizeManagementName(site?.name).includes('kuntur') || normalizeManagementName(site?.name).includes('kunthur');
+  const objectiveIsAvailableForKunthur = objective => kunthurManagements.has(normalizeManagementName(objective?.responsibleManagement || managementForOwner(objective?.ownerId)));
   const signedInEmail = session?.user?.email?.trim().toLowerCase();
   const currentAccountIds = [...new Set([...accountIdentities(session?.user?.email, organizationPeople), ...(signedInEmail === 'jcardenas@biomont.com.pe' ? ['jcardenas@kunturpharma.pe'] : signedInEmail === 'jcardenas@kunturpharma.pe' ? ['jcardenas@biomont.com.pe'] : [])])];
   const isKunturAccount = /@kunturpharma\.pe$/i.test(signedInEmail || '') || ['jcardenas@biomont.com.pe', 'jcardenas@kunturpharma.pe'].includes(signedInEmail || '');
@@ -318,7 +322,11 @@ export default function App() {
   const managerAssignments = siteAssignments.filter(assignment => assignment.active && accountOwns(assignment.responsible_email));
   const managerSiteIds = new Set(managerAssignments.map(assignment => String(assignment.site_id)));
   const siteVisibleIndicatorIds = new Set(siteAssignments.filter(assignment => assignment.active && managerSiteIds.has(String(assignment.site_id))).map(assignment => String(assignment.indicator_id)));
-  const scopedObjectives = isManagerScoped ? objectivesWithIndicatorProgress.filter(objective => indicators.some(indicator => String(indicator.objectiveId) === String(objective.id) && siteVisibleIndicatorIds.has(String(indicator.id)))) : objectivesWithIndicatorProgress;
+  const scopedObjectives = isManagerScoped
+    ? objectivesWithIndicatorProgress.filter(objective => isKunturAccount
+      ? objectiveIsAvailableForKunthur(objective)
+      : indicators.some(indicator => String(indicator.objectiveId) === String(objective.id) && siteVisibleIndicatorIds.has(String(indicator.id))))
+    : objectivesWithIndicatorProgress;
   const hasBiomontAssignment = managerAssignments.some(assignment => String(sites.find(site => String(site.id) === String(assignment.site_id))?.name || '').trim().toLowerCase() === 'biomont');
   const hideBscForSiteProfile = isKunturAccount || (isManagerScoped && managerAssignments.length > 0 && !hasBiomontAssignment);
   const scopedIndicators = isManagerScoped
@@ -991,6 +999,7 @@ export default function App() {
     const obj = objectives.find(o => String(o.id) === String(selectedObjectiveId));
     const [formData, setFormData] = useState({ name: '', formula: '', target: '', unit: '%', comparator: '>=', frequency: 'Mensual', ownerId: '', siteAssignments: sites.map(site => ({ siteId: String(site.id), responsibleEmail: '' })) });
     const defaultBiomontReporter = managementLeadFor(obj?.responsibleManagement || managementForOwner(obj?.ownerId))?.email || '';
+    const kunthurManagementAllowed = kunthurManagements.has(normalizeManagementName(obj?.responsibleManagement || managementForOwner(obj?.ownerId)));
     useEffect(() => {
       if (!defaultBiomontReporter || !sites.length) return;
       setFormData(current => {
@@ -1040,7 +1049,10 @@ export default function App() {
         const site = sites.find(candidate => String(candidate.id) === String(item.siteId));
         return String(site?.name || '').trim().toLocaleLowerCase('es') === 'biomont';
       });
-      const selectedSiteAssignments = formData.siteAssignments.filter(item => item.responsibleEmail);
+      const selectedSiteAssignments = formData.siteAssignments.filter(item => item.responsibleEmail).filter(item => {
+        const site = sites.find(candidate => String(candidate.id) === String(item.siteId));
+        return !isKunturSite(site) || kunthurManagementAllowed;
+      });
       const invalidAssignment = selectedSiteAssignments.some(item => !item.siteId);
       const duplicateSites = new Set(selectedSiteAssignments.map(item => item.siteId)).size !== selectedSiteAssignments.length;
       if (invalidAssignment || duplicateSites || !biomontAssignment?.responsibleEmail) {
@@ -1104,7 +1116,7 @@ export default function App() {
               <Select label="Plazo *" required options={['Mensual', 'Bimestral', 'Trimestral', 'Semestral', 'Anual']} value={formData.frequency} onChange={e => setFormData({...formData, frequency: e.target.value})} />
               <Select label="Frecuencia de revisión *" required options={['Mensual', 'Bimestral', 'Trimestral', 'Semestral', 'Anual']} value={formData.reviewFrequency} onChange={e => setFormData({...formData, reviewFrequency: e.target.value})} />
             </div>
-            <div className="mt-5 rounded-2xl border border-slate-200 p-5"><div className="mb-5"><h4 className="font-semibold text-slate-900">Asignación por sede</h4><p className="mt-1 text-sm text-slate-500">Selecciona el responsable de cada sede. Biomont es obligatorio; Kuntur Pharma y Biomont Ecuador son opcionales.</p></div><div className="space-y-3">{formData.siteAssignments.map((assignment, index) => { const site = sites.find(candidate => String(candidate.id) === String(assignment.siteId)); const siteName = site?.name || 'Sede'; const isBiomont = siteName.trim().toLocaleLowerCase('es') === 'biomont'; return <section key={assignment.siteId || index} className="grid grid-cols-1 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 md:grid-cols-[minmax(11rem,0.8fr)_minmax(16rem,1.5fr)_auto]"><h5 className="text-lg font-semibold text-slate-900">{siteName}</h5><label className="block"><span className="sr-only">{isBiomont ? 'Responsable obligatorio' : 'Responsable opcional'} de {siteName}</span><select required={isBiomont} aria-label={`Responsable de ${siteName}`} value={assignment.responsibleEmail} onChange={event => setFormData({ ...formData, siteAssignments: formData.siteAssignments.map((item, itemIndex) => itemIndex === index ? { ...item, responsibleEmail: event.target.value } : item) })} className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-transparent focus:ring-2 focus:ring-[#3B82F6]"><option value="">{isBiomont ? 'Seleccionar responsable...' : 'Sin asignar (opcional)'}</option>{responsibleOptionsForSite(assignment.siteId).map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label><span className={`justify-self-start rounded-full px-3 py-1.5 text-xs font-medium md:justify-self-end ${isBiomont ? 'bg-blue-100 text-blue-700' : 'bg-slate-200 text-slate-600'}`}>{isBiomont ? 'Responsable obligatorio' : 'Opcional'}</span></section>; })}</div></div>
+            <div className="mt-5 rounded-2xl border border-slate-200 p-5"><div className="mb-5"><h4 className="font-semibold text-slate-900">Asignación por sede</h4><p className="mt-1 text-sm text-slate-500">Selecciona el responsable de cada sede. Biomont es obligatorio; Kuntur Pharma y Biomont Ecuador son opcionales.</p></div><div className="space-y-3">{formData.siteAssignments.filter(assignment => { const site = sites.find(candidate => String(candidate.id) === String(assignment.siteId)); return !isKunturSite(site) || kunthurManagementAllowed; }).map((assignment, index) => { const site = sites.find(candidate => String(candidate.id) === String(assignment.siteId)); const siteName = site?.name || 'Sede'; const isBiomont = siteName.trim().toLocaleLowerCase('es') === 'biomont'; return <section key={assignment.siteId || index} className="grid grid-cols-1 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 md:grid-cols-[minmax(11rem,0.8fr)_minmax(16rem,1.5fr)_auto]"><h5 className="text-lg font-semibold text-slate-900">{siteName}</h5><label className="block"><span className="sr-only">{isBiomont ? 'Responsable obligatorio' : 'Responsable opcional'} de {siteName}</span><select required={isBiomont} aria-label={`Responsable de ${siteName}`} value={assignment.responsibleEmail} onChange={event => setFormData({ ...formData, siteAssignments: formData.siteAssignments.map((item, itemIndex) => String(item.siteId) === String(assignment.siteId) ? { ...item, responsibleEmail: event.target.value } : item) })} className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-transparent focus:ring-2 focus:ring-[#3B82F6]"><option value="">{isBiomont ? 'Seleccionar responsable...' : 'Sin asignar (opcional)'}</option>{responsibleOptionsForSite(assignment.siteId).map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label><span className={`justify-self-start rounded-full px-3 py-1.5 text-xs font-medium md:justify-self-end ${isBiomont ? 'bg-blue-100 text-blue-700' : 'bg-slate-200 text-slate-600'}`}>{isBiomont ? 'Responsable obligatorio' : 'Opcional'}</span></section>; })}</div></div>
           </Card>
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="ghost" onClick={() => obj ? navigateTo('objective-detail', obj.name, { objectiveId: obj.id, objectiveTab: 'summary' }) : navigateTo('objectives', 'Objetivos')}>Cancelar</Button>

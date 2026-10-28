@@ -17,21 +17,21 @@ alter table public.objectives
 
 with directory(full_name, email, job_title, management, submanagement, role, is_management_lead) as (
   values
-    ('Juan Carlos Amaro', 'jamaro@biomont.com.pe', 'Gerente de Administración y Finanzas', 'Administración y Finanzas', 'Administración y Finanzas', 'gerente_responsable', true),
-    ('Randolph Rafael Baca', 'rbaca@biomont.com.pe', 'Gerente Customer Experience', 'Central Comercial', 'Marketing', 'gerente_responsable', false),
-    ('Jesús Alberto Cusicuna', 'jcusicuna@biomont.com.pe', 'Sub Gerente de Marketing', 'Central Comercial', 'Trade Marketing', 'gerente_responsable', false),
-    ('Julio Cesar De La Vega', 'jdelavega@biomont.com.pe', 'Gerente de Supply Chain', 'Supply Chain', 'Supply Chain', 'gerente_responsable', true),
-    ('Manuel Jesus Gamboa', 'mgamboa@biomont.com.pe', 'Subgerente de Calidad', 'Operaciones y Planta', 'Operaciones y Planta', 'gerente_responsable', false),
-    ('Carlos Antonio Huerta', 'chuerta@biomont.com.pe', 'Gerente de TI', 'Tecnologías de la Información', 'Tecnologías de la Información', 'gerente_responsable', true),
-    ('Nathalie Marcela Mas', 'nmas@biomont.com.pe', 'Gerente de Gestión Humana', 'Gestión Humana', 'Gestión Humana', 'gerente_responsable', true),
-    ('Carminia Medrano', 'cmedrano@biomont.com.pe', 'Gerente Central Comercial', 'Central Comercial', 'Comercial', 'gerente_responsable', true),
-    ('Aldo Santiago Pedraglio', 'apedraglio@biomont.com.pe', 'Gerente General', 'Gerencia General', 'Gerencia General', 'gerente_general', true),
-    ('William Freddy Peña', 'wpena@biomont.com.pe', 'Gerente de Operaciones y Planta', 'Operaciones y Planta', 'Operaciones y Planta', 'gerente_responsable', true),
-    ('Melissa Pimentel', 'mpimentel@biomont.com.pe', 'Subgerente de Mantenimiento', 'Operaciones y Planta', 'Mantenimiento', 'gerente_responsable', false),
-    ('Ivan Noly Reyna', 'ireyna@biomont.com.pe', 'Subgerente Técnico Científico', 'Técnica Científica', 'Técnica Científica', 'gerente_responsable', true),
-    ('Patricia Rivera', 'privera@biomont.com.pe', 'Sub Gerente de Planta', 'Operaciones y Planta', 'Planta', 'gerente_responsable', false),
-    ('Helen Geraldine Salazar', 'hsalazar@biomont.com.pe', 'Subgerente de Asuntos Regulatorios', 'Asuntos Regulatorios', 'Asuntos Regulatorios', 'gerente_responsable', true),
-    ('Erika Lucia Tacunan', 'etacunan@biomont.com.pe', 'Subgerente de Investigación y Desarrollo', 'Operaciones y Planta', 'Desarrollo Farmacéutico', 'gerente_responsable', false)
+    ('Juan Carlos Amaro', 'person-008@example.invalid', 'Gerente de Administración y Finanzas', 'Administración y Finanzas', 'Administración y Finanzas', 'gerente_responsable', true),
+    ('Randolph Rafael Baca', 'person-019@example.invalid', 'Gerente Customer Experience', 'Central Comercial', 'Marketing', 'gerente_responsable', false),
+    ('Jesús Alberto Cusicuna', 'person-014@example.invalid', 'Sub Gerente de Marketing', 'Central Comercial', 'Trade Marketing', 'gerente_responsable', false),
+    ('Julio Cesar De La Vega', 'person-010@example.invalid', 'Gerente de Supply Chain', 'Supply Chain', 'Supply Chain', 'gerente_responsable', true),
+    ('Manuel Jesus Gamboa', 'person-020@example.invalid', 'Subgerente de Calidad', 'Operaciones y Planta', 'Operaciones y Planta', 'gerente_responsable', false),
+    ('Carlos Antonio Huerta', 'person-015@example.invalid', 'Gerente de TI', 'Tecnologías de la Información', 'Tecnologías de la Información', 'gerente_responsable', true),
+    ('Nathalie Marcela Mas', 'person-011@example.invalid', 'Gerente de Gestión Humana', 'Gestión Humana', 'Gestión Humana', 'gerente_responsable', true),
+    ('Carminia Medrano', 'person-009@example.invalid', 'Gerente Central Comercial', 'Central Comercial', 'Comercial', 'gerente_responsable', true),
+    ('Aldo Santiago Pedraglio', 'person-007@example.invalid', 'Gerente General', 'Gerencia General', 'Gerencia General', 'gerente_general', true),
+    ('William Freddy Peña', 'person-012@example.invalid', 'Gerente de Operaciones y Planta', 'Operaciones y Planta', 'Operaciones y Planta', 'gerente_responsable', true),
+    ('Melissa Pimentel', 'person-021@example.invalid', 'Subgerente de Mantenimiento', 'Operaciones y Planta', 'Mantenimiento', 'gerente_responsable', false),
+    ('Ivan Noly Reyna', 'person-013@example.invalid', 'Subgerente Técnico Científico', 'Técnica Científica', 'Técnica Científica', 'gerente_responsable', true),
+    ('Patricia Rivera', 'person-022@example.invalid', 'Sub Gerente de Planta', 'Operaciones y Planta', 'Planta', 'gerente_responsable', false),
+    ('Helen Geraldine Salazar', 'person-023@example.invalid', 'Subgerente de Asuntos Regulatorios', 'Asuntos Regulatorios', 'Asuntos Regulatorios', 'gerente_responsable', true),
+    ('Erika Lucia Tacunan', 'person-024@example.invalid', 'Subgerente de Investigación y Desarrollo', 'Operaciones y Planta', 'Desarrollo Farmacéutico', 'gerente_responsable', false)
 )
 update public.organization_people p
 set full_name = d.full_name,
@@ -49,21 +49,21 @@ where lower(coalesce(p.email, '')) = lower(d.email)
 
 with directory(full_name, email, job_title, management, submanagement, role, is_management_lead) as (
   values
-    ('Juan Carlos Amaro', 'jamaro@biomont.com.pe', 'Gerente de Administración y Finanzas', 'Administración y Finanzas', 'Administración y Finanzas', 'gerente_responsable', true),
-    ('Randolph Rafael Baca', 'rbaca@biomont.com.pe', 'Gerente Customer Experience', 'Central Comercial', 'Marketing', 'gerente_responsable', false),
-    ('Jesús Alberto Cusicuna', 'jcusicuna@biomont.com.pe', 'Sub Gerente de Marketing', 'Central Comercial', 'Trade Marketing', 'gerente_responsable', false),
-    ('Julio Cesar De La Vega', 'jdelavega@biomont.com.pe', 'Gerente de Supply Chain', 'Supply Chain', 'Supply Chain', 'gerente_responsable', true),
-    ('Manuel Jesus Gamboa', 'mgamboa@biomont.com.pe', 'Subgerente de Calidad', 'Operaciones y Planta', 'Operaciones y Planta', 'gerente_responsable', false),
-    ('Carlos Antonio Huerta', 'chuerta@biomont.com.pe', 'Gerente de TI', 'Tecnologías de la Información', 'Tecnologías de la Información', 'gerente_responsable', true),
-    ('Nathalie Marcela Mas', 'nmas@biomont.com.pe', 'Gerente de Gestión Humana', 'Gestión Humana', 'Gestión Humana', 'gerente_responsable', true),
-    ('Carminia Medrano', 'cmedrano@biomont.com.pe', 'Gerente Central Comercial', 'Central Comercial', 'Comercial', 'gerente_responsable', true),
-    ('Aldo Santiago Pedraglio', 'apedraglio@biomont.com.pe', 'Gerente General', 'Gerencia General', 'Gerencia General', 'gerente_general', true),
-    ('William Freddy Peña', 'wpena@biomont.com.pe', 'Gerente de Operaciones y Planta', 'Operaciones y Planta', 'Operaciones y Planta', 'gerente_responsable', true),
-    ('Melissa Pimentel', 'mpimentel@biomont.com.pe', 'Subgerente de Mantenimiento', 'Operaciones y Planta', 'Mantenimiento', 'gerente_responsable', false),
-    ('Ivan Noly Reyna', 'ireyna@biomont.com.pe', 'Subgerente Técnico Científico', 'Técnica Científica', 'Técnica Científica', 'gerente_responsable', true),
-    ('Patricia Rivera', 'privera@biomont.com.pe', 'Sub Gerente de Planta', 'Operaciones y Planta', 'Planta', 'gerente_responsable', false),
-    ('Helen Geraldine Salazar', 'hsalazar@biomont.com.pe', 'Subgerente de Asuntos Regulatorios', 'Asuntos Regulatorios', 'Asuntos Regulatorios', 'gerente_responsable', true),
-    ('Erika Lucia Tacunan', 'etacunan@biomont.com.pe', 'Subgerente de Investigación y Desarrollo', 'Operaciones y Planta', 'Desarrollo Farmacéutico', 'gerente_responsable', false)
+    ('Juan Carlos Amaro', 'person-008@example.invalid', 'Gerente de Administración y Finanzas', 'Administración y Finanzas', 'Administración y Finanzas', 'gerente_responsable', true),
+    ('Randolph Rafael Baca', 'person-019@example.invalid', 'Gerente Customer Experience', 'Central Comercial', 'Marketing', 'gerente_responsable', false),
+    ('Jesús Alberto Cusicuna', 'person-014@example.invalid', 'Sub Gerente de Marketing', 'Central Comercial', 'Trade Marketing', 'gerente_responsable', false),
+    ('Julio Cesar De La Vega', 'person-010@example.invalid', 'Gerente de Supply Chain', 'Supply Chain', 'Supply Chain', 'gerente_responsable', true),
+    ('Manuel Jesus Gamboa', 'person-020@example.invalid', 'Subgerente de Calidad', 'Operaciones y Planta', 'Operaciones y Planta', 'gerente_responsable', false),
+    ('Carlos Antonio Huerta', 'person-015@example.invalid', 'Gerente de TI', 'Tecnologías de la Información', 'Tecnologías de la Información', 'gerente_responsable', true),
+    ('Nathalie Marcela Mas', 'person-011@example.invalid', 'Gerente de Gestión Humana', 'Gestión Humana', 'Gestión Humana', 'gerente_responsable', true),
+    ('Carminia Medrano', 'person-009@example.invalid', 'Gerente Central Comercial', 'Central Comercial', 'Comercial', 'gerente_responsable', true),
+    ('Aldo Santiago Pedraglio', 'person-007@example.invalid', 'Gerente General', 'Gerencia General', 'Gerencia General', 'gerente_general', true),
+    ('William Freddy Peña', 'person-012@example.invalid', 'Gerente de Operaciones y Planta', 'Operaciones y Planta', 'Operaciones y Planta', 'gerente_responsable', true),
+    ('Melissa Pimentel', 'person-021@example.invalid', 'Subgerente de Mantenimiento', 'Operaciones y Planta', 'Mantenimiento', 'gerente_responsable', false),
+    ('Ivan Noly Reyna', 'person-013@example.invalid', 'Subgerente Técnico Científico', 'Técnica Científica', 'Técnica Científica', 'gerente_responsable', true),
+    ('Patricia Rivera', 'person-022@example.invalid', 'Sub Gerente de Planta', 'Operaciones y Planta', 'Planta', 'gerente_responsable', false),
+    ('Helen Geraldine Salazar', 'person-023@example.invalid', 'Subgerente de Asuntos Regulatorios', 'Asuntos Regulatorios', 'Asuntos Regulatorios', 'gerente_responsable', true),
+    ('Erika Lucia Tacunan', 'person-024@example.invalid', 'Subgerente de Investigación y Desarrollo', 'Operaciones y Planta', 'Desarrollo Farmacéutico', 'gerente_responsable', false)
 )
 insert into public.organization_people (full_name, email, job_title, management, submanagement, role, is_management_lead, active)
 select d.full_name, d.email, d.job_title, d.management, d.submanagement, d.role, d.is_management_lead, true
@@ -76,21 +76,21 @@ where not exists (
 
 insert into public.role_assignments(email, role)
 values
-  ('jamaro@biomont.com.pe', 'gerente_responsable'),
-  ('rbaca@biomont.com.pe', 'gerente_responsable'),
-  ('jcusicuna@biomont.com.pe', 'gerente_responsable'),
-  ('jdelavega@biomont.com.pe', 'gerente_responsable'),
-  ('mgamboa@biomont.com.pe', 'gerente_responsable'),
-  ('chuerta@biomont.com.pe', 'gerente_responsable'),
-  ('nmas@biomont.com.pe', 'gerente_responsable'),
-  ('cmedrano@biomont.com.pe', 'gerente_responsable'),
-  ('apedraglio@biomont.com.pe', 'gerente_general'),
-  ('wpena@biomont.com.pe', 'gerente_responsable'),
-  ('mpimentel@biomont.com.pe', 'gerente_responsable'),
-  ('ireyna@biomont.com.pe', 'gerente_responsable'),
-  ('privera@biomont.com.pe', 'gerente_responsable'),
-  ('hsalazar@biomont.com.pe', 'gerente_responsable'),
-  ('etacunan@biomont.com.pe', 'gerente_responsable')
+  ('person-008@example.invalid', 'gerente_responsable'),
+  ('person-019@example.invalid', 'gerente_responsable'),
+  ('person-014@example.invalid', 'gerente_responsable'),
+  ('person-010@example.invalid', 'gerente_responsable'),
+  ('person-020@example.invalid', 'gerente_responsable'),
+  ('person-015@example.invalid', 'gerente_responsable'),
+  ('person-011@example.invalid', 'gerente_responsable'),
+  ('person-009@example.invalid', 'gerente_responsable'),
+  ('person-007@example.invalid', 'gerente_general'),
+  ('person-012@example.invalid', 'gerente_responsable'),
+  ('person-021@example.invalid', 'gerente_responsable'),
+  ('person-013@example.invalid', 'gerente_responsable'),
+  ('person-022@example.invalid', 'gerente_responsable'),
+  ('person-023@example.invalid', 'gerente_responsable'),
+  ('person-024@example.invalid', 'gerente_responsable')
 on conflict (email) do update
 set role = excluded.role,
     updated_at = now();
@@ -100,11 +100,11 @@ set role = r.role
 from public.role_assignments r
 where lower(p.email) = lower(r.email)
   and lower(r.email) in (
-    'jamaro@biomont.com.pe','rbaca@biomont.com.pe','jcusicuna@biomont.com.pe',
-    'jdelavega@biomont.com.pe','mgamboa@biomont.com.pe','chuerta@biomont.com.pe',
-    'nmas@biomont.com.pe','cmedrano@biomont.com.pe','apedraglio@biomont.com.pe',
-    'wpena@biomont.com.pe','mpimentel@biomont.com.pe','ireyna@biomont.com.pe',
-    'privera@biomont.com.pe','hsalazar@biomont.com.pe','etacunan@biomont.com.pe'
+    'person-008@example.invalid','person-019@example.invalid','person-014@example.invalid',
+    'person-010@example.invalid','person-020@example.invalid','person-015@example.invalid',
+    'person-011@example.invalid','person-009@example.invalid','person-007@example.invalid',
+    'person-012@example.invalid','person-021@example.invalid','person-013@example.invalid',
+    'person-022@example.invalid','person-023@example.invalid','person-024@example.invalid'
   );
 
 update public.objectives o

@@ -62,8 +62,8 @@ begin
     (20,'Fortalecer la disciplina financiera','Promover prácticas de control y sostenibilidad financiera.','Personas / Aprendizaje','Administración y Finanzas','jamaro@biomont.com.pe','none');
 
   for item in select * from seed_objectives order by seq loop
-    insert into public.objectives (name,description,category,owner_email,responsible_management,progress,status,created_date,target_date,stakeholders)
-    values (item.name,item.description,item.category,item.owner_email,item.management,0,'En progreso',current_date,date '2027-12-31','[]'::jsonb)
+    insert into public.objectives (name,description,category,focus,owner_email,responsible_management,progress,status,created_date,target_date,stakeholders)
+    values (item.name,item.description,item.category,case when item.category = 'Personas / Aprendizaje' then 'Personas/Aprendizaje' else item.category end,item.owner_email,item.management,0,'En progreso',current_date,date '2027-12-31','[]'::jsonb)
     returning id into objective_id;
 
     insert into public.projects (objective_id,name,status,progress,owner_email,source)

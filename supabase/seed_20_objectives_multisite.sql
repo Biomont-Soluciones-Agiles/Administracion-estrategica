@@ -23,10 +23,18 @@ begin
     raise exception 'La carga requiere objetivos e indicadores vacíos.';
   end if;
 
+  -- La limpieza operativa puede haber eliminado las sedes. Se recuperan sin
+  -- alterar las configuraciones existentes cuando ya están creadas.
+  insert into public.sites (name, active) values
+    ('Biomont', true),
+    ('Kuntur', true),
+    ('Biomont Ecuador', true)
+  on conflict (name) do update set active = true;
+
   select id into biomont_site_id from public.sites where lower(name) = 'biomont' limit 1;
   select id into kunthur_site_id from public.sites where lower(name) in ('kunthur', 'kuntur') limit 1;
   if biomont_site_id is null or kunthur_site_id is null then
-    raise exception 'No se encontraron las sedes Biomont y Kunthur.';
+    raise exception 'No se pudieron preparar las sedes Biomont y Kunthur.';
   end if;
 
   create temporary table seed_objectives (

@@ -309,8 +309,8 @@ export default function App() {
   const isKunturSite = site => normalizeManagementName(site?.name).includes('kuntur') || normalizeManagementName(site?.name).includes('kunthur');
   const objectiveIsAvailableForKunthur = objective => kunthurManagements.has(normalizeManagementName(objective?.responsibleManagement || managementForOwner(objective?.ownerId)));
   const signedInEmail = session?.user?.email?.trim().toLowerCase();
-  const currentAccountIds = [...new Set([...accountIdentities(session?.user?.email, organizationPeople), ...(signedInEmail === 'jcardenas@biomont.com.pe' ? ['jcardenas@kunturpharma.pe'] : signedInEmail === 'jcardenas@kunturpharma.pe' ? ['jcardenas@biomont.com.pe'] : [])])];
-  const isKunturAccount = /@kunturpharma\.pe$/i.test(signedInEmail || '') || ['jcardenas@biomont.com.pe', 'jcardenas@kunturpharma.pe'].includes(signedInEmail || '');
+  const currentAccountIds = [...new Set(accountIdentities(session?.user?.email, organizationPeople))];
+  const isKunturAccount = /@kunturpharma\.pe$/i.test(signedInEmail || '');
   const signedInPerson = organizationPeople.find(person => person.email?.trim().toLowerCase() === signedInEmail)
     || microsoftPeople.find(person => person.email?.trim().toLowerCase() === signedInEmail);
   const signedInName = signedInPerson?.full_name || session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || 'Usuario';

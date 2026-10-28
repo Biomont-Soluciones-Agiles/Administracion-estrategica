@@ -45,7 +45,7 @@ test('personal indicator status name is consistent in navigation and heading', (
 test('Aurio is registered in directory and role assignment, preserving existing authentication', () => {
   const migration = readFileSync(new URL('../supabase/migrations/016_aurio_responsible_manager.sql', import.meta.url), 'utf8');
   assert.ok(migration.includes('Aurio de la Cruz'));
-  assert.ok(migration.includes("('adelacruz@biomont.com.pe', 'gerente_responsable')"));
+  assert.ok(migration.includes("('person-006@example.invalid', 'gerente_responsable')"));
   assert.ok(migration.includes('update public.profiles'));
   assert.ok(migration.includes('insert into public.organization_people'));
   assert.equal(migration.includes('insert into auth.users'), false);

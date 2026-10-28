@@ -835,7 +835,6 @@ export default function App() {
               <div><p className="text-xs text-slate-400 mb-1">Foco estratégico</p><p className="text-sm font-medium text-slate-900">{obj.focus || 'Sin foco definido'}</p></div>
               <div><p className="text-xs text-slate-400 mb-1">Periodo de vigencia</p><p className="text-sm font-medium text-slate-900 flex items-center gap-1"><Calendar className="w-4 h-4 text-slate-400" /> {obj.validityStartYear} - {obj.validityEndYear}</p></div>
               <div><p className="text-xs text-slate-400 mb-1">Proyectos activos</p><p className="text-sm font-medium text-slate-900">{objProjects.length}</p></div>
-              <div><p className="text-xs text-slate-400 mb-1">Avance por indicadores</p><p className="text-sm font-medium text-slate-900">{obj.progress || 0}%</p></div>
             </div>
           </div>
         </div>

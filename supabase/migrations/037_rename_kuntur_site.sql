@@ -9,9 +9,9 @@ insert into public.sites(name)
 select 'Kuntur'
 where not exists (select 1 from public.sites where lower(name) = 'kuntur');
 
--- jcardenas@biomont.com.pe mantiene el rol GCG y puede administrar la sede.
+-- person-001@example.invalid mantiene el rol GCG y puede administrar la sede.
 insert into public.role_assignments(email, role)
-values ('jcardenas@biomont.com.pe', 'gcg')
+values ('person-001@example.invalid', 'gcg')
 on conflict (email) do update set role = excluded.role, updated_at = now();
 
 notify pgrst, 'reload schema';

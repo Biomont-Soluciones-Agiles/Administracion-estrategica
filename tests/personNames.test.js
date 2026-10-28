@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { personName, fiveWhyAnswers } from '../src/lib/personNames.js';
 test('resuelve responsables por ID o correo y nunca muestra un UUID como nombre', () => {
-  const people = [{ id: '123-uuid', email: 'molin@biomont.com.pe', name: 'Manuel Olin' }];
+  const people = [{ id: '123-uuid', email: 'person-002@example.invalid', name: 'Manuel Olin' }];
   assert.equal(personName('123-uuid', people), 'Manuel Olin');
-  assert.equal(personName('MOLIN@biomont.com.pe', people), 'Manuel Olin');
+  assert.equal(personName('person-002@example.invalid', people), 'Manuel Olin');
   assert.equal(personName('system@example.invalid'), 'Responsable asignado');
   assert.equal(personName('unknown-uuid', people), 'Responsable asignado');
 });

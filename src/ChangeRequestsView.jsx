@@ -10,7 +10,7 @@ const requestType = kind => kind === 'target' ? 'Cambio de meta' : kind === 'rep
 const requesterName = (request, users) => {
   const email = (request.requested_email || '').toLowerCase();
   const person = users.find(user => (user.email || user.id || '').toLowerCase() === email);
-  return email === 'sig@biomont.com.pe' ? 'SIG' : person?.full_name || person?.name || 'Usuario registrado';
+  return person?.full_name || person?.name || 'Usuario registrado';
 };
 function Values({ values }) {
   return <dl className="space-y-2">{Object.entries(values || {}).map(([key, value]) => <div key={key} className="flex flex-wrap justify-between gap-2"><dt className="text-slate-500">{labels[key] || key}</dt><dd className="font-medium text-slate-900 break-words">{String(value ?? '—')}</dd></div>)}{!Object.keys(values || {}).length && <p className="text-slate-400">Sin datos.</p>}</dl>;
@@ -112,7 +112,7 @@ export default function ChangeRequestsView({ isGcg, indicators, users = [], repo
       {!indicatorId && visible.map(request => {
         const email = (request.requested_email || '').toLowerCase();
         const person = users.find(user => (user.email || user.id || '').toLowerCase() === email);
-        const requester = email === 'sig@biomont.com.pe' ? 'SIG' : person?.full_name || person?.name || 'Usuario registrado';
+        const requester = person?.full_name || person?.name || 'Usuario registrado';
         const indicator = indicators.find(item => item.id === request.indicator_id);
         const status = requestStatus(request.status);
         return <article key={request.id} className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 space-y-5">

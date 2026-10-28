@@ -2,7 +2,7 @@
 begin;
 
 insert into public.role_assignments (email, role)
-values ('jcardenas@biomont.com.pe', 'gerente_responsable')
+values ('person-001@example.invalid', 'gerente_responsable')
 on conflict (email) do update
 set role = excluded.role,
     updated_at = now();
@@ -10,10 +10,10 @@ set role = excluded.role,
 update public.profiles
 set role = 'gerente_responsable',
     updated_at = now()
-where lower(email) = 'jcardenas@biomont.com.pe';
+where lower(email) = 'person-001@example.invalid';
 
 insert into public.organization_people (full_name, email, role, active)
-values ('John Cardenas', 'jcardenas@biomont.com.pe', 'gerente_responsable', true)
+values ('John Cardenas', 'person-001@example.invalid', 'gerente_responsable', true)
 on conflict (email) do update
 set full_name = excluded.full_name,
     role = excluded.role,

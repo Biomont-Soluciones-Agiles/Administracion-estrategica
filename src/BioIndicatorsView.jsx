@@ -1,5 +1,5 @@
 import { displayUnit } from './lib/units';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Filter, Star } from 'lucide-react';
 import { AttentionPanel, IndicatorPortfolioCard, PortfolioSummary, PortfolioStatus } from './IndicatorPortfolio';
 import { portfolioRows } from './lib/indicatorPortfolio';
@@ -15,7 +15,20 @@ import CoreIndicators from './CoreIndicators';
 
 const input = 'mt-1 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-base';
 
+const useCloseDetailsOnOutsideClick = () => {
+  const ref = useRef(null);
+  useEffect(() => {
+    const close = event => {
+      if (ref.current && !ref.current.contains(event.target)) ref.current.open = false;
+    };
+    document.addEventListener('pointerdown', close);
+    return () => document.removeEventListener('pointerdown', close);
+  }, []);
+  return ref;
+};
+
 export function IndicatorFilterMenu({ objectives, indicators, reports = [], isGcg = false, users = [], sites = [], assignments = [], filters, onChange }) {
+  const menuRef = useCloseDetailsOnOutsideClick();
   const statusIndicators = portfolioRows(indicators, reports).map(row => ({ ...row.indicator, status: row.status, condition: row.latest?.result == null ? 'Sin condición' : ({ pesimista: 'Pesimista', optimista: 'Optimista', excepcional: 'Excepcional' })[measurementComplianceBand(row.latest.result, row.indicator.target, row.indicator.comparator).band] || 'Sin condición' }));
   const responsibles = [...new Map(indicators.map(item => {
     const id = item.ownerId || item.owner_email || item.reporter_email || '';
@@ -28,7 +41,7 @@ export function IndicatorFilterMenu({ objectives, indicators, reports = [], isGc
   };
   const change = key => event => apply({ ...filters, [key]: event.target.value });
   const matches = filterIndicators(statusIndicators, { ...filters, search: '' });
-  return <details className="relative ml-auto shrink-0">
+  return <details ref={menuRef} className="relative ml-auto shrink-0">
     <summary aria-label="Filtros de indicadores" title="Filtros de indicadores" className="flex cursor-pointer list-none items-center rounded-lg p-2 text-slate-600 hover:bg-slate-100 hover:text-slate-900"><Filter className="h-5 w-5" /><span className="sr-only">Filtros de indicadores</span></summary>
     <div className="absolute right-0 top-full z-[60] mt-2 w-[min(92vw,48rem)] rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
       <div className="mb-3 flex items-center justify-between"><p className="text-sm font-semibold text-slate-800">Filtros de indicadores</p>{(filters.search || filters.objectiveId || filters.responsibleId || filters.siteId || filters.status || filters.condition || filters.indicatorId) && <button type="button" className="text-sm font-medium text-blue-700" onClick={() => onChange({ search: '', objectiveId: '', responsibleId: '', siteId: '', status: '', condition: '', indicatorId: '' })}>Limpiar</button>}</div>
@@ -43,9 +56,10 @@ export function IndicatorFilterMenu({ objectives, indicators, reports = [], isGc
 }
 
 export function IndicatorYearFilter({ reports, year, onChange, indicatorId, sites = [], assignments = [], siteView = '', onSiteChange, showSiteFilter = false }) {
+  const menuRef = useCloseDetailsOnOutsideClick();
   const years = [...new Set([String(new Date().getFullYear()), ...reports.map(report => parseReportPeriod(report.period)?.year).filter(Boolean)])].sort((a, b) => Number(b) - Number(a));
   const assignedSites = assignments.filter(item => item.active !== false && String(item.indicator_id) === String(indicatorId)).map(item => sites.find(site => String(site.id) === String(item.site_id))).filter(Boolean).filter((site, index, list) => list.findIndex(item => String(item.id) === String(site.id)) === index);
-  return <details className="relative ml-auto shrink-0"><summary aria-label="Filtros del indicador" className="flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100"><Filter className="h-5 w-5" /></summary><div className="absolute right-0 top-full z-[60] mt-2 w-72 rounded-xl border border-slate-200 bg-white p-4 shadow-xl"><p className="mb-3 text-sm font-semibold text-slate-800">Filtros de visualización</p><label className="block text-sm font-semibold text-slate-700">Año<select aria-label="Año del indicador" className={input} value={year} onChange={event => onChange(event.target.value)}><option value="">Todos los años</option>{years.map(value => <option key={value} value={value}>{value}</option>)}</select></label>{showSiteFilter && <fieldset className="mt-4 border-t border-slate-100 pt-4"><legend className="text-sm font-semibold text-slate-700">Sede</legend><div className="mt-2 space-y-1">{assignedSites.map(site => <label key={site.id} className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-2 text-sm text-slate-700 hover:bg-slate-50"><input type="radio" name="indicator-site-view" checked={String(siteView) === String(site.id)} onChange={() => onSiteChange?.(String(site.id))} className="h-4 w-4 border-slate-300 text-blue-700 focus:ring-blue-500" />{site.name}</label>)}<label className="flex cursor-pointer items-center gap-3 rounded-lg bg-blue-50 px-2 py-2 text-sm font-semibold text-blue-800 hover:bg-blue-100"><input type="radio" name="indicator-site-view" checked={siteView === 'weighted'} onChange={() => onSiteChange?.('weighted')} className="h-4 w-4 border-slate-300 text-blue-700 focus:ring-blue-500" />Ponderado</label></div></fieldset>}</div></details>;
+  return <details ref={menuRef} className="relative ml-auto shrink-0"><summary aria-label="Filtros del indicador" className="flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100"><Filter className="h-5 w-5" /></summary><div className="absolute right-0 top-full z-[60] mt-2 w-72 rounded-xl border border-slate-200 bg-white p-4 shadow-xl"><p className="mb-3 text-sm font-semibold text-slate-800">Filtros de visualización</p><label className="block text-sm font-semibold text-slate-700">Año<select aria-label="Año del indicador" className={input} value={year} onChange={event => onChange(event.target.value)}><option value="">Todos los años</option>{years.map(value => <option key={value} value={value}>{value}</option>)}</select></label>{showSiteFilter && <fieldset className="mt-4 border-t border-slate-100 pt-4"><legend className="text-sm font-semibold text-slate-700">Sede</legend><div className="mt-2 space-y-1">{assignedSites.map(site => <label key={site.id} className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-2 text-sm text-slate-700 hover:bg-slate-50"><input type="radio" name="indicator-site-view" checked={String(siteView) === String(site.id)} onChange={() => onSiteChange?.(String(site.id))} className="h-4 w-4 border-slate-300 text-blue-700 focus:ring-blue-500" />{site.name}</label>)}<label className="flex cursor-pointer items-center gap-3 rounded-lg bg-blue-50 px-2 py-2 text-sm font-semibold text-blue-800 hover:bg-blue-100"><input type="radio" name="indicator-site-view" checked={siteView === 'weighted'} onChange={() => onSiteChange?.('weighted')} className="h-4 w-4 border-slate-300 text-blue-700 focus:ring-blue-500" />Ponderado</label></div></fieldset>}</div></details>;
 }
 
 function SimpleMeasurementHistory({ rows, indicator, objective, workflow, users, canViewWorkflow = false }) {

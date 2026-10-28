@@ -1,5 +1,5 @@
 import { displayUnit } from './lib/units';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   LayoutDashboard, Target, FolderKanban, Settings, User, Plus, 
@@ -221,7 +221,16 @@ export default function App() {
   const [selectedObjectiveId, setSelectedObjectiveId] = useState(null);
   const [selectedObjectiveTab, setSelectedObjectiveTab] = useState('summary');
   const [objectiveFilterOpen, setObjectiveFilterOpen] = useState(false);
+  const objectiveFilterRef = useRef(null);
   const [objectiveFilters, setObjectiveFilters] = useState({ query: '', owner: '', status: '', focus: '', indicator: '' });
+  useEffect(() => {
+    if (!objectiveFilterOpen) return undefined;
+    const close = event => {
+      if (objectiveFilterRef.current && !objectiveFilterRef.current.contains(event.target)) setObjectiveFilterOpen(false);
+    };
+    document.addEventListener('pointerdown', close);
+    return () => document.removeEventListener('pointerdown', close);
+  }, [objectiveFilterOpen]);
   const [objectiveActionsOpen, setObjectiveActionsOpen] = useState(false);
   const [actionsHistoryOpen, setActionsHistoryOpen] = useState(false);
   const [selectedIndicatorId, setSelectedIndicatorId] = useState(null);
@@ -583,7 +592,7 @@ export default function App() {
   };
 
   const ObjectiveFilterControl = () => (
-    <div className="relative ml-auto">
+    <div ref={objectiveFilterRef} className="relative ml-auto">
       <button type="button" onClick={() => setObjectiveFilterOpen(open => !open)} aria-label="Filtrar objetivos" aria-expanded={objectiveFilterOpen} className={`rounded-lg p-2 text-slate-600 transition-colors hover:bg-slate-100 hover:text-[#1D4ED8] ${objectiveFilterOpen ? 'bg-blue-50 text-[#1D4ED8]' : ''}`}><Filter className="h-6 w-6" /></button>
       {objectiveFilterOpen && <div className="absolute right-0 top-full z-[70] mt-2 w-[min(92vw,34rem)] rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
         <div className="mb-4 flex items-center justify-between"><h2 className="font-semibold text-slate-900">Filtrar objetivos</h2><button type="button" onClick={() => setObjectiveFilterOpen(false)} aria-label="Cerrar filtros" className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"><X className="h-4 w-4" /></button></div>

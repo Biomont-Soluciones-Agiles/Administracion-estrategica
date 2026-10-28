@@ -51,7 +51,7 @@ begin
 
   -- John Cardenas usa la identidad Kuntur ya registrada.
   insert into public.site_responsibles(site_id, email, active)
-  values (v_kuntur_id, 'jcardenas@kunturpharma.pe', true)
+  values (v_kuntur_id, 'person-018@example.invalid', true)
   on conflict (site_id, email) do update
   set active = true, updated_at = now();
 

@@ -48,26 +48,26 @@ begin
   ) on commit drop;
 
   insert into seed_objectives values
-    (1,'Optimizar la rentabilidad financiera','Mejorar el margen y la eficiencia del gasto para sostener el crecimiento.','Financiero','Administración y Finanzas','jamaro@biomont.com.pe','dual'),
-    (2,'Incrementar ingresos de canales comerciales','Impulsar los ingresos rentables de los canales prioritarios.','Financiero','Central Comercial','cmedrano@biomont.com.pe','dual'),
-    (3,'Digitalizar el control presupuestal','Asegurar información oportuna para decisiones financieras.','Financiero','Tecnologías de la Información','chuerta@biomont.com.pe','biomont'),
-    (4,'Reducir el costo logístico integral','Optimizar abastecimiento, inventarios y distribución.','Financiero','Supply Chain','jdelavega@biomont.com.pe','biomont'),
-    (5,'Mejorar la productividad de planta','Elevar la productividad de las operaciones y capacidad instalada.','Financiero','Operaciones y Planta','wpena@biomont.com.pe','biomont'),
-    (6,'Elevar la satisfacción de clientes estratégicos','Fortalecer la propuesta de valor y experiencia de clientes.','Cliente','Central Comercial','cmedrano@biomont.com.pe','dual'),
-    (7,'Fortalecer la fidelización de clientes','Aumentar la permanencia y recompra de clientes prioritarios.','Cliente','Central Comercial','rbaca@biomont.com.pe','biomont'),
-    (8,'Mejorar la oportunidad de facturación','Garantizar facturación precisa dentro del plazo comprometido.','Cliente','Administración y Finanzas','jamaro@biomont.com.pe','biomont'),
-    (9,'Desarrollar capacidades de servicio','Potenciar competencias orientadas a la atención del cliente.','Cliente','Gestión Humana','nmas@biomont.com.pe','biomont'),
-    (10,'Asegurar disponibilidad de productos','Mantener niveles de servicio que respondan a la demanda comercial.','Cliente','Supply Chain','jdelavega@biomont.com.pe','biomont'),
-    (11,'Optimizar procesos productivos críticos','Reducir pérdidas y variabilidad en los procesos de planta.','Procesos','Operaciones y Planta','wpena@biomont.com.pe','biomont'),
-    (12,'Automatizar procesos administrativos','Simplificar procesos mediante soluciones tecnológicas confiables.','Procesos','Tecnologías de la Información','chuerta@biomont.com.pe','biomont'),
-    (13,'Fortalecer el cumplimiento regulatorio','Asegurar requisitos regulatorios aplicables.','Procesos','Asuntos Regulatorios','hsalazar@biomont.com.pe','biomont'),
-    (14,'Mejorar la planificación de abastecimiento','Anticipar necesidades y reducir quiebres de inventario.','Procesos','Supply Chain','jdelavega@biomont.com.pe','biomont'),
-    (15,'Acelerar la respuesta a requerimientos','Mejorar tiempo de respuesta a solicitudes comerciales.','Procesos','Central Comercial','cmedrano@biomont.com.pe','dual'),
-    (16,'Fortalecer el compromiso del talento','Incrementar compromiso y permanencia del equipo.','Personas / Aprendizaje','Gestión Humana','nmas@biomont.com.pe','biomont'),
-    (17,'Desarrollar capacidades técnico científicas','Consolidar conocimientos técnicos para innovación y calidad.','Personas / Aprendizaje','Técnica Científica','ireyna@biomont.com.pe','biomont'),
-    (18,'Mejorar competencias operativas','Desarrollar capacidades para una operación segura y eficiente.','Personas / Aprendizaje','Operaciones y Planta','wpena@biomont.com.pe','biomont'),
-    (19,'Consolidar la excelencia comercial','Implementar iniciativas de mejora continua para la gestión comercial.','Personas / Aprendizaje','Central Comercial','cmedrano@biomont.com.pe','none'),
-    (20,'Fortalecer la disciplina financiera','Promover prácticas de control y sostenibilidad financiera.','Personas / Aprendizaje','Administración y Finanzas','jamaro@biomont.com.pe','none');
+    (1,'Optimizar la rentabilidad financiera','Mejorar el margen y la eficiencia del gasto para sostener el crecimiento.','Financiero','Administración y Finanzas','person-008@example.invalid','dual'),
+    (2,'Incrementar ingresos de canales comerciales','Impulsar los ingresos rentables de los canales prioritarios.','Financiero','Central Comercial','person-009@example.invalid','dual'),
+    (3,'Digitalizar el control presupuestal','Asegurar información oportuna para decisiones financieras.','Financiero','Tecnologías de la Información','person-015@example.invalid','biomont'),
+    (4,'Reducir el costo logístico integral','Optimizar abastecimiento, inventarios y distribución.','Financiero','Supply Chain','person-010@example.invalid','biomont'),
+    (5,'Mejorar la productividad de planta','Elevar la productividad de las operaciones y capacidad instalada.','Financiero','Operaciones y Planta','person-012@example.invalid','biomont'),
+    (6,'Elevar la satisfacción de clientes estratégicos','Fortalecer la propuesta de valor y experiencia de clientes.','Cliente','Central Comercial','person-009@example.invalid','dual'),
+    (7,'Fortalecer la fidelización de clientes','Aumentar la permanencia y recompra de clientes prioritarios.','Cliente','Central Comercial','person-019@example.invalid','biomont'),
+    (8,'Mejorar la oportunidad de facturación','Garantizar facturación precisa dentro del plazo comprometido.','Cliente','Administración y Finanzas','person-008@example.invalid','biomont'),
+    (9,'Desarrollar capacidades de servicio','Potenciar competencias orientadas a la atención del cliente.','Cliente','Gestión Humana','person-011@example.invalid','biomont'),
+    (10,'Asegurar disponibilidad de productos','Mantener niveles de servicio que respondan a la demanda comercial.','Cliente','Supply Chain','person-010@example.invalid','biomont'),
+    (11,'Optimizar procesos productivos críticos','Reducir pérdidas y variabilidad en los procesos de planta.','Procesos','Operaciones y Planta','person-012@example.invalid','biomont'),
+    (12,'Automatizar procesos administrativos','Simplificar procesos mediante soluciones tecnológicas confiables.','Procesos','Tecnologías de la Información','person-015@example.invalid','biomont'),
+    (13,'Fortalecer el cumplimiento regulatorio','Asegurar requisitos regulatorios aplicables.','Procesos','Asuntos Regulatorios','person-023@example.invalid','biomont'),
+    (14,'Mejorar la planificación de abastecimiento','Anticipar necesidades y reducir quiebres de inventario.','Procesos','Supply Chain','person-010@example.invalid','biomont'),
+    (15,'Acelerar la respuesta a requerimientos','Mejorar tiempo de respuesta a solicitudes comerciales.','Procesos','Central Comercial','person-009@example.invalid','dual'),
+    (16,'Fortalecer el compromiso del talento','Incrementar compromiso y permanencia del equipo.','Personas / Aprendizaje','Gestión Humana','person-011@example.invalid','biomont'),
+    (17,'Desarrollar capacidades técnico científicas','Consolidar conocimientos técnicos para innovación y calidad.','Personas / Aprendizaje','Técnica Científica','person-013@example.invalid','biomont'),
+    (18,'Mejorar competencias operativas','Desarrollar capacidades para una operación segura y eficiente.','Personas / Aprendizaje','Operaciones y Planta','person-012@example.invalid','biomont'),
+    (19,'Consolidar la excelencia comercial','Implementar iniciativas de mejora continua para la gestión comercial.','Personas / Aprendizaje','Central Comercial','person-009@example.invalid','none'),
+    (20,'Fortalecer la disciplina financiera','Promover prácticas de control y sostenibilidad financiera.','Personas / Aprendizaje','Administración y Finanzas','person-008@example.invalid','none');
 
   for item in select * from seed_objectives order by seq loop
     insert into public.objectives (name,description,category,focus,owner_email,responsible_management,progress,status,created_date,target_date,stakeholders)
@@ -92,7 +92,7 @@ begin
       kunthur_assignment_id := null;
       if item.indicator_scope = 'dual' then
         insert into public.indicator_site_assignments (indicator_id,site_id,responsible_email,weight,active)
-        values (indicator_id,kunthur_site_id,case when item.management='Central Comercial' then 'jcardenas@kunturpharma.pe' else 'jamaro@biomont.com.pe' end,1,true)
+        values (indicator_id,kunthur_site_id,case when item.management='Central Comercial' then 'person-018@example.invalid' else 'person-008@example.invalid' end,1,true)
         returning id into kunthur_assignment_id;
       end if;
 

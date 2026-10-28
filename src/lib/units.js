@@ -1,4 +1,11 @@
 export function displayUnit(unit) {
-  const value = String(unit || '').trim();
-  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() === 'numero' ? '' : value;
+  const normalized = String(unit || '').trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const units = {
+    numero: '',
+    soles: 'S/.',
+    dolares: 'USD$',
+    horas: 'h',
+    dias: 'd',
+  };
+  return Object.prototype.hasOwnProperty.call(units, normalized) ? units[normalized] : String(unit || '').trim();
 }

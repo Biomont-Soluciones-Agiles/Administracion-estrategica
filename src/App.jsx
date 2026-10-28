@@ -222,7 +222,7 @@ export default function App() {
   const [selectedObjectiveTab, setSelectedObjectiveTab] = useState('summary');
   const [objectiveFilterOpen, setObjectiveFilterOpen] = useState(false);
   const objectiveFilterRef = useRef(null);
-  const [objectiveFilters, setObjectiveFilters] = useState({ query: '', owner: '', status: '', focus: '', indicator: '' });
+  const [objectiveFilters, setObjectiveFilters] = useState({ query: '', management: '', status: '', focus: '', indicator: '' });
   useEffect(() => {
     if (!objectiveFilterOpen) return undefined;
     const close = event => {
@@ -298,7 +298,6 @@ export default function App() {
     })),
   ];
   const MOCK_USERS = availableUsers;
-  const objectiveOwnerOptions = availableUsers.filter((user, index, items) => user.email && items.findIndex(item => item.email === user.email) === index);
   const managementLeads = organizationPeople.filter(person => person.active !== false && person.management && person.is_management_lead && person.email);
   const managementOptions = [...new Map(managementLeads.map(person => [person.management, person])).values()]
     .sort((a, b) => a.management.localeCompare(b.management, 'es'))
@@ -610,12 +609,12 @@ export default function App() {
         <div className="mb-4 flex items-center justify-between"><h2 className="font-semibold text-slate-900">Filtrar objetivos</h2><button type="button" onClick={() => setObjectiveFilterOpen(false)} aria-label="Cerrar filtros" className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"><X className="h-4 w-4" /></button></div>
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="block text-xs font-medium text-slate-600 sm:col-span-2">Buscar por nombre<div className="relative mt-1"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input value={objectiveFilters.query} onChange={event => setObjectiveFilters(filters => ({ ...filters, query: event.target.value }))} placeholder="Nombre del objetivo" className="w-full rounded-lg border border-slate-200 py-2.5 pl-9 pr-3 text-sm text-slate-800 outline-none focus:border-transparent focus:ring-2 focus:ring-[#3B82F6]" /></div></label>
-          <label className="block text-xs font-medium text-slate-600">Responsable<select value={objectiveFilters.owner} onChange={event => setObjectiveFilters(filters => ({ ...filters, owner: event.target.value }))} className="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800"><option value="">Todos</option>{objectiveOwnerOptions.map(user => <option key={user.email} value={user.email}>{user.name}</option>)}</select></label>
+          <label className="block text-xs font-medium text-slate-600">Gerencia responsable<select value={objectiveFilters.management} onChange={event => setObjectiveFilters(filters => ({ ...filters, management: event.target.value }))} className="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800"><option value="">Todas</option>{managementOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
           <label className="block text-xs font-medium text-slate-600">Estatus<select value={objectiveFilters.status} onChange={event => setObjectiveFilters(filters => ({ ...filters, status: event.target.value }))} className="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800"><option value="">Todos</option><option value="Activo">Activo</option><option value="No activo">No activo</option></select></label>
           <label className="block text-xs font-medium text-slate-600">Foco estratégico<select value={objectiveFilters.focus} onChange={event => setObjectiveFilters(filters => ({ ...filters, focus: event.target.value }))} className="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800"><option value="">Todos</option><option value="Financiero">Financiero</option><option value="Cliente">Cliente</option><option value="Procesos">Procesos</option><option value="Personas/Aprendizaje">Personas/Aprendizaje</option></select></label>
           <label className="block text-xs font-medium text-slate-600">Indicador<select value={objectiveFilters.indicator} onChange={event => setObjectiveFilters(filters => ({ ...filters, indicator: event.target.value }))} className="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800"><option value="">Todos</option><option value="with">Con indicador</option><option value="without">Pendiente de indicador</option></select></label>
         </div>
-        <button type="button" onClick={() => setObjectiveFilters({ query: '', owner: '', status: '', focus: '', indicator: '' })} className="mt-4 text-sm font-semibold text-[#1D4ED8] hover:underline">Limpiar filtros</button>
+        <button type="button" onClick={() => setObjectiveFilters({ query: '', management: '', status: '', focus: '', indicator: '' })} className="mt-4 text-sm font-semibold text-[#1D4ED8] hover:underline">Limpiar filtros</button>
       </div>}
     </div>
   );
@@ -623,12 +622,12 @@ export default function App() {
   const ObjectivesView = () => {
     const visibleObjectives = scopedObjectives.filter(objective => {
       const matchesName = !objectiveFilters.query || objective.name.toLowerCase().includes(objectiveFilters.query.trim().toLowerCase());
-      const matchesOwner = !objectiveFilters.owner || String(objective.ownerId || '') === objectiveFilters.owner;
+      const matchesManagement = !objectiveFilters.management || (objective.responsibleManagement || managementForOwner(objective.ownerId)) === objectiveFilters.management;
       const matchesStatus = !objectiveFilters.status || objectiveActivityStatus(objective) === objectiveFilters.status;
       const matchesFocus = !objectiveFilters.focus || objective.focus === objectiveFilters.focus;
       const hasIndicator = indicators.some(indicator => String(indicator.objectiveId) === String(objective.id));
       const matchesIndicator = !objectiveFilters.indicator || (objectiveFilters.indicator === 'with' ? hasIndicator : !hasIndicator);
-      return matchesName && matchesOwner && matchesStatus && matchesFocus && matchesIndicator;
+      return matchesName && matchesManagement && matchesStatus && matchesFocus && matchesIndicator;
     });
     const changeObjectiveStatus = async (objective, status) => {
       if (!(isGcg || isResponsibleManager) || !['Activo', 'No activo'].includes(status) || !scopedObjectives.some(item => item.id === objective.id)) throw new Error('No puedes cambiar el estatus de este objetivo.');

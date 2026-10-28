@@ -3,36 +3,36 @@ begin;
 
 update public.role_assignments
 set role = case
-  when lower(email) = 'sig@biomont.com.pe' then 'super_admin'
-  when lower(email) = 'jcardenas@biomont.com.pe' then 'gcg'
-  when lower(email) = 'molin@biomont.com.pe' then 'gerente_responsable'
+  when lower(email) = 'person-005@example.invalid' then 'super_admin'
+  when lower(email) = 'person-001@example.invalid' then 'gcg'
+  when lower(email) = 'person-002@example.invalid' then 'gerente_responsable'
   else role
 end
-where lower(email) in ('sig@biomont.com.pe', 'jcardenas@biomont.com.pe', 'molin@biomont.com.pe');
+where lower(email) in ('person-005@example.invalid', 'person-001@example.invalid', 'person-002@example.invalid');
 
 update public.profiles
 set role = case
-  when lower(email) = 'sig@biomont.com.pe' then 'super_admin'
-  when lower(email) = 'jcardenas@biomont.com.pe' then 'gcg'
-  when lower(email) = 'molin@biomont.com.pe' then 'gerente_responsable'
+  when lower(email) = 'person-005@example.invalid' then 'super_admin'
+  when lower(email) = 'person-001@example.invalid' then 'gcg'
+  when lower(email) = 'person-002@example.invalid' then 'gerente_responsable'
   else role
 end
-where lower(email) in ('sig@biomont.com.pe', 'jcardenas@biomont.com.pe', 'molin@biomont.com.pe');
+where lower(email) in ('person-005@example.invalid', 'person-001@example.invalid', 'person-002@example.invalid');
 
 update public.organization_people
 set role = case
-  when lower(email) = 'sig@biomont.com.pe' then 'super_admin'
-  when lower(email) = 'jcardenas@biomont.com.pe' then 'gcg'
-  when lower(email) = 'molin@biomont.com.pe' then 'gerente_responsable'
+  when lower(email) = 'person-005@example.invalid' then 'super_admin'
+  when lower(email) = 'person-001@example.invalid' then 'gcg'
+  when lower(email) = 'person-002@example.invalid' then 'gerente_responsable'
   else role
 end
-where lower(email) in ('sig@biomont.com.pe', 'jcardenas@biomont.com.pe', 'molin@biomont.com.pe');
+where lower(email) in ('person-005@example.invalid', 'person-001@example.invalid', 'person-002@example.invalid');
 
 insert into public.role_assignments (email, role)
 values
-  ('sig@biomont.com.pe', 'super_admin'),
-  ('jcardenas@biomont.com.pe', 'gcg'),
-  ('molin@biomont.com.pe', 'gerente_responsable')
+  ('person-005@example.invalid', 'super_admin'),
+  ('person-001@example.invalid', 'gcg'),
+  ('person-002@example.invalid', 'gerente_responsable')
 on conflict (email) do update set role = excluded.role;
 
 create or replace function public.is_super_admin()

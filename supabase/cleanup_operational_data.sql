@@ -17,7 +17,7 @@ declare
     'corrective_evidence', 'corrective_events', 'corrective_tasks',
     'corrective_actions', 'cause_analyses', 'indicator_change_audit',
     'indicator_change_requests', 'indicator_target_history',
-    'core_indicators', 'indicator_site_assignments', 'indicator_reports',
+    'core_indicators', 'general_manager_indicators', 'indicator_site_assignments', 'indicator_reports',
     'indicators', 'strategic_actions', 'projects', 'objectives',
     'dashboard_messages'
   ];

@@ -11,7 +11,7 @@ import { measurementComplianceBand } from './lib/complianceBand';
 
 const NAVY = '#112B50';
 const COMPARISON_COLORS = ['#112B50', '#5B8FF9', '#16A34A', '#D97706', '#7C3AED', '#E11D48'];
-const formatValue = value => Number(value).toLocaleString('es-PE', { maximumFractionDigits: 4 });
+const formatValue = value => Number(value).toLocaleString('es-PE', { maximumFractionDigits: 2 });
 const valueWithUnit = (value, unit) => value == null ? 'Sin medición' : `${formatValue(value)} ${unit}`.trim();
 
 function MeasurementTooltip({ active, payload, label, unit, defaultComparator, comparison, comparisonYears }) {

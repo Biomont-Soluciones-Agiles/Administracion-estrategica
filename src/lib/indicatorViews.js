@@ -65,7 +65,7 @@ export function filterIndicators(indicators, { search = '', objectiveId = '', re
   const query = normalizeSearch(search);
   return indicators.filter(indicator => {
     const searchable = normalizeSearch(`${indicator.code || ''} ${indicator.name || ''}`);
-    const responsible = indicator.ownerId || indicator.owner_email || indicator.reporter_email || '';
+    const responsible = indicator.responsibleManagement || indicator.responsible_management || indicator.ownerId || indicator.owner_email || indicator.reporter_email || '';
     return searchable.includes(query)
       && (!objectiveId || String(indicator.objectiveId) === String(objectiveId))
       && (!responsibleId || String(responsible) === String(responsibleId))

@@ -287,6 +287,7 @@ export default function App() {
   const isResponsibleManager = selectedRole?.name === 'Gerente responsable';
   const isGcg = selectedRole?.key === 'gcg' || selectedRole?.name === 'GCG' || assignedRole === 'gcg';
   const isSuperAdmin = assignedRole === 'super_admin';
+  const isStandardUser = selectedRole?.key === 'usuario' || assignedRole === 'usuario';
   const availableUsers = [
     ...organizationPeople.map(person => ({ id: person.id, email: person.email, name: microsoftPeople.find(item => item.email === person.email?.toLowerCase())?.full_name || person.full_name, role: person.role, jobTitle: person.job_title, management: person.management, submanagement: person.submanagement, isManagementLead: person.is_management_lead, avatar: person.full_name.slice(0, 2).toUpperCase() })),
     ...microsoftPeople.filter(person => !organizationPeople.some(item => item.email?.toLowerCase() === person.email)).map(person => ({ id: person.email, email: person.email, name: person.full_name, role: profiles.find(item => item.email?.toLowerCase() === person.email)?.role || 'directory', avatar: person.full_name.slice(0, 2).toUpperCase() })),
@@ -328,7 +329,7 @@ export default function App() {
       : indicators.some(indicator => String(indicator.objectiveId) === String(objective.id) && siteVisibleIndicatorIds.has(String(indicator.id))))
     : objectivesWithIndicatorProgress;
   const hasBiomontAssignment = managerAssignments.some(assignment => String(sites.find(site => String(site.id) === String(assignment.site_id))?.name || '').trim().toLowerCase() === 'biomont');
-  const hideBscForSiteProfile = isKunturAccount || (isManagerScoped && managerAssignments.length > 0 && !hasBiomontAssignment);
+  const hideBscForSiteProfile = isStandardUser || isKunturAccount || (isManagerScoped && managerAssignments.length > 0 && !hasBiomontAssignment);
   const scopedIndicators = isManagerScoped
     ? indicators.filter(indicator => {
       const assignments = siteAssignments.filter(item => String(item.indicator_id) === String(indicator.id) && item.active);

@@ -283,11 +283,17 @@ export default function App() {
     setSidebarTooltip({ label: event.currentTarget.dataset.sidebarTooltip, top: bounds.top + bounds.height / 2 });
   };
   const hideSidebarTooltip = () => setSidebarTooltip(null);
-  const isGeneralManager = selectedRole?.key === 'gerente_general';
-  const isResponsibleManager = selectedRole?.name === 'Gerente responsable';
-  const isGcg = selectedRole?.key === 'gcg' || selectedRole?.name === 'GCG' || assignedRole === 'gcg';
-  const isSuperAdmin = assignedRole === 'super_admin';
-  const isStandardUser = selectedRole?.key === 'usuario' || assignedRole === 'usuario';
+  const normalizedCurrentRole = String(selectedRole?.key || assignedRole || selectedRole?.name || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, '_');
+  const isGeneralManager = normalizedCurrentRole === 'gerente_general';
+  const isResponsibleManager = normalizedCurrentRole === 'gerente_responsable';
+  const isGcg = normalizedCurrentRole === 'gcg';
+  const isSuperAdmin = normalizedCurrentRole === 'super_admin';
+  const isStandardUser = ['usuario', 'user', 'standard_user'].includes(normalizedCurrentRole);
   const availableUsers = [
     ...organizationPeople.map(person => ({ id: person.id, email: person.email, name: microsoftPeople.find(item => item.email === person.email?.toLowerCase())?.full_name || person.full_name, role: person.role, jobTitle: person.job_title, management: person.management, submanagement: person.submanagement, isManagementLead: person.is_management_lead, avatar: person.full_name.slice(0, 2).toUpperCase() })),
     ...microsoftPeople.filter(person => !organizationPeople.some(item => item.email?.toLowerCase() === person.email)).map(person => ({ id: person.email, email: person.email, name: person.full_name, role: profiles.find(item => item.email?.toLowerCase() === person.email)?.role || 'directory', avatar: person.full_name.slice(0, 2).toUpperCase() })),

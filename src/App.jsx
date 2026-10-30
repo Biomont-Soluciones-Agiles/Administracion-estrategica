@@ -457,16 +457,19 @@ export default function App() {
       setSession(activeSession);
       if (error) {
         setAuthError('No se pudo verificar tu rol. Reintenta sin cerrar la sesión.');
-      } else if (!data?.role || !['gcg', 'gerente_responsable', 'super_admin', 'usuario', 'gerente_general'].includes(data.role)) {
-        setAssignedRole(null);
-        setSelectedRole(null);
-        setAuthError(`Tu correo corporativo no tiene un rol asignado en ${APP_TITLE}. Contacta al administrador.`);
       } else {
-        setAuthError('');
-        const role = data.role;
-        setAssignedRole(role);
-        setSelectedRole(role === 'super_admin' ? null : { key: role, name: ROLE_LABELS[role] });
-        await loadOperationalData();
+        const sourceRole = String(data?.role || '').trim().toLowerCase().replace(/[\s-]+/g, '_');
+        const role = sourceRole === 'user' || sourceRole === 'standard_user' ? 'usuario' : sourceRole;
+        if (!['gcg', 'gerente_responsable', 'super_admin', 'usuario', 'gerente_general'].includes(role)) {
+          setAssignedRole(null);
+          setSelectedRole(null);
+          setAuthError(`Tu correo corporativo no tiene un rol asignado en ${APP_TITLE}. Contacta al administrador.`);
+        } else {
+          setAuthError('');
+          setAssignedRole(role);
+          setSelectedRole(role === 'super_admin' ? null : { key: role, name: ROLE_LABELS[role] });
+          await loadOperationalData();
+        }
       }
       setAuthLoading(false);
     };

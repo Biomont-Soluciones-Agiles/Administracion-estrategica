@@ -212,6 +212,7 @@ export default function App() {
   const [organizationPeople, setOrganizationPeople] = useState([]);
   const [sites, setSites] = useState([]);
   const [siteAssignments, setSiteAssignments] = useState([]);
+  const [reportingSupports, setReportingSupports] = useState([]);
   const [siteResponsibleRows, setSiteResponsibleRows] = useState([]);
   const [microsoftPeople, setMicrosoftPeople] = useState([]);
   const [dashboardMessages, setDashboardMessages] = useState([]);
@@ -327,6 +328,10 @@ export default function App() {
   const isManagerScoped = isResponsibleManager && !isSuperAdmin;
   const objectivesWithIndicatorProgress = withIndicatorMeasurementProgress(objectives, indicators, reports);
   const managerAssignments = siteAssignments.filter(assignment => assignment.active && accountOwns(assignment.responsible_email));
+  const supportedAssignmentIds = new Set(reportingSupports
+    .filter(support => support.active && accountOwns(support.support_email))
+    .map(support => String(support.site_assignment_id)));
+  const accountCanReportAssignment = assignment => isGcg || isSuperAdmin || accountOwns(assignment?.responsible_email) || supportedAssignmentIds.has(String(assignment?.id));
   const managerSiteIds = new Set(managerAssignments.map(assignment => String(assignment.site_id)));
   const siteVisibleIndicatorIds = new Set(siteAssignments.filter(assignment => assignment.active && managerSiteIds.has(String(assignment.site_id))).map(assignment => String(assignment.indicator_id)));
   const scopedObjectives = isManagerScoped
@@ -358,7 +363,7 @@ export default function App() {
 
   const loadOperationalData = async () => {
     if (!supabase) return;
-    const [profilesResult, peopleResult, objectivesResult, projectsResult, actionsResult, indicatorsResult, reportsResult, messagesResult, catalogResult, directoryResult, sitesResult, assignmentsResult, coreResult, generalManagerResult, siteResponsiblesResult] = await Promise.all([
+    const [profilesResult, peopleResult, objectivesResult, projectsResult, actionsResult, indicatorsResult, reportsResult, messagesResult, catalogResult, directoryResult, sitesResult, assignmentsResult, coreResult, generalManagerResult, siteResponsiblesResult, reportingSupportsResult] = await Promise.all([
       supabase.from('profiles').select('email, role').order('email'),
       supabase.from('organization_people').select('id, full_name, email, role, job_title, management, submanagement, is_management_lead, active').eq('active', true).order('full_name'),
       supabase.from('objectives').select('*').order('created_at', { ascending: false }),
@@ -374,6 +379,7 @@ export default function App() {
       supabase.from('core_indicators').select('*').order('created_at'),
       supabase.from('general_manager_indicators').select('*').order('position'),
       supabase.from('site_responsibles').select('*').eq('active', true),
+      supabase.from('indicator_reporting_supports').select('*').eq('active', true),
     ]);
     const firstError = [profilesResult, peopleResult, objectivesResult, projectsResult, actionsResult, indicatorsResult, reportsResult].find(result => result.error)?.error;
     if (firstError) {
@@ -407,6 +413,8 @@ export default function App() {
     });
     setSites(visibleSites);
     setSiteAssignments(assignmentsResult.data || []);
+    if (!reportingSupportsResult.error) setReportingSupports(reportingSupportsResult.data || []);
+    else setReportingSupports([]);
     if (!siteResponsiblesResult.error) setSiteResponsibleRows(siteResponsiblesResult.data || []);
     if (!coreResult.error) setCoreIndicatorRows(coreResult.data || []);
     if (!generalManagerResult.error) setGeneralManagerIndicatorRows(generalManagerResult.data || []);
@@ -1170,7 +1178,8 @@ export default function App() {
     const weightedStatus = weighted.value === null ? 'Sin reporte' : calculateIndicatorStatus(weighted.value, ind.target, ind.comparator);
     const ownIds = accountIdentities(session.user.email, organizationPeople);
     const { canManage, canReport: legacyCanReport } = indicatorAccess(ind, obj, ownIds, isSuperAdmin);
-    const canReport = isGcg || (!isGeneralManager && (legacyCanReport || managerAssignments.some(assignment => String(assignment.indicator_id) === String(ind.id))));
+    const hasAssignedReportingAccess = indAssignments.some(assignment => accountCanReportAssignment(assignment));
+    const canReport = isGcg || (!isGeneralManager && (legacyCanReport || hasAssignedReportingAccess));
     const reporter = ind.reporter_email ? personName(ind.reporter_email, availableUsers) : 'Sin asignar';
     const historyCondition = report => {
       if (report.result == null) return 'Sin datos';
@@ -1247,7 +1256,7 @@ export default function App() {
 
   const ReportFormView = () => {
     const ind = indicators.find(i => i.id === selectedIndicatorId);
-    const reportingAssignments = siteAssignments.filter(assignment => String(assignment.indicator_id) === String(ind?.id) && assignment.active && (!isManagerScoped || accountOwns(assignment.responsible_email)));
+    const reportingAssignments = siteAssignments.filter(assignment => String(assignment.indicator_id) === String(ind?.id) && assignment.active && accountCanReportAssignment(assignment));
     const [formData, setFormData] = useState({ period: '', result: '', obs: '', noData: false, assignmentId: reportingAssignments[0] ? String(reportingAssignments[0].id) : '' });
     const registrationDate = new Date().toLocaleDateString('en-CA');
     const registrationDateLabel = registrationDate.split('-').reverse().join('-');
@@ -1338,8 +1347,8 @@ export default function App() {
   const headerIndicator = currentView === 'bio-indicators' && indicatorFilters.indicatorId
     ? indicators.find(item => String(item.id) === String(indicatorFilters.indicatorId))
     : null;
-  const headerIndicatorHasAssignment = !!headerIndicator && managerAssignments.some(
-    assignment => String(assignment.indicator_id) === String(headerIndicator.id)
+  const headerIndicatorHasAssignment = !!headerIndicator && siteAssignments.some(
+    assignment => String(assignment.indicator_id) === String(headerIndicator.id) && assignment.active && accountCanReportAssignment(assignment)
   );
   const canUseHeaderIndicatorActions = !!headerIndicator && (
     isGcg || (!isGeneralManager && headerIndicatorHasAssignment)

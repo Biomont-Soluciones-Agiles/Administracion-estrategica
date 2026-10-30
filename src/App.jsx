@@ -385,7 +385,21 @@ export default function App() {
     setTasks((actionsResult.data || []).map(toAction));
     setIndicators((indicatorsResult.data || []).map(toIndicator));
     setReports((reportsResult.data || []).map(toReport));
-    setSites(sitesResult.data || []);
+    const activeSites = sitesResult.data || [];
+    const normalizeSiteName = site => String(site?.name || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .toLowerCase();
+    const hasCanonicalKunturSite = activeSites.some(site => {
+      const name = normalizeSiteName(site);
+      return name === 'kuntur pharma' || name === 'kunthur pharma';
+    });
+    const visibleSites = activeSites.filter(site => {
+      const name = normalizeSiteName(site);
+      return !hasCanonicalKunturSite || (name !== 'kuntur' && name !== 'kunthur');
+    });
+    setSites(visibleSites);
     setSiteAssignments(assignmentsResult.data || []);
     if (!siteResponsiblesResult.error) setSiteResponsibleRows(siteResponsiblesResult.data || []);
     if (!coreResult.error) setCoreIndicatorRows(coreResult.data || []);

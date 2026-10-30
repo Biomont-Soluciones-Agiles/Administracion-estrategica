@@ -1053,7 +1053,10 @@ export default function App() {
               return allowedNames.some(name => normalizedName.includes(name));
             })
           : availableUsers.filter(user => user.role === 'gerente_responsable');
-      return people.map(user => ({ value: user.email || user.id, label: user.name }));
+      return [...new Map(people.map(user => {
+        const value = String(user.email || user.id || '').trim().toLowerCase();
+        return [value, { value: user.email || user.id, label: user.name }];
+      })).values()];
     };
 
     const handleSubmit = async (e) => {

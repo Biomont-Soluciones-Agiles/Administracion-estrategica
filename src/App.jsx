@@ -197,11 +197,23 @@ const ProgressBar = ({ progress, status, target, comparator, unit = '%' }) => {
   </div>;
 }
 
+const greetingForHour = hour => {
+  if (hour >= 4 && hour < 12) return 'Buenos días';
+  if (hour >= 12 && hour < 18) return 'Buenas tardes';
+  return 'Buenas noches';
+};
+
 export default function App() {
   const [currentView, setCurrentView] = useState('dashboard');
   const [navHistory, setNavHistory] = useState([{ id: 'dashboard', name: 'Gráfica BSC' }]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarTooltip, setSidebarTooltip] = useState(null);
+  const [currentTime, setCurrentTime] = useState(() => new Date());
+  useEffect(() => {
+    const refreshTime = () => setCurrentTime(new Date());
+    const interval = window.setInterval(refreshTime, 60_000);
+    return () => window.clearInterval(interval);
+  }, []);
   
   const [objectives, setObjectives] = useState(INITIAL_OBJECTIVES);
   const [projects, setProjects] = useState(INITIAL_PROJECTS);
@@ -690,7 +702,7 @@ export default function App() {
       <div className="space-y-8 fade-in">
         <div className="flex flex-wrap justify-between items-end gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-[#0F172A] tracking-tight">Buenos días, {signedInName}</h1>
+            <h1 className="text-2xl font-bold text-[#0F172A] tracking-tight">{greetingForHour(currentTime.getHours())}, {signedInName}</h1>
             <p className="mt-1 whitespace-pre-line text-slate-500">{dashboardIntroduction}</p>
           </div>
           <div className="flex flex-wrap items-end gap-3">

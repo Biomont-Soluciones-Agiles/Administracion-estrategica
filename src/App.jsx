@@ -55,6 +55,17 @@ const INITIAL_TASKS = [];
 const INITIAL_INDICATORS = [];
 const INITIAL_REPORTS = [];
 
+const createIndicatorDraft = () => ({
+  name: '',
+  formula: '',
+  target: '',
+  unit: '%',
+  comparator: '>=',
+  reportingFrequency: 'Mensual',
+  ownerId: '',
+  siteAssignments: [],
+});
+
 const calculateIndicatorStatus = (result, target, comparator) => {
   const res = parseFloat(result);
   const tgt = parseFloat(target);
@@ -273,6 +284,9 @@ export default function App() {
     setIndicatorFilters(next);
   };
   const [selectedActionId, setSelectedActionId] = useState(null);
+  // Lives in App rather than the view so a session-refresh render cannot discard
+  // the indicator being drafted while the user is working in another application.
+  const [indicatorDraft, setIndicatorDraft] = useState(createIndicatorDraft);
   const [portfolioFilter, setPortfolioFilter] = useState(null);
   const [generalObjectiveFilter, setGeneralObjectiveFilter] = useState('Todos');
   const [selectedRole, setSelectedRole] = useState(null);
@@ -528,7 +542,10 @@ export default function App() {
       || (['edit-target', 'report-indicator', 'indicator-status'].includes(view) && !isResponsibleManager)
       || (['new-project', 'edit-action', 'link-project'].includes(view) && !isGcg)) return;
     setCurrentView(view);
-    if (view === 'new-indicator' && !params.objectiveId) setSelectedObjectiveId(null);
+    if (view === 'new-indicator') {
+      setIndicatorDraft(createIndicatorDraft());
+      if (!params.objectiveId) setSelectedObjectiveId(null);
+    }
     if (params.objectiveId) setSelectedObjectiveId(params.objectiveId);
     if (params.objectiveTab) setSelectedObjectiveTab(params.objectiveTab);
     else if (view === 'objective-detail') setSelectedObjectiveTab('summary');
@@ -1046,7 +1063,8 @@ export default function App() {
 
   const IndicatorFormView = () => {
     const obj = objectives.find(o => String(o.id) === String(selectedObjectiveId));
-    const [formData, setFormData] = useState({ name: '', formula: '', target: '', unit: '%', comparator: '>=', reportingFrequency: 'Mensual', ownerId: '', siteAssignments: sites.map(site => ({ siteId: String(site.id), responsibleEmail: '' })) });
+    const formData = indicatorDraft;
+    const setFormData = setIndicatorDraft;
     const defaultBiomontReporter = managementLeadFor(obj?.responsibleManagement || managementForOwner(obj?.ownerId))?.email || '';
     const kunthurManagementAllowed = kunthurManagements.has(normalizeManagementName(obj?.responsibleManagement || managementForOwner(obj?.ownerId)));
     useEffect(() => {
@@ -1135,6 +1153,7 @@ export default function App() {
       }
       setIndicators([...indicators, toIndicator(data)]);
       setSiteAssignments(items => [...items, ...(assignmentRows || [])]);
+      setIndicatorDraft(createIndicatorDraft());
       notify('Indicador creado y asignado por sede.');
       navigateTo('objective-detail', obj.name, { objectiveId: obj.id, objectiveTab: 'summary' });
     };

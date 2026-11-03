@@ -33,21 +33,50 @@ export function activeObjectives(objectives, now = new Date()) {
 }
 
 
-// Objective progress is the consolidated measurement of its indicator for the current year.
+const indicatorAchievement = (result, target, comparator) => {
+  const value = Number(result);
+  const goal = Number(target);
+  if (!Number.isFinite(value) || !Number.isFinite(goal)) return 0;
+  if (comparator === '=') return value === goal ? 100 : 0;
+  if (comparator === '<=' || comparator === '<') {
+    if (value <= goal) return 100;
+    return goal > 0 && value > 0 ? Math.max(0, Math.min(100, goal / value * 100)) : 0;
+  }
+  if (goal <= 0) return value >= goal ? 100 : 0;
+  return Math.max(0, Math.min(100, value / goal * 100));
+};
+
+// Objective progress is the equal-weighted compliance of every linked indicator.
+// Missing current-year measurements intentionally contribute 0%.
 export function withIndicatorMeasurementProgress(objectives = [], indicators = [], reports = [], now = new Date()) {
   const currentYear = String(new Intl.DateTimeFormat('en', { timeZone: 'America/Lima', year: 'numeric' }).format(now));
   return objectives.map(objective => {
-    const indicator = indicators.find(item => String(item.objectiveId ?? item.objective_id) === String(objective.id));
-    if (!indicator) return { ...objective, progress: 0 };
+    const objectiveIndicators = indicators.filter(item => String(item.objectiveId ?? item.objective_id) === String(objective.id));
+    if (!objectiveIndicators.length) return { ...objective, progress: 0, indicatorCount: 0, measuredIndicatorCount: 0 };
 
-    const currentYearReports = reports
-      .filter(report => String(report.indicatorId ?? report.indicator_id) === String(indicator.id) && report.result != null && report.status !== 'Sin datos')
-      .map(report => ({ report, period: parseReportPeriod(report.period) }))
-      .filter(item => item.period?.year === currentYear && Number.isFinite(Number(item.report.result)));
-
-    if (!currentYearReports.length) return { ...objective, progress: 0 };
-
-    const consolidated = currentYearReports.reduce((sum, item) => sum + Number(item.report.result), 0) / currentYearReports.length;
-    return { ...objective, progress: Number(consolidated.toFixed(2)) };
+    const equalWeight = 100 / objectiveIndicators.length;
+    const summaries = objectiveIndicators.map(indicator => {
+      const latest = reports
+        .filter(report => String(report.indicatorId ?? report.indicator_id) === String(indicator.id) && report.result != null && report.status !== 'Sin datos')
+        .map(report => ({ report, period: parseReportPeriod(report.period) }))
+        .filter(item => item.period?.year === currentYear && Number.isFinite(Number(item.report.result)))
+        .sort((left, right) => right.period.order - left.period.order || Number(right.report.id || 0) - Number(left.report.id || 0))[0];
+      const weight = Number(indicator.objectiveWeight ?? indicator.objective_weight);
+      const normalizedWeight = Number.isFinite(weight) && weight > 0 ? weight : equalWeight;
+      return {
+        indicator,
+        measured: Boolean(latest),
+        weight: normalizedWeight,
+        compliance: latest ? indicatorAchievement(latest.report.result, indicator.target, indicator.comparator) : 0,
+      };
+    });
+    const totalWeight = summaries.reduce((sum, item) => sum + item.weight, 0) || 100;
+    const progress = summaries.reduce((sum, item) => sum + item.compliance * item.weight / totalWeight, 0);
+    return {
+      ...objective,
+      progress: Number(progress.toFixed(2)),
+      indicatorCount: summaries.length,
+      measuredIndicatorCount: summaries.filter(item => item.measured).length,
+    };
   });
 }

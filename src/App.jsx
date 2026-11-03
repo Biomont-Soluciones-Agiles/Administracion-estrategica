@@ -44,7 +44,7 @@ const ROLE_LABELS = {
 const toObjective = (row) => ({ ...row, ownerId: row.owner_email, responsibleManagement: row.responsible_management, createdDate: row.created_date, targetDate: row.target_date, validityStartYear: row.validity_start_year, validityEndYear: row.validity_end_year, focus: row.focus });
 const toProject = (row) => ({ ...row, objectiveId: row.objective_id, ownerId: row.owner_email });
 const toAction = (row) => ({ ...row, objectiveId: row.objective_id, projectId: row.project_id, dueDate: row.due_date, completedAt: row.completed_at, ownerId: row.owner_email });
-const toIndicator = (row) => ({ ...row, objectiveId: row.objective_id, ownerId: row.owner_email, approvalStatus: row.approval_status, reviewFrequency: row.review_frequency, target: Number(row.target) });
+const toIndicator = (row) => ({ ...row, objectiveId: row.objective_id, ownerId: row.owner_email, objectiveWeight: Number(row.objective_weight), approvalStatus: row.approval_status, reviewFrequency: row.review_frequency, target: Number(row.target) });
 const toReport = (row) => ({ ...row, indicatorId: row.indicator_id, assignmentId: row.site_assignment_id, date: row.registered_date, result: row.result == null ? null : Number(row.result), obs: row.observations });
 
 // La aplicación inicia sin datos operativos. Los usuarios registrados crean los
@@ -983,14 +983,14 @@ export default function App() {
                  )}
                </Card>
                <Card className="p-5">
-                 <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2"><BarChart3 className="w-5 h-5 text-slate-400"/> Indicador</h3>
-                 {objIndicators.length === 0 ? <div className="space-y-3"><p className="text-sm text-slate-500 italic">No hay indicadores definidos.</p>{isGcg && <Button onClick={() => navigateTo('new-indicator', 'Nuevo Indicador', { objectiveId: obj.id, objectiveTab: 'summary' })} className="w-fit text-xs py-1.5"><Plus className="w-4 h-4"/> Crear indicador</Button>}</div> : (
+                 <div className="mb-4 flex items-center justify-between gap-3"><h3 className="font-semibold text-slate-900 flex items-center gap-2"><BarChart3 className="w-5 h-5 text-slate-400"/> Indicadores <span className="text-xs font-normal text-slate-500">{objIndicators.length}</span></h3>{isGcg && <Button onClick={() => navigateTo('new-indicator', 'Nuevo Indicador', { objectiveId: obj.id, objectiveTab: 'summary' })} className="shrink-0 text-xs py-1.5"><Plus className="w-4 h-4"/> Crear indicador</Button>}</div>
+                 {objIndicators.length === 0 ? <p className="text-sm text-slate-500 italic">No hay indicadores definidos.</p> : (
                    <div className="space-y-3">
                      {objIndicators.map(ind => {
                         const latest = sortReportsByPeriod(reports.filter(r => r.indicatorId === ind.id), 'desc')[0];
                         return (
                           <button type="button" key={ind.id} onClick={() => { setIndicatorFilters({ search: '', objectiveId: '', responsibleId: '', siteId: '', indicatorId: String(ind.id) }); navigateTo('bio-indicators', ind.name, { indicatorId: ind.id, objectiveId: obj.id, objectiveTab: 'summary' }); }} className="flex w-full items-center justify-between rounded-lg border border-slate-100 bg-slate-50 p-3 text-left transition hover:border-blue-200 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                            <div><p className="text-sm font-medium text-slate-800">{ind.name}</p><p className="text-xs text-slate-500 mt-0.5">Meta: {ind.comparator} {ind.target} {displayUnit(ind.unit)}</p></div>
+                            <div><p className="text-sm font-medium text-slate-800">{ind.name}</p><p className="text-xs text-slate-500 mt-0.5">Meta: {ind.comparator} {ind.target} {displayUnit(ind.unit)} · Ponderación: {Number(ind.objectiveWeight || 0).toFixed(2)}%</p></div>
                             <div className="text-right"><Badge status={ind.status}>{ind.status}</Badge><p className="text-xs font-bold mt-1 text-slate-700">Actual: {latest?.result || '-'} {displayUnit(ind.unit)}</p></div>
                           </button>
                         )
@@ -1116,7 +1116,6 @@ export default function App() {
     const handleSubmit = async (e) => {
       e.preventDefault();
       if (!isGcg || !obj) { setDataError('Solo GCG puede crear indicadores desde un objetivo válido.'); return; }
-      if (indicators.some(item => String(item.objectiveId) === String(obj.id))) { setDataError('Este objetivo ya tiene un indicador. Cada objetivo admite solo uno.'); return; }
       const biomontAssignment = formData.siteAssignments.find(item => {
         const site = sites.find(candidate => String(candidate.id) === String(item.siteId));
         return String(site?.name || '').trim().toLocaleLowerCase('es') === 'biomont';
@@ -1147,16 +1146,15 @@ export default function App() {
         setDataError(`No se pudo guardar el indicador: ${error.message}`);
         return;
       }
-      const { data: assignmentRows, error: assignmentError } = await supabase.from('indicator_site_assignments').insert(selectedSiteAssignments.map(item => ({ indicator_id: data.id, site_id: Number(item.siteId), responsible_email: item.responsibleEmail, weight: 1, active: true }))).select();
+      const { error: assignmentError } = await supabase.from('indicator_site_assignments').insert(selectedSiteAssignments.map(item => ({ indicator_id: data.id, site_id: Number(item.siteId), responsible_email: item.responsibleEmail, weight: 1, active: true }))).select();
       if (assignmentError) {
         await supabase.from('indicators').delete().eq('id', data.id);
         setDataError(`No se pudo guardar las sedes del indicador: ${assignmentError.message}`);
         return;
       }
-      setIndicators([...indicators, toIndicator(data)]);
-      setSiteAssignments(items => [...items, ...(assignmentRows || [])]);
+      await loadOperationalData();
       setIndicatorDraft(createIndicatorDraft());
-      notify('Indicador creado y asignado por sede.');
+      notify('Indicador creado. Las ponderaciones del objetivo se distribuyeron en partes iguales.');
       navigateTo('objective-detail', obj.name, { objectiveId: obj.id, objectiveTab: 'summary' });
     };
 

@@ -561,6 +561,27 @@ export default function App() {
     }
   };
 
+  const draftIndicatorObjective = objectives.find(objective => String(objective.id) === String(selectedObjectiveId));
+  const defaultDraftBiomontReporter = managementLeadFor(draftIndicatorObjective?.responsibleManagement || managementForOwner(draftIndicatorObjective?.ownerId))?.email || '';
+  useEffect(() => {
+    if (currentView !== 'new-indicator' || !defaultDraftBiomontReporter || !sites.length) return;
+    setIndicatorDraft(current => {
+      const assignments = current.siteAssignments.length
+        ? current.siteAssignments
+        : sites.map(site => ({ siteId: String(site.id), responsibleEmail: '' }));
+      const nextAssignments = assignments.map(assignment => {
+        const siteName = String(sites.find(site => String(site.id) === String(assignment.siteId))?.name || '').trim().toLowerCase();
+        return siteName === 'biomont' && !assignment.responsibleEmail
+          ? { ...assignment, responsibleEmail: defaultDraftBiomontReporter }
+          : assignment;
+      });
+      const assignmentsChanged = nextAssignments.some((assignment, index) => assignment !== current.siteAssignments[index]);
+      const ownerId = current.ownerId || defaultDraftBiomontReporter;
+      if (ownerId === current.ownerId && !assignmentsChanged && assignments === current.siteAssignments) return current;
+      return { ...current, ownerId, siteAssignments: nextAssignments };
+    });
+  }, [currentView, defaultDraftBiomontReporter, sites]);
+
   useEffect(() => {
     if (hideBscForSiteProfile && currentView === 'dashboard') {
       setCurrentView('bio-indicators');
@@ -1061,30 +1082,11 @@ export default function App() {
     return <div className="max-w-3xl mx-auto fade-in"><div className="mb-6"><h1 className="text-2xl font-bold text-slate-900">Editar indicador</h1><p className="text-slate-500 mt-1">Actualiza la información operativa del indicador.</p></div><form onSubmit={handleSubmit} className="space-y-5"><Card className="p-6"><div className="space-y-4"><Input label="Nombre del indicador *" required value={formData.name} onChange={event => setFormData({ ...formData, name: event.target.value })} /><Input label="Fórmula" value={formData.formula} onChange={event => setFormData({ ...formData, formula: event.target.value })} /><div className="grid grid-cols-1 md:grid-cols-3 gap-4"><Select label="Comparador *" required options={[{ value: '>=', label: 'Mayor o igual (>=)' }, { value: '>', label: 'Mayor (>)' }, { value: '<=', label: 'Menor o igual (<=)' }, { value: '<', label: 'Menor (<)' }, { value: '=', label: 'Igual (=)' }]} value={formData.comparator} onChange={event => setFormData({ ...formData, comparator: event.target.value })} /><Input label={'Meta' + (displayUnit(formData.unit) ? ' (' + displayUnit(formData.unit) + ')' : '') + ' *'} type="number" step="0.01" required value={formData.target} onChange={event => setFormData({ ...formData, target: event.target.value })} /><Select label="Unidad *" required options={['%', 'Número', 'Soles', 'Dólares', 'Horas', 'Días', 'Ratio']} value={formData.unit} onChange={event => setFormData({ ...formData, unit: event.target.value })} /></div><div className="grid grid-cols-1 md:grid-cols-3 gap-4"><Select label="Frecuencia de reporte *" required options={['Mensual', 'Bimestral', 'Trimestral', 'Semestral', 'Anual']} value={formData.reviewFrequency} onChange={event => setFormData({ ...formData, reviewFrequency: event.target.value })} /><Select label="Responsable del reporte *" required options={availableUsers.map(user => ({ value: user.id, label: user.name }))} value={formData.ownerId} onChange={event => setFormData({ ...formData, ownerId: event.target.value })} /></div></div></Card><div className="flex justify-end gap-3"><Button type="button" variant="ghost" onClick={() => navigateTo('indicator-status', 'Mis indicadores')}>Cancelar</Button><Button type="submit">Guardar cambios</Button></div></form></div>;
   };
 
-  const IndicatorFormView = () => {
-    const obj = objectives.find(o => String(o.id) === String(selectedObjectiveId));
+  const renderIndicatorFormView = () => {
+    const obj = draftIndicatorObjective;
     const formData = indicatorDraft;
     const setFormData = setIndicatorDraft;
-    const defaultBiomontReporter = managementLeadFor(obj?.responsibleManagement || managementForOwner(obj?.ownerId))?.email || '';
     const kunthurManagementAllowed = kunthurManagements.has(normalizeManagementName(obj?.responsibleManagement || managementForOwner(obj?.ownerId)));
-    useEffect(() => {
-      if (!defaultBiomontReporter || !sites.length) return;
-      setFormData(current => {
-        const assignments = current.siteAssignments.length
-          ? current.siteAssignments
-          : sites.map(site => ({ siteId: String(site.id), responsibleEmail: '' }));
-        return {
-          ...current,
-          ownerId: current.ownerId || defaultBiomontReporter,
-          siteAssignments: assignments.map(assignment => {
-            const siteName = String(sites.find(site => String(site.id) === String(assignment.siteId))?.name || '').trim().toLowerCase();
-            return siteName === 'biomont' && !assignment.responsibleEmail
-              ? { ...assignment, responsibleEmail: defaultBiomontReporter }
-              : assignment;
-          }),
-        };
-      });
-    }, [obj?.id, defaultBiomontReporter, sites]);
     const responsibleOptionsForSite = siteId => {
       const siteName = String(sites.find(site => String(site.id) === String(siteId))?.name || '')
         .normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -1487,7 +1489,7 @@ export default function App() {
           {currentView === 'edit-objective' && <EditObjectiveView />}
           {currentView === 'new-project' && <ProjectFormView />}
           {currentView === 'edit-action' && <EditActionView />}
-          {currentView === 'new-indicator' && <IndicatorFormView />}
+          {currentView === 'new-indicator' && renderIndicatorFormView()}
           {currentView === 'indicator-status' && <AssignedIndicators indicators={indicators} objectives={objectivesWithIndicatorProgress} reports={isManagerScoped ? scopedReports : reports} users={availableUsers} siteAssignments={siteAssignments} ownIds={currentAccountIds} isSuperAdmin={isSuperAdmin} onSelect={openIndicatorWorkspace} />}
           {currentView === 'edit-indicator' && <EditIndicatorView />}
           {currentView === 'edit-target' && <EditTargetView />}

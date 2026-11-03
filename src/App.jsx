@@ -9,6 +9,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import biomontLogo from './assets/biomont-logo.png';
 import strategicLoginHero from './assets/strategic-login-hero.png';
 import kunturLogo from './assets/kuntur-pharma-logo.png';
+import BulkImport from './BulkImport';
 
 const APP_TITLE = 'Gestión Estratégica';
 import { supabase } from './lib/supabase';
@@ -1086,26 +1087,8 @@ export default function App() {
     const formData = indicatorDraft;
     const setFormData = setIndicatorDraft;
     const kunthurManagementAllowed = kunthurManagements.has(normalizeManagementName(obj?.responsibleManagement || managementForOwner(obj?.ownerId)));
-    const responsibleOptionsForSite = siteId => {
-      const siteName = String(sites.find(site => String(site.id) === String(siteId))?.name || '')
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-      const configuredEmails = siteResponsibleRows
-        .filter(row => String(row.site_id) === String(siteId))
-        .map(row => String(row.email || '').trim().toLowerCase())
-        .filter(Boolean);
-      const allowedNames = siteName.includes('kuntur')
-        ? ['chiara pedraglio', 'john cardenas']
-        : siteName.includes('ecuador')
-          ? ['angel perez']
-          : [];
-      const people = configuredEmails.length
-        ? availableUsers.filter(user => configuredEmails.includes(String(user.email || '').trim().toLowerCase()))
-        : allowedNames.length
-          ? availableUsers.filter(user => {
-              const normalizedName = String(user.name || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-              return allowedNames.some(name => normalizedName.includes(name));
-            })
-          : availableUsers.filter(user => user.role === 'gerente_responsable');
+    const responsibleOptionsForSite = () => {
+      const people = availableUsers.filter(user => user.role === 'gerente_responsable');
       return [...new Map(people.map(user => {
         const value = String(user.email || user.id || '').trim().toLowerCase();
         return [value, { value: user.email || user.id, label: user.name }];
@@ -1376,8 +1359,14 @@ export default function App() {
       notify(`Mensaje actualizado para ${recipient?.name || recipientEmail}.`);
     };
 
+    const importRows = async rows => {
+      const { data, error } = await supabase.rpc('bulk_import_strategic_plan', { import_rows: rows });
+      if (!error) await loadOperationalData();
+      return { data, error: error?.message || '' };
+    };
 
-    return <div className="max-w-3xl fade-in space-y-6"><div><h1 className="text-2xl font-bold text-slate-900">Configuración</h1><p className="text-slate-500 mt-1">Administra las preferencias generales de {APP_TITLE}.</p></div>{isGcg && <MicrosoftDirectory session={session} onReload={loadOperationalData} />}<Card className="p-6"><h2 className="font-semibold text-slate-900">Preferencias de visualización</h2><div className="mt-5 space-y-4"><label className="flex items-center justify-between gap-4 py-3 border-b border-slate-100"><span><span className="block text-sm font-medium text-slate-800">Alertas estratégicas</span><span className="block text-xs text-slate-500 mt-1">Muestra objetivos retrasados en el Monitor.</span></span><input type="checkbox" defaultChecked className="w-4 h-4 accent-[#D71920]" /></label><label className="flex items-center justify-between gap-4 py-3"><span><span className="block text-sm font-medium text-slate-800">Vista compacta</span><span className="block text-xs text-slate-500 mt-1">Reduce el espacio entre elementos del dashboard.</span></span><input type="checkbox" className="w-4 h-4 accent-[#D71920]" /></label></div></Card>{isGcg && <Card className="p-6"><div><h2 className="font-semibold text-slate-900">Mensaje personalizado del monitor</h2><p className="mt-1 text-sm text-slate-500">Selecciona una persona y escribe el texto que verá debajo de su saludo en Objetivos.</p></div><form onSubmit={saveMessage} className="mt-5 space-y-4"><Select label="Persona destinataria *" required options={availableUsers.filter(user => user.email).map(user => ({ value: String(user.email).toLowerCase(), label: user.name }))} value={recipientEmail} onChange={event => setRecipientEmail(event.target.value)} /><div className="flex flex-col gap-1.5"><label className="text-sm font-medium text-slate-700">Texto personalizado *</label><textarea required maxLength={600} rows={4} value={message} onChange={event => setMessage(event.target.value)} placeholder="Ej.: Recuerda registrar la medición de este mes antes del cierre." className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#3B82F6]" /><p className="text-right text-xs text-slate-400">{message.length}/600</p></div><div className="flex flex-wrap justify-end gap-3"><Button type="submit" disabled={!recipientEmail || !message.trim() || busy}>{busy ? 'Guardando…' : existingMessage ? 'Actualizar mensaje' : 'Guardar mensaje'}</Button></div></form></Card>}<Card className="p-6"><h2 className="font-semibold text-slate-900">Sesión</h2><p className="text-sm text-slate-500 mt-2">Correo: {session?.user?.email}</p><p className="text-sm text-slate-500 mt-1">Rol actual: {selectedRole?.name || ROLE_LABELS[assignedRole]}</p><div className="mt-4 flex flex-wrap gap-3">{assignedRole === 'super_admin' && <Button variant="secondary" onClick={() => { setSelectedRole(null); setCurrentView('dashboard'); }}>Cambiar rol</Button>}<Button variant="secondary" onClick={signOut}><LogOut className="w-4 h-4" />Cerrar sesión</Button></div></Card><Card className="p-6"><h2 className="font-semibold text-slate-900">Información de la plataforma</h2><p className="text-sm text-slate-500 mt-2">{APP_TITLE} · Plataforma estratégica de Biomont</p></Card></div>;
+
+    return <div className="max-w-3xl fade-in space-y-6"><div><h1 className="text-2xl font-bold text-slate-900">Configuración</h1><p className="text-slate-500 mt-1">Administra las preferencias generales de {APP_TITLE}.</p></div>{isGcg && <MicrosoftDirectory session={session} onReload={loadOperationalData} />}{isGcg && <Card className="p-6"><div className="flex flex-wrap items-start justify-between gap-4"><div><h2 className="font-semibold text-slate-900">Objetivos e indicadores</h2><p className="mt-1 text-sm text-slate-500">Importa una tabla de planificación para crear objetivos e indicadores automáticamente.</p></div><BulkImport onImported={importRows} onError={setDataError} notify={notify} /></div></Card>}<Card className="p-6"><h2 className="font-semibold text-slate-900">Preferencias de visualización</h2><div className="mt-5 space-y-4"><label className="flex items-center justify-between gap-4 py-3 border-b border-slate-100"><span><span className="block text-sm font-medium text-slate-800">Alertas estratégicas</span><span className="block text-xs text-slate-500 mt-1">Muestra objetivos retrasados en el Monitor.</span></span><input type="checkbox" defaultChecked className="w-4 h-4 accent-[#D71920]" /></label><label className="flex items-center justify-between gap-4 py-3"><span><span className="block text-sm font-medium text-slate-800">Vista compacta</span><span className="block text-xs text-slate-500 mt-1">Reduce el espacio entre elementos del dashboard.</span></span><input type="checkbox" className="w-4 h-4 accent-[#D71920]" /></label></div></Card>{isGcg && <Card className="p-6"><div><h2 className="font-semibold text-slate-900">Mensaje personalizado del monitor</h2><p className="mt-1 text-sm text-slate-500">Selecciona una persona y escribe el texto que verá debajo de su saludo en Objetivos.</p></div><form onSubmit={saveMessage} className="mt-5 space-y-4"><Select label="Persona destinataria *" required options={availableUsers.filter(user => user.email).map(user => ({ value: String(user.email).toLowerCase(), label: user.name }))} value={recipientEmail} onChange={event => setRecipientEmail(event.target.value)} /><div className="flex flex-col gap-1.5"><label className="text-sm font-medium text-slate-700">Texto personalizado *</label><textarea required maxLength={600} rows={4} value={message} onChange={event => setMessage(event.target.value)} placeholder="Ej.: Recuerda registrar la medición de este mes antes del cierre." className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#3B82F6]" /><p className="text-right text-xs text-slate-400">{message.length}/600</p></div><div className="flex flex-wrap justify-end gap-3"><Button type="submit" disabled={!recipientEmail || !message.trim() || busy}>{busy ? 'Guardando…' : existingMessage ? 'Actualizar mensaje' : 'Guardar mensaje'}</Button></div></form></Card>}<Card className="p-6"><h2 className="font-semibold text-slate-900">Sesión</h2><p className="text-sm text-slate-500 mt-2">Correo: {session?.user?.email}</p><p className="text-sm text-slate-500 mt-1">Rol actual: {selectedRole?.name || ROLE_LABELS[assignedRole]}</p><div className="mt-4 flex flex-wrap gap-3">{assignedRole === 'super_admin' && <Button variant="secondary" onClick={() => { setSelectedRole(null); setCurrentView('dashboard'); }}>Cambiar rol</Button>}<Button variant="secondary" onClick={signOut}><LogOut className="w-4 h-4" />Cerrar sesión</Button></div></Card><Card className="p-6"><h2 className="font-semibold text-slate-900">Información de la plataforma</h2><p className="text-sm text-slate-500 mt-2">{APP_TITLE} · Plataforma estratégica de Biomont</p></Card></div>;
   };
 
   const headerIndicator = currentView === 'bio-indicators' && indicatorFilters.indicatorId

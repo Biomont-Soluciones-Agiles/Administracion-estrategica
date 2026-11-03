@@ -799,7 +799,6 @@ export default function App() {
                 const objProjects = projects.filter(p => p.objectiveId === obj.id);
                 const objActions = tasks.filter(task => task.objectiveId === obj.id);
                 const objIndicators = indicators.filter(i => i.objectiveId === obj.id);
-                const objIndicator = objIndicators[0];
                 
                 return (
                   <Card key={obj.id} className="group flex min-h-[272px] flex-col p-5 transition-transform duration-200 hover:-translate-y-0.5" onClick={() => navigateTo('objective-detail', obj.name, { objectiveId: obj.id })}>
@@ -816,7 +815,7 @@ export default function App() {
                         <span className="font-medium text-slate-700">Avance</span>
                         <span className="font-bold text-slate-900">{obj.progress}%</span>
                       </div>
-                      <div className="w-[72%] min-w-[12rem] max-w-full"><ProgressBar progress={obj.progress} status={obj.status} target={objIndicator?.target} comparator={objIndicator?.comparator} unit={objIndicator?.unit} /></div>
+                      <div className="w-[72%] min-w-[12rem] max-w-full"><ProgressBar progress={obj.progress} status={obj.status} target={100} comparator=">=" unit="%" /></div>
                     </div>
 
                     <div className="mt-auto flex items-center justify-between border-t border-slate-100 pt-4">

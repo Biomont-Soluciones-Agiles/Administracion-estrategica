@@ -734,7 +734,7 @@ export default function App() {
     };
     const activeObs = activeObjectives(scopedObjectives).length;
     const registeredIndicators = scopedIndicators.length;
-    const measuredIndicators = reportedProgress(scopedIndicators, scopedReports).reported;
+    const reportedIndicators = reportedProgress(scopedIndicators, scopedReports).reported;
     const riskInds = attentionIndicators(scopedIndicators, scopedReports, corrective.analyses);
 
     return (
@@ -750,7 +750,7 @@ export default function App() {
           </Button>}</div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <Card className="p-5 border-l-4 border-l-[#3B82F6]">
             <div className="flex justify-between items-start">
               <div>
@@ -760,20 +760,11 @@ export default function App() {
               <div className="p-2 bg-blue-50 rounded-lg"><Target className="w-5 h-5 text-blue-600" /></div>
             </div>
           </Card>
-          <Card className="p-5 border-l-4 border-l-yellow-500">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-sm font-medium text-slate-500 mb-1">Indicadores registrados</p>
-                <h3 className="text-3xl font-bold text-slate-900">{registeredIndicators}/{scopedObjectives.length}</h3>
-              </div>
-              <div className="p-2 bg-yellow-50 rounded-lg"><AlertCircle className="w-5 h-5 text-yellow-600" /></div>
-            </div>
-          </Card>
           <Card className="p-5 border-l-4 border-l-green-500">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-sm font-medium text-slate-500 mb-1">Indicadores con medición</p>
-                <h3 className="text-3xl font-bold text-slate-900">{measuredIndicators}</h3>
+                <p className="text-sm font-medium text-slate-500 mb-1">Indicadores con reporte</p>
+                <h3 className="text-3xl font-bold text-slate-900">{reportedIndicators}/{registeredIndicators}</h3>
               </div>
               <div className="p-2 bg-green-50 rounded-lg"><CheckCircle2 className="w-5 h-5 text-green-600" /></div>
             </div>

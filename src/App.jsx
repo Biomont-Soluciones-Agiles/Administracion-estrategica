@@ -11,7 +11,7 @@ import strategicLoginHero from './assets/strategic-login-hero.png';
 import kunturLogo from './assets/kuntur-pharma-logo.png';
 import BulkImport from './BulkImport';
 
-const APP_TITLE = 'Gestión Estratégica';
+const APP_TITLE = 'BioIndicadores';
 import { supabase } from './lib/supabase';
 import { observeAuthentication } from './lib/authLifecycle';
 import { accountIdentities, indicatorAccess } from './lib/responsibility';
@@ -669,7 +669,7 @@ export default function App() {
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
           <div>
             <p className="text-sm font-semibold text-[#D71920] uppercase tracking-[0.16em]">{APP_TITLE}</p>
-            <h1 className="text-3xl font-bold text-slate-900 tracking-tight mt-1">Gestión Estratégica</h1>
+            <h1 className="text-3xl font-bold text-slate-900 tracking-tight mt-1">BioIndicadores</h1>
             <p className="text-slate-500 mt-1">Vista ejecutiva del avance de los objetivos de Biomont.</p>
           </div>
           <div className="bg-white rounded-xl border border-slate-200 px-4 py-2.5 flex items-center gap-2 text-sm font-medium text-slate-600 shadow-sm"><Calendar className="w-4 h-4 text-[#D71920]" /> Periodo: 2026</div>
@@ -1239,7 +1239,7 @@ export default function App() {
           <div className="overflow-x-auto">
             <table className="w-full table-fixed text-center text-sm">
               <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
-                <tr><th className="w-[13%] px-3 py-3 text-center">Periodo</th><th className="w-[12%] px-3 py-3 text-center">Fecha Reporte</th><th className="w-[11%] px-3 py-3 text-center">Resultado</th><th className="w-[13%] px-3 py-3 text-center">Estado</th><th className="w-[18%] px-3 py-3 text-center">Condición</th><th className="w-[16%] px-3 py-3 text-center">Análisis de causa</th><th className="w-[10%] px-3 py-3 text-center">Acciones</th></tr>
+                <tr><th className="w-[13%] px-3 py-3 text-center">Periodo</th><th className="w-[12%] px-3 py-3 text-center">Fecha Reporte</th><th className="w-[11%] px-3 py-3 text-center">Resultado</th><th className="w-[13%] px-3 py-3 text-center">Estado</th><th className="w-[18%] px-3 py-3 text-center">Condición</th><th className="w-[16%] px-3 py-3 text-center">¿Por qué pasó?</th><th className="w-[10%] px-3 py-3 text-center">Acciones</th></tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {indReports.length === 0 && <tr><td colSpan="9" className="px-6 py-8 text-center text-slate-500">Aún no existen resultados registrados para este indicador.</td></tr>}

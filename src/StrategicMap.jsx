@@ -73,7 +73,7 @@ function ObjectiveDetail({ objective, indicators, reports, projects = [], action
 export default function StrategicMap({ objectives = [], indicators = [], reports = [], projects = [], actions = [], users = [], isGeneralManager = false, onSelectIndicator, canSelectIndicator = () => true }) {
   const [selected, setSelected] = React.useState(null);
   return <section className="flex min-h-[calc(100vh-7rem)] flex-col" aria-label="Mapa estratégico BSC">
-    <header className="mb-5"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#D71920]">Gestión Estratégica</p><h1 className="mt-1 text-2xl font-bold text-slate-950 md:text-3xl">Mapa estratégico BSC</h1><p className="mt-1 text-sm text-slate-500">Objetivos organizados por foco estratégico</p></header>
+    <header className="mb-5"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#D71920]">BioIndicadores</p><h1 className="mt-1 text-2xl font-bold text-slate-950 md:text-3xl">Mapa estratégico BSC</h1><p className="mt-1 text-sm text-slate-500">Objetivos organizados por foco estratégico</p></header>
     <div className="relative flex-1 space-y-4 pb-4">{FOCI.map(({ key, label, Icon, panel, tile }) => {
       const rows = objectives.filter(objective => objective.focus === key);
       return <section key={key} aria-label={`Foco ${label}`} className={`relative z-10 grid min-h-[150px] grid-cols-[132px_minmax(0,1fr)] gap-4 rounded-2xl border p-3 md:grid-cols-[170px_minmax(0,1fr)] md:p-4 ${panel} max-md:grid-cols-1`}>

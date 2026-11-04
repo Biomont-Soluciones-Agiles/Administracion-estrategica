@@ -36,10 +36,8 @@ const MANAGEMENT_ALIASES = {
   'gestion humana': 'Gestión Humana',
 };
 
-function normalizeTargetAndUnit(target, indicatorName, formula) {
+function normalizeTargetAndUnit(target) {
   if (target === null) return { target: null, unit: '%' };
-  const text = `${indicatorName} ${formula}`.toLowerCase();
-  if (/endeudamiento|ebitda/.test(text)) return { target, unit: 'Ratio' };
   return { target: target >= 0 && target <= 1 ? Number((target * 100).toFixed(6)) : target, unit: '%' };
 }
 
@@ -109,7 +107,7 @@ export default function BulkImport({ onImported, onError, notify }) {
         if (!rawObjective || !management || !focus) { invalid.push(`Fila ${line}: no se importará porque falta Objetivo, Foco o Responsable.`); return; }
         if (!FOCUS_ALIASES[normalize(focus)]) { invalid.push(`Fila ${line}: el foco “${focus}” no es válido.`); return; }
         const formula = String(value('formula') ?? '').trim();
-        imported.push({ objective_name: rawObjective, description: String(value('description') ?? '').trim(), focus, responsible_management: management, indicator_name: rawIndicator, formula, ...normalizeTargetAndUnit(target, rawIndicator, formula) });
+        imported.push({ objective_name: rawObjective, description: String(value('description') ?? '').trim(), focus, responsible_management: management, indicator_name: rawIndicator, formula, ...normalizeTargetAndUnit(target) });
       });
       if (imported.length > 500) invalid.push('El archivo contiene más de 500 filas. Divide la carga en archivos más pequeños.');
       const pendingTargets = imported.filter(row => row.target === null).length;

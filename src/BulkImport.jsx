@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import * as XLSX from 'xlsx';
 import { FileSpreadsheet, Upload, X } from 'lucide-react';
 
-const normalize = value => String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase().replace(/\s+/g, ' ');
+const normalize = value => String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase().replace(/\s+/g, ' ').replace(/\s*\/\s*/g, '/');
 
 const HEADERS = {
   objectiveName: ['objetivo estrategico', 'nombre del objetivo'],
@@ -32,9 +32,15 @@ const MANAGEMENT_ALIASES = {
   'operaciones y planta': 'Operaciones y Planta',
   'gte ti': 'Tecnología de la Información',
   'tecnologia de la informacion': 'Tecnología de la Información',
-  gh: 'Gestión Humana',
+  gh: 'Gestión Humana', 'gte gh': 'Gestión Humana',
   'gestion humana': 'Gestión Humana',
 };
+
+function normalizeTargetAndUnit(target, indicatorName, formula) {
+  const text = `${indicatorName} ${formula}`.toLowerCase();
+  if (/endeudamiento|ebitda/.test(text)) return { target, unit: 'Ratio' };
+  return { target: target >= 0 && target <= 1 ? Number((target * 100).toFixed(6)) : target, unit: '%' };
+}
 
 const FOCUS_ALIASES = {
   financiero: 'Financiero', cliente: 'Cliente', procesos: 'Procesos',
@@ -83,21 +89,29 @@ export default function BulkImport({ onImported, onError, notify }) {
       if (!header) { setErrors(['No se encontraron las columnas obligatorias: Objetivo estratégico, Foco, Responsable, Indicador y Meta.']); return; }
       const imported = [];
       const invalid = [];
+      const previous = { objectiveName: '', focus: '', responsibleManagement: '' };
       matrix.slice(header.rowIndex + 1).forEach((source, offset) => {
         const value = field => header.indexes[field] >= 0 ? source[header.indexes[field]] : '';
-        const rawObjective = String(value('objectiveName') ?? '').trim();
+        const objectiveCell = String(value('objectiveName') ?? '').trim();
+        const focusCell = String(value('focus') ?? '').trim();
+        const responsibleCell = String(value('responsibleManagement') ?? '').trim();
+        if (objectiveCell) previous.objectiveName = objectiveCell;
+        if (focusCell) previous.focus = focusCell;
+        if (responsibleCell) previous.responsibleManagement = responsibleCell;
+        const rawObjective = previous.objectiveName;
         const rawIndicator = String(value('indicatorName') ?? '').trim();
-        if (!rawObjective && !rawIndicator) return;
-        const management = MANAGEMENT_ALIASES[normalize(value('responsibleManagement'))] || String(value('responsibleManagement') ?? '').trim();
-        const focus = FOCUS_ALIASES[normalize(value('focus'))] || String(value('focus') ?? '').trim();
+        if (!rawIndicator) return;
+        const management = MANAGEMENT_ALIASES[normalize(previous.responsibleManagement)] || previous.responsibleManagement;
+        const focus = FOCUS_ALIASES[normalize(previous.focus)] || previous.focus;
         const target = parseTarget(value('target'));
         const line = header.rowIndex + offset + 2;
-        if (!rawObjective || !rawIndicator || !management || !focus || target === null) { invalid.push(`Fila ${line}: completa Objetivo estratégico, Foco, Responsable, Indicador y Meta.`); return; }
+        if (!rawObjective || !management || !focus || target === null) { invalid.push(`Fila ${line}: no se importará porque falta Objetivo, Foco, Responsable o Meta.`); return; }
         if (!FOCUS_ALIASES[normalize(focus)]) { invalid.push(`Fila ${line}: el foco “${focus}” no es válido.`); return; }
-        imported.push({ objective_name: rawObjective, description: String(value('description') ?? '').trim(), focus, responsible_management: management, indicator_name: rawIndicator, formula: String(value('formula') ?? '').trim(), target });
+        const formula = String(value('formula') ?? '').trim();
+        imported.push({ objective_name: rawObjective, description: String(value('description') ?? '').trim(), focus, responsible_management: management, indicator_name: rawIndicator, formula, ...normalizeTargetAndUnit(target, rawIndicator, formula) });
       });
       if (imported.length > 500) invalid.push('El archivo contiene más de 500 filas. Divide la carga en archivos más pequeños.');
-      setFileName(file.name); setRows(imported.slice(0, 500)); setErrors(invalid);
+      setFileName(invalid.length ? `${file.name} · ${invalid.length} fila(s) sin meta no se importarán` : file.name); setRows(imported.slice(0, 500)); setErrors([]);
     } catch {
       setErrors(['No se pudo leer el archivo. Verifica que no esté dañado y vuelve a intentarlo.']);
     }

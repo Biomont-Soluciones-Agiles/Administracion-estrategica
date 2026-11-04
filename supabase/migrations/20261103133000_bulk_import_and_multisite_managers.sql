@@ -23,6 +23,7 @@ set management = case lower(email)
   when 'person-010@example.invalid' then 'Supply Chain'
   when 'person-012@example.invalid' then 'Operaciones y Planta'
   when 'person-015@example.invalid' then 'Tecnología de la Información'
+  when 'chuerta@biomont.com.pe' then 'Tecnología de la Información'
   when 'person-011@example.invalid' then 'Gestión Humana'
   when 'jcusicuna@biomont.com.pe' then 'Subgerencia de Marketing'
   when 'rbaca@biomont.com.pe' then 'Gerencia de Customer Experience'
@@ -32,7 +33,7 @@ end,
 is_management_lead = case
   when lower(email) in (
     'person-008@example.invalid', 'person-009@example.invalid', 'person-010@example.invalid',
-    'person-012@example.invalid', 'person-015@example.invalid', 'person-011@example.invalid',
+    'person-012@example.invalid', 'person-015@example.invalid', 'chuerta@biomont.com.pe', 'person-011@example.invalid',
     'jcusicuna@biomont.com.pe', 'rbaca@biomont.com.pe', 'adelacruz@biomont.com.pe'
   ) then true
   else is_management_lead
@@ -40,7 +41,7 @@ end,
 updated_at = now()
 where lower(email) in (
   'person-008@example.invalid', 'person-009@example.invalid', 'person-010@example.invalid',
-  'person-012@example.invalid', 'person-015@example.invalid', 'person-011@example.invalid',
+  'person-012@example.invalid', 'person-015@example.invalid', 'chuerta@biomont.com.pe', 'person-011@example.invalid',
   'jcusicuna@biomont.com.pe', 'rbaca@biomont.com.pe', 'adelacruz@biomont.com.pe'
 );
 
@@ -155,7 +156,7 @@ begin
         review_frequency, owner_email, approval_status
       ) values (
         v_objective_id, indicator_name, nullif(trim(item->>'formula'), ''), target_value,
-        '%', '>=', 'Mensual', 'Mensual', owner, 'Aprobado'
+        coalesce(nullif(trim(item->>'unit'), ''), '%'), '>=', 'Mensual', 'Mensual', owner, 'Aprobado'
       ) returning id into v_indicator_id;
       created_indicators := created_indicators + 1;
     end if;

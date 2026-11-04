@@ -1,6 +1,10 @@
 -- Carga masiva de objetivos e indicadores y responsables disponibles en todas las sedes.
 begin;
 
+-- Una carga de planificación puede incorporar indicadores cuya meta aún está por definir.
+-- No podrán medir hasta que GCG les asigne una meta y los apruebe.
+alter table public.indicators alter column target drop not null;
+
 create table if not exists public.site_responsibles (
   site_id bigint not null references public.sites(id) on delete cascade,
   email text not null,
@@ -104,8 +108,8 @@ begin
     focus_name := nullif(trim(item->>'focus'), '');
     target_value := nullif(trim(item->>'target'), '')::numeric;
 
-    if objective_name is null or indicator_name is null or management_name is null or focus_name is null or target_value is null then
-      raise exception 'Fila %: faltan datos obligatorios (objetivo, foco, responsable, indicador o meta).', row_number;
+    if objective_name is null or indicator_name is null or management_name is null or focus_name is null then
+      raise exception 'Fila %: faltan datos obligatorios (objetivo, foco, responsable o indicador).', row_number;
     end if;
     if focus_name not in ('Financiero', 'Cliente', 'Procesos', 'Personas/Aprendizaje') then
       raise exception 'Fila %: el foco estratégico "%" no es válido.', row_number, focus_name;
@@ -156,7 +160,8 @@ begin
         review_frequency, owner_email, approval_status
       ) values (
         v_objective_id, indicator_name, nullif(trim(item->>'formula'), ''), target_value,
-        coalesce(nullif(trim(item->>'unit'), ''), '%'), '>=', 'Mensual', 'Mensual', owner, 'Aprobado'
+        coalesce(nullif(trim(item->>'unit'), ''), '%'), '>=', 'Mensual', 'Mensual', owner,
+        case when target_value is null then 'Pendiente de aprobación' else 'Aprobado' end
       ) returning id into v_indicator_id;
       created_indicators := created_indicators + 1;
     end if;

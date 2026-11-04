@@ -37,6 +37,7 @@ const MANAGEMENT_ALIASES = {
 };
 
 function normalizeTargetAndUnit(target, indicatorName, formula) {
+  if (target === null) return { target: null, unit: '%' };
   const text = `${indicatorName} ${formula}`.toLowerCase();
   if (/endeudamiento|ebitda/.test(text)) return { target, unit: 'Ratio' };
   return { target: target >= 0 && target <= 1 ? Number((target * 100).toFixed(6)) : target, unit: '%' };
@@ -105,13 +106,14 @@ export default function BulkImport({ onImported, onError, notify }) {
         const focus = FOCUS_ALIASES[normalize(previous.focus)] || previous.focus;
         const target = parseTarget(value('target'));
         const line = header.rowIndex + offset + 2;
-        if (!rawObjective || !management || !focus || target === null) { invalid.push(`Fila ${line}: no se importará porque falta Objetivo, Foco, Responsable o Meta.`); return; }
+        if (!rawObjective || !management || !focus) { invalid.push(`Fila ${line}: no se importará porque falta Objetivo, Foco o Responsable.`); return; }
         if (!FOCUS_ALIASES[normalize(focus)]) { invalid.push(`Fila ${line}: el foco “${focus}” no es válido.`); return; }
         const formula = String(value('formula') ?? '').trim();
         imported.push({ objective_name: rawObjective, description: String(value('description') ?? '').trim(), focus, responsible_management: management, indicator_name: rawIndicator, formula, ...normalizeTargetAndUnit(target, rawIndicator, formula) });
       });
       if (imported.length > 500) invalid.push('El archivo contiene más de 500 filas. Divide la carga en archivos más pequeños.');
-      setFileName(invalid.length ? `${file.name} · ${invalid.length} fila(s) sin meta no se importarán` : file.name); setRows(imported.slice(0, 500)); setErrors([]);
+      const pendingTargets = imported.filter(row => row.target === null).length;
+      setFileName(pendingTargets ? `${file.name} · ${pendingTargets} indicador(es) con meta pendiente` : file.name); setRows(imported.slice(0, 500)); setErrors([]);
     } catch {
       setErrors(['No se pudo leer el archivo. Verifica que no esté dañado y vuelve a intentarlo.']);
     }

@@ -45,7 +45,7 @@ const ROLE_LABELS = {
 const toObjective = (row) => ({ ...row, ownerId: row.owner_email, responsibleManagement: row.responsible_management, createdDate: row.created_date, targetDate: row.target_date, validityStartYear: row.validity_start_year, validityEndYear: row.validity_end_year, focus: row.focus });
 const toProject = (row) => ({ ...row, objectiveId: row.objective_id, ownerId: row.owner_email });
 const toAction = (row) => ({ ...row, objectiveId: row.objective_id, projectId: row.project_id, dueDate: row.due_date, completedAt: row.completed_at, ownerId: row.owner_email });
-const toIndicator = (row) => ({ ...row, objectiveId: row.objective_id, ownerId: row.owner_email, objectiveWeight: Number(row.objective_weight), approvalStatus: row.approval_status, reviewFrequency: row.review_frequency, target: Number(row.target) });
+const toIndicator = (row) => ({ ...row, objectiveId: row.objective_id, ownerId: row.owner_email, objectiveWeight: Number(row.objective_weight), approvalStatus: row.approval_status, reviewFrequency: row.review_frequency, target: row.target == null ? null : Number(row.target) });
 const toReport = (row) => ({ ...row, indicatorId: row.indicator_id, assignmentId: row.site_assignment_id, date: row.registered_date, result: row.result == null ? null : Number(row.result), obs: row.observations });
 
 // La aplicación inicia sin datos operativos. Los usuarios registrados crean los

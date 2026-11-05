@@ -242,6 +242,7 @@ export default function App() {
   const [dashboardMessages, setDashboardMessages] = useState([]);
   const [coreIndicatorRows, setCoreIndicatorRows] = useState([]);
   const [generalManagerIndicatorRows, setGeneralManagerIndicatorRows] = useState([]);
+  const [pmoLinkRequests, setPmoLinkRequests] = useState([]);
   
   const [selectedObjectiveId, setSelectedObjectiveId] = useState(null);
   const [selectedObjectiveTab, setSelectedObjectiveTab] = useState('summary');
@@ -390,7 +391,7 @@ export default function App() {
 
   const loadOperationalData = async () => {
     if (!supabase) return;
-    const [profilesResult, peopleResult, objectivesResult, projectsResult, actionsResult, indicatorsResult, reportsResult, messagesResult, catalogResult, directoryResult, sitesResult, assignmentsResult, coreResult, generalManagerResult, siteResponsiblesResult, reportingSupportsResult] = await Promise.all([
+    const [profilesResult, peopleResult, objectivesResult, projectsResult, actionsResult, indicatorsResult, reportsResult, messagesResult, catalogResult, directoryResult, sitesResult, assignmentsResult, coreResult, generalManagerResult, siteResponsiblesResult, reportingSupportsResult, pmoLinkRequestsResult] = await Promise.all([
       supabase.from('profiles').select('email, role').order('email'),
       supabase.from('organization_people').select('id, full_name, email, role, job_title, management, submanagement, is_management_lead, active').eq('active', true).order('full_name'),
       supabase.from('objectives').select('*').order('created_at', { ascending: false }),
@@ -407,6 +408,7 @@ export default function App() {
       supabase.from('general_manager_indicators').select('*').order('position'),
       supabase.from('site_responsibles').select('*').eq('active', true),
       supabase.from('indicator_reporting_supports').select('*').eq('active', true),
+      supabase.from('pmo_project_link_requests').select('*').order('requested_at', { ascending: false }),
     ]);
     const firstError = [profilesResult, peopleResult, objectivesResult, projectsResult, actionsResult, indicatorsResult, reportsResult].find(result => result.error)?.error;
     if (firstError) {
@@ -445,6 +447,8 @@ export default function App() {
     if (!siteResponsiblesResult.error) setSiteResponsibleRows(siteResponsiblesResult.data || []);
     if (!coreResult.error) setCoreIndicatorRows(coreResult.data || []);
     if (!generalManagerResult.error) setGeneralManagerIndicatorRows(generalManagerResult.data || []);
+    if (!pmoLinkRequestsResult.error) setPmoLinkRequests(pmoLinkRequestsResult.data || []);
+    else setPmoLinkRequests([]);
     setDashboardMessages(messagesResult.data || []);
     setDataError('');
     await corrective.reload();
@@ -687,6 +691,8 @@ export default function App() {
             {!isGeneralManager && <Card className="p-5 border-l-4 border-l-amber-500"><p className="text-sm font-medium text-slate-500">Alertas de riesgo</p><div className="flex items-end justify-between mt-2"><h3 className="text-3xl font-bold text-slate-900">{atRisk}</h3><AlertCircle className="w-6 h-6 text-amber-500" /></div><p className="text-xs text-amber-700 mt-3">Requieren atención</p></Card>}
           </>}
         </div>
+
+        {isGcg && pmoLinkRequests.filter(request => request.status === 'pending' || request.status === 'notified').length > 0 && <Card className="overflow-hidden border-amber-200"><div className="flex flex-wrap items-center justify-between gap-3 border-b border-amber-100 bg-amber-50 px-5 py-4"><div><h2 className="font-bold text-amber-950">Notificaciones de integración PMO</h2><p className="mt-1 text-sm text-amber-800">Vinculaciones registradas y solicitudes de desvinculación que requieren atención.</p></div><span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-900">{pmoLinkRequests.filter(request => request.status === 'pending').length} por aprobar</span></div><div className="divide-y divide-slate-100">{pmoLinkRequests.filter(request => request.status === 'pending' || request.status === 'notified').slice(0, 5).map(request => { const objective = objectives.find(item => String(item.id) === String(request.objective_id)); const action = request.event_type === 'unlink_requested' ? 'solicitó desvincular' : 'vinculó'; return <button key={request.id} type="button" onClick={() => objective && navigateTo('objective-detail', objective.name, { objectiveId: objective.id, objectiveTab: 'projects' })} className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left hover:bg-slate-50"><span><span className="block text-sm font-semibold text-slate-900">PMO {action} el proyecto {request.payload?.project_code || ''}</span><span className="mt-1 block text-xs text-slate-500">Objetivo: {objective?.code || request.payload?.objective_code || 'Sin código'} · {objective?.name || 'No disponible'}</span></span><span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${request.status === 'pending' ? 'bg-red-50 text-red-700' : 'bg-blue-50 text-blue-700'}`}>{request.status === 'pending' ? 'Requiere aprobación' : 'Vinculado'}</span></button>; })}</div></Card>}
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           <Card className="xl:col-span-2 p-6"><div className="flex items-center justify-between mb-6"><div><h2 className="text-lg font-bold text-slate-900">Avance por objetivo</h2><p className="text-sm text-slate-500">Progreso acumulado del plan estratégico</p></div>{!isGeneralManager && <button onClick={() => navigateTo('objectives', 'Objetivos')} className="text-sm font-semibold text-[#D71920] hover:underline">Ver objetivos</button>}</div><ObjectiveProgressList objectives={scopedObjectives} /></Card>
@@ -993,7 +999,7 @@ export default function App() {
           )}
 
           {activeTab === 'projects' && (
-            <PmoProjects objective={obj} projects={objProjects} canManage={isGcg} canSync={isGcg} accessToken={session?.access_token} onReload={loadOperationalData} onNotify={notify} />
+            <PmoProjects objective={obj} projects={objProjects} canManage={isGcg} canSync={isGcg} accessToken={session?.access_token} linkRequests={pmoLinkRequests} onReload={loadOperationalData} onNotify={notify} />
           )}
 
           {activeTab === 'actions' && (

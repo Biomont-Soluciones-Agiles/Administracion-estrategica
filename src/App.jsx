@@ -35,11 +35,12 @@ import { personName } from './lib/personNames';
 import { complianceMark, measurementComplianceBand } from './lib/complianceBand';
 
 const ROLE_LABELS = {
-  usuario: 'Usuario',
-  gerente_responsable: 'Gerente responsable',
-  gcg: 'GCG',
-  gerente_general: 'Gerencia general',
-  super_admin: 'Super admin',
+  sig: 'CONTROL TOTAL',
+  super_admin: 'CONTROL TOTAL',
+  gerente_general: 'ALTA DIRECCIÓN',
+  gcg: 'ADMINISTRADOR',
+  gerente_responsable: 'RESPONSABLE',
+  usuario: 'DELEGADO',
 };
 
 const toObjective = (row) => ({ ...row, ownerId: row.owner_email, responsibleManagement: row.responsible_management, createdDate: row.created_date, targetDate: row.target_date, validityStartYear: row.validity_start_year, validityEndYear: row.validity_end_year, focus: row.focus });
@@ -321,7 +322,7 @@ export default function App() {
   const isGeneralManager = normalizedCurrentRole === 'gerente_general';
   const isResponsibleManager = normalizedCurrentRole === 'gerente_responsable';
   const isGcg = normalizedCurrentRole === 'gcg';
-  const isSuperAdmin = normalizedCurrentRole === 'super_admin';
+  const isSuperAdmin = ['super_admin', 'sig'].includes(normalizedCurrentRole);
   const isStandardUser = ['usuario', 'user', 'standard_user'].includes(normalizedCurrentRole);
   const availableUsers = [
     ...organizationPeople.map(person => ({ id: person.id, email: person.email, name: microsoftPeople.find(item => item.email === person.email?.toLowerCase())?.full_name || person.full_name, role: person.role, jobTitle: person.job_title, management: person.management, submanagement: person.submanagement, isManagementLead: person.is_management_lead, avatar: person.full_name.slice(0, 2).toUpperCase() })),
@@ -499,14 +500,14 @@ export default function App() {
       } else {
         const sourceRole = String(data?.role || '').trim().toLowerCase().replace(/[\s-]+/g, '_');
         const role = sourceRole === 'user' || sourceRole === 'standard_user' ? 'usuario' : sourceRole;
-        if (!['gcg', 'gerente_responsable', 'super_admin', 'usuario', 'gerente_general'].includes(role)) {
+        if (!['sig', 'gcg', 'gerente_responsable', 'super_admin', 'usuario', 'gerente_general'].includes(role)) {
           setAssignedRole(null);
           setSelectedRole(null);
           setAuthError(`Tu correo corporativo no tiene un rol asignado en ${APP_TITLE}. Contacta al administrador.`);
         } else {
           setAuthError('');
           setAssignedRole(role);
-          setSelectedRole(role === 'super_admin' ? null : { key: role, name: ROLE_LABELS[role] });
+          setSelectedRole(['super_admin', 'sig'].includes(role) ? null : { key: role, name: ROLE_LABELS[role] });
           await loadOperationalData();
         }
       }
@@ -1420,12 +1421,12 @@ export default function App() {
 
   if (selectedRole?.key === 'usuario') return <UserWorkspace session={session} objectives={objectivesWithIndicatorProgress} indicators={indicators} reports={reports} users={availableUsers} organizationPeople={organizationPeople} onReload={loadOperationalData} onSignOut={signOut} />;
 
-  if (!selectedRole && assignedRole === 'super_admin') {
+  if (!selectedRole && ['super_admin', 'sig'].includes(assignedRole)) {
     const roles = [
-      { key: 'gerente_responsable', name: 'Gerente responsable', description: 'Reporta indicadores asignados y delega responsables de reporte.', icon: Target, color: 'bg-blue-50 text-blue-600 border-blue-100' },
-      { key: 'gcg', name: 'GCG', description: 'Crea objetivos e indicadores y aprueba solicitudes de modificación.', icon: CheckCircle2, color: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
-      { key: 'gerente_general', name: 'Gerencia general', description: 'Consulta objetivos, todos los indicadores e indicadores gerenciales, sin permisos de edición.', icon: Users, color: 'bg-violet-50 text-violet-600 border-violet-100' },
-      { key: 'usuario', name: 'Usuario', description: 'Consulta y registra únicamente los indicadores donde fue asignado como apoyo.', icon: User, color: 'bg-violet-50 text-violet-600 border-violet-100' }
+      { key: 'gerente_responsable', name: ROLE_LABELS.gerente_responsable, description: 'Reporta indicadores asignados y delega responsables de reporte.', icon: Target, color: 'bg-blue-50 text-blue-600 border-blue-100' },
+      { key: 'gcg', name: ROLE_LABELS.gcg, description: 'Crea objetivos e indicadores y aprueba solicitudes de modificación.', icon: CheckCircle2, color: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
+      { key: 'gerente_general', name: ROLE_LABELS.gerente_general, description: 'Consulta objetivos, todos los indicadores e indicadores gerenciales, sin permisos de edición.', icon: Users, color: 'bg-violet-50 text-violet-600 border-violet-100' },
+      { key: 'usuario', name: ROLE_LABELS.usuario, description: 'Consulta y registra únicamente los indicadores donde fue asignado como apoyo.', icon: User, color: 'bg-violet-50 text-violet-600 border-violet-100' }
     ];
     return <AuthShell><div className="text-center mb-9"><img src={biomontLogo} alt="Biomont" className="h-20 w-auto object-contain mx-auto mb-6" /><p className="text-sm font-bold text-[#D71920] uppercase tracking-[0.2em]">Super administrador</p><h1 className="text-4xl font-bold text-slate-900 mt-2">Selecciona una vista</h1><p className="text-slate-500 mt-3 max-w-xl mx-auto">Elige el rol con el que deseas ingresar a {APP_TITLE}.</p></div><div className="grid grid-cols-1 md:grid-cols-3 gap-5">{roles.map(role => { const Icon = role.icon; return <button key={role.name} onClick={() => setSelectedRole(role)} className="bg-white border border-slate-200 rounded-2xl p-6 text-left shadow-sm hover:shadow-lg hover:-translate-y-1 hover:border-[#D71920]/40 transition-all group"><div className={`w-12 h-12 border rounded-xl flex items-center justify-center ${role.color}`}><Icon className="w-6 h-6" /></div><h2 className="text-lg font-bold text-slate-900 mt-5">{role.name}</h2><p className="text-sm text-slate-500 leading-6 mt-2">{role.description}</p><div className="flex items-center gap-2 text-sm font-semibold text-[#D71920] mt-6">Ingresar <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" /></div></button>})}</div><div className="text-center mt-7"><button onClick={signOut} className="text-sm text-slate-500 hover:text-slate-800">Cerrar sesión de {session.user.email}</button></div></AuthShell>;
   }

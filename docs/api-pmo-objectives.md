@@ -18,7 +18,7 @@ Authorization: Bearer <PMO_OBJECTIVES_API_KEY>
 
 `GET /api/pmo-objectives`
 
-La PMO debe invocarlo al presionar su botón **Actualizar objetivos**. Devuelve exclusivamente objetivos cuyo `status` sea `Activo`. No expone el identificador interno `id`; la integración usa `code`.
+La PMO debe invocarlo al presionar su botón **Actualizar objetivos**. Devuelve exclusivamente los objetivos activos. Un estado explícito `No activo` siempre se excluye; para registros heredados, BioIndicadores determina la actividad mediante su vigencia. No expone el identificador interno `id`; la integración usa `code`.
 
 ```json
 {

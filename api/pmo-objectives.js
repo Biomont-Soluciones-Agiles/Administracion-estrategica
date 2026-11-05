@@ -1,7 +1,6 @@
 import { timingSafeEqual } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 
-const ACTIVE_STATUS = 'activo';
 const allowedOrigins = () => String(process.env.PMO_ALLOWED_ORIGINS || '')
   .split(',').map(item => item.trim()).filter(Boolean);
 const json = (response, status, body) => response.status(status).json(body);
@@ -49,16 +48,25 @@ function validProject(input) {
   };
 }
 
+function isActiveObjective(objective, now = new Date()) {
+  const status = normalizeText(objective?.status, 80).toLowerCase();
+  if (status === 'activo') return true;
+  if (status === 'no activo') return false;
+  const year = Number(new Intl.DateTimeFormat('en', { timeZone: 'America/Lima', year: 'numeric' }).format(now));
+  const start = Number(objective?.validity_start_year) || Number(String(objective?.created_at || '').slice(0, 4)) || year;
+  const end = Number(objective?.validity_end_year) || Number(String(objective?.target_date || '').slice(0, 4)) || year;
+  return start <= year && end >= year;
+}
+
 async function activeObjective(supabase, objectiveCode) {
   const code = normalizeText(objectiveCode, 80);
   if (!code) return null;
   const { data, error } = await supabase.from('objectives')
-    .select('id, code, name, status')
+    .select('id, code, name, status, validity_start_year, validity_end_year, created_at, target_date')
     .eq('code', code)
-    .ilike('status', ACTIVE_STATUS)
     .maybeSingle();
   if (error) throw error;
-  return data;
+  return data && isActiveObjective(data) ? data : null;
 }
 
 async function linkProjects(supabase, body) {
@@ -133,12 +141,13 @@ export default async function handler(request, response) {
   try {
     if (request.method === 'GET') {
       const updatedSince = normalizeText(request.query?.updated_since, 40);
-      let query = supabase.from('objectives').select('code, name, description, focus, updated_at')
-        .ilike('status', ACTIVE_STATUS).order('updated_at', { ascending: false });
+      let query = supabase.from('objectives').select('code, name, description, focus, updated_at, status, validity_start_year, validity_end_year, created_at, target_date')
+        .order('updated_at', { ascending: false });
       if (updatedSince) query = query.gt('updated_at', updatedSince);
       const { data, error } = await query;
       if (error) throw error;
-      return json(response, 200, { data: data || [], generated_at: new Date().toISOString() });
+      const objectives = (data || []).filter(isActiveObjective).map(({ status, validity_start_year, validity_end_year, created_at, target_date, ...objective }) => objective);
+      return json(response, 200, { data: objectives, generated_at: new Date().toISOString() });
     }
     const action = request.body?.action;
     const result = action === 'link' ? await linkProjects(supabase, request.body) : action === 'request_unlink' ? await requestUnlink(supabase, request.body) : { status: 400, body: { error: 'La acción debe ser link o request_unlink.' } };

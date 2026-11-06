@@ -1419,7 +1419,7 @@ export default function App() {
 
   if (!assignedRole || authError) return <AuthShell><div className="mx-auto max-w-md rounded-2xl border bg-white p-8 text-center"><h1 className="text-xl font-bold">Acceso no autorizado</h1><p className="mt-3 text-sm text-slate-600">{authError || `Tu cuenta no tiene un rol asignado en ${APP_TITLE}. Contacta al administrador.`}</p><Button className="mt-5 w-full" variant="secondary" onClick={signOut}>Cerrar sesión</Button></div></AuthShell>;
 
-  if (selectedRole?.key === 'usuario') return <UserWorkspace session={session} objectives={objectivesWithIndicatorProgress} indicators={indicators} reports={reports} users={availableUsers} organizationPeople={organizationPeople} onReload={loadOperationalData} onSignOut={signOut} />;
+  if (selectedRole?.key === 'usuario') return <UserWorkspace session={session} objectives={objectivesWithIndicatorProgress} indicators={indicators} reports={reports} users={availableUsers} organizationPeople={organizationPeople} sites={sites} assignments={siteAssignments} reportingSupports={reportingSupports} onReload={loadOperationalData} onSignOut={signOut} />;
 
   if (!selectedRole && ['super_admin', 'sig'].includes(assignedRole)) {
     const roles = [

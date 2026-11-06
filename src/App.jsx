@@ -346,7 +346,6 @@ export default function App() {
   const normalizeManagementName = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
   const kunthurManagements = new Set(['central comercial', 'administracion y finanzas']);
   const isKunturSite = site => normalizeManagementName(site?.name).includes('kuntur') || normalizeManagementName(site?.name).includes('kunthur');
-  const objectiveIsAvailableForKunthur = objective => kunthurManagements.has(normalizeManagementName(objective?.responsibleManagement || managementForOwner(objective?.ownerId)));
   const signedInEmail = session?.user?.email?.trim().toLowerCase();
   const currentAccountIds = [...new Set(accountIdentities(session?.user?.email, organizationPeople))];
   const isKunturAccount = /@kunturpharma\.pe$/i.test(signedInEmail || '');
@@ -363,18 +362,10 @@ export default function App() {
     .filter(support => support.active && accountOwns(support.support_email))
     .map(support => String(support.site_assignment_id)));
   const accountCanReportAssignment = assignment => isGcg || isSuperAdmin || accountOwns(assignment?.responsible_email) || supportedAssignmentIds.has(String(assignment?.id));
-  const managerSiteIds = new Set(managerAssignments.map(assignment => String(assignment.site_id)));
-  const siteVisibleIndicatorIds = new Set(siteAssignments.filter(assignment => assignment.active && managerSiteIds.has(String(assignment.site_id))).map(assignment => String(assignment.indicator_id)));
-  const scopedObjectives = isManagerScoped
-    ? objectivesWithIndicatorProgress.filter(objective => isKunturAccount
-      ? objectiveIsAvailableForKunthur(objective)
-      : indicators.some(indicator => String(indicator.objectiveId) === String(objective.id) && (
-        siteVisibleIndicatorIds.has(String(indicator.id))
-        || indicatorAccess(indicator, objective, currentAccountIds).canReport
-      )))
-    : objectivesWithIndicatorProgress;
-  const hasBiomontAssignment = managerAssignments.some(assignment => String(sites.find(site => String(site.id) === String(assignment.site_id))?.name || '').trim().toLowerCase() === 'biomont');
-  const hideBscForSiteProfile = isStandardUser || isKunturAccount || (isManagerScoped && managerAssignments.length > 0 && !hasBiomontAssignment);
+  // Los Responsables consultan el portafolio completo y el mapa BSC. Sus
+  // permisos de reporte siguen limitados por scopedIndicators/assignments.
+  const scopedObjectives = objectivesWithIndicatorProgress;
+  const hideBscForSiteProfile = isStandardUser;
   const scopedIndicators = isManagerScoped
     ? indicators.filter(indicator => {
       const legacyAccess = indicatorAccess(indicator, objectivesWithIndicatorProgress.find(objective => objective.id === indicator.objectiveId), currentAccountIds).canReport;
@@ -737,7 +728,7 @@ export default function App() {
       return matchesName && matchesManagement && matchesStatus && matchesFocus && matchesIndicator;
     });
     const changeObjectiveStatus = async (objective, status) => {
-      if (!(isGcg || isResponsibleManager) || !['Activo', 'No activo'].includes(status) || !scopedObjectives.some(item => item.id === objective.id)) throw new Error('No puedes cambiar el estatus de este objetivo.');
+      if (!isGcg || !['Activo', 'No activo'].includes(status) || !scopedObjectives.some(item => item.id === objective.id)) throw new Error('No puedes cambiar el estatus de este objetivo.');
       const { data, error } = await supabase.from('objectives').update({ status, updated_at: new Date().toISOString() }).eq('id', objective.id).select().single();
       if (error) throw new Error('No se pudo guardar el estatus. Inténtalo nuevamente.');
       setObjectives(items => items.map(item => item.id === objective.id ? toObjective(data) : item));
@@ -810,7 +801,7 @@ export default function App() {
                         <p className="text-xs font-semibold text-blue-700 mb-1">{obj.code}</p><h3 className="break-words text-lg font-semibold text-slate-900 group-hover:text-[#1D4ED8] transition-colors">{obj.name}</h3>
                         <p className="text-sm text-slate-500 mt-1 line-clamp-1">{obj.description}</p>
                       </div>
-                      <ObjectiveStatusControl objective={obj} canEdit={isGcg || isResponsibleManager} onChange={changeObjectiveStatus} />
+                      <ObjectiveStatusControl objective={obj} canEdit={isGcg} onChange={changeObjectiveStatus} />
                     </div>
                     
                     <div className="mb-4">
@@ -1467,8 +1458,8 @@ export default function App() {
         </header>
         <div className="app-content p-4 md:p-6 flex-1 relative z-0">
           {dataError && <div className="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-center justify-between gap-3"><span>{dataError}</span><button onClick={() => setDataError('')} className="font-semibold shrink-0">Cerrar</button></div>}
-          {currentView === 'dashboard' && !hideBscForSiteProfile && <StrategicMap objectives={isManagerScoped ? scopedObjectives : objectivesWithIndicatorProgress} indicators={isManagerScoped ? scopedIndicators : indicators} reports={isManagerScoped ? scopedReports : reports} projects={scopedProjects} actions={scopedTasks} users={availableUsers} isGeneralManager onSelectIndicator={openIndicatorWorkspace} />}
-          {(currentView === 'bio-indicators' || currentView === 'general-manager-indicators') && <BioIndicatorsView coreRows={coreIndicatorRows} generalManagerRows={generalManagerIndicatorRows} workflow={corrective} objectives={objectivesWithIndicatorProgress} indicators={indicators} reports={isManagerScoped ? scopedReports : reports} users={availableUsers} sites={sites} assignments={siteAssignments} filters={indicatorFilters} onChange={changeIndicatorFilters} year={bioIndicatorYear} siteView={isGcg ? (bioIndicatorSiteView || (() => { const biomont = sites.find(site => String(site.name || '').trim().toLowerCase() === 'biomont'); return siteAssignments.some(item => item.active !== false && String(item.indicator_id) === String(indicatorFilters.indicatorId) && String(item.site_id) === String(biomont?.id)) ? String(biomont.id) : 'weighted'; })()) : ''} isGcg={isGcg} isGeneralManager={isGeneralManager} featuredOnly={currentView === 'general-manager-indicators'} featuredTitle="Indicadores para Gerencia General" session={session} onReload={loadOperationalData} onError={setDataError} onNotify={notify} selectionMode={indicatorSelectionMode} onSelectionModeChange={setIndicatorSelectionMode} onCoreSaved={ids => setCoreIndicatorRows(ids.map((indicator_id, index) => ({ indicator_id, position: index + 1 })))} onGeneralManagerSaved={ids => setGeneralManagerIndicatorRows(ids.map((indicator_id, index) => ({ indicator_id, position: index + 1 })))} />}
+          {currentView === 'dashboard' && !hideBscForSiteProfile && <StrategicMap objectives={objectivesWithIndicatorProgress} indicators={indicators} reports={reports} projects={scopedProjects} actions={scopedTasks} users={availableUsers} isGeneralManager onSelectIndicator={openIndicatorWorkspace} />}
+          {(currentView === 'bio-indicators' || currentView === 'general-manager-indicators') && <BioIndicatorsView coreRows={coreIndicatorRows} generalManagerRows={generalManagerIndicatorRows} workflow={corrective} objectives={objectivesWithIndicatorProgress} indicators={indicators} reports={reports} users={availableUsers} sites={sites} assignments={siteAssignments} filters={indicatorFilters} onChange={changeIndicatorFilters} year={bioIndicatorYear} siteView={isGcg ? (bioIndicatorSiteView || (() => { const biomont = sites.find(site => String(site.name || '').trim().toLowerCase() === 'biomont'); return siteAssignments.some(item => item.active !== false && String(item.indicator_id) === String(indicatorFilters.indicatorId) && String(item.site_id) === String(biomont?.id)) ? String(biomont.id) : 'weighted'; })()) : ''} isGcg={isGcg} isGeneralManager={isGeneralManager} featuredOnly={currentView === 'general-manager-indicators'} featuredTitle="Indicadores para Gerencia General" session={session} onReload={loadOperationalData} onError={setDataError} onNotify={notify} selectionMode={indicatorSelectionMode} onSelectionModeChange={setIndicatorSelectionMode} onCoreSaved={ids => setCoreIndicatorRows(ids.map((indicator_id, index) => ({ indicator_id, position: index + 1 })))} onGeneralManagerSaved={ids => setGeneralManagerIndicatorRows(ids.map((indicator_id, index) => ({ indicator_id, position: index + 1 })))} />}
           {currentView === 'change-requests' && <ChangeRequests isGcg={isGcg} indicators={indicators} users={organizationPeople} onReload={loadOperationalData} onError={setDataError} />}
           {currentView === 'indicator-request-history' && <ChangeRequests isGcg={isGcg} indicators={indicators} users={organizationPeople} reports={reports} onReload={loadOperationalData} onError={setDataError} indicatorId={selectedIndicatorId} initialHistory onBack={goBack} />}
           {currentView === 'objectives' && <ObjectivesView />}

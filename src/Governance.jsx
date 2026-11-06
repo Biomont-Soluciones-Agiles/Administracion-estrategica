@@ -16,8 +16,7 @@ export function AssignedIndicators({ indicators, objectives, reports = [], users
   const assignedIndicatorIds = new Set(siteAssignments.filter(assignment => assignment.active && owns(assignment.responsible_email)).map(assignment => String(assignment.indicator_id)));
   const assigned = indicators.filter(indicator => {
     if (assignedIndicatorIds.has(String(indicator.id))) return true;
-    const hasSiteAssignments = siteAssignments.some(assignment => assignment.active && String(assignment.indicator_id) === String(indicator.id));
-    return !hasSiteAssignments && indicatorAccess(indicator, objectives.find(objective => objective.id === indicator.objectiveId), ownIds, isSuperAdmin).canReport;
+    return indicatorAccess(indicator, objectives.find(objective => objective.id === indicator.objectiveId), ownIds, isSuperAdmin).canReport;
   });
   return <AssignedIndicatorPortfolio indicators={assigned} objectives={objectives} reports={reports} users={users} onSelect={onSelect} />;
 }

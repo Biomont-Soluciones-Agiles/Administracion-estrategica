@@ -368,16 +368,18 @@ export default function App() {
   const scopedObjectives = isManagerScoped
     ? objectivesWithIndicatorProgress.filter(objective => isKunturAccount
       ? objectiveIsAvailableForKunthur(objective)
-      : indicators.some(indicator => String(indicator.objectiveId) === String(objective.id) && siteVisibleIndicatorIds.has(String(indicator.id))))
+      : indicators.some(indicator => String(indicator.objectiveId) === String(objective.id) && (
+        siteVisibleIndicatorIds.has(String(indicator.id))
+        || indicatorAccess(indicator, objective, currentAccountIds).canReport
+      )))
     : objectivesWithIndicatorProgress;
   const hasBiomontAssignment = managerAssignments.some(assignment => String(sites.find(site => String(site.id) === String(assignment.site_id))?.name || '').trim().toLowerCase() === 'biomont');
   const hideBscForSiteProfile = isStandardUser || isKunturAccount || (isManagerScoped && managerAssignments.length > 0 && !hasBiomontAssignment);
   const scopedIndicators = isManagerScoped
     ? indicators.filter(indicator => {
-      const assignments = siteAssignments.filter(item => String(item.indicator_id) === String(indicator.id) && item.active);
-      return assignments.length
-        ? managerAssignments.some(item => String(item.indicator_id) === String(indicator.id))
-        : indicatorAccess(indicator, objectivesWithIndicatorProgress.find(objective => objective.id === indicator.objectiveId), currentAccountIds).canReport;
+      const legacyAccess = indicatorAccess(indicator, objectivesWithIndicatorProgress.find(objective => objective.id === indicator.objectiveId), currentAccountIds).canReport;
+      return managerAssignments.some(item => String(item.indicator_id) === String(indicator.id))
+        || legacyAccess;
     })
     : indicators;
   const scopedProjects = isManagerScoped

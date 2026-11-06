@@ -319,10 +319,12 @@ export default function App() {
     .trim()
     .toLowerCase()
     .replace(/[\s-]+/g, '_');
+  const isSuperAdmin = ['super_admin', 'sig'].includes(normalizedCurrentRole);
   const isGeneralManager = normalizedCurrentRole === 'gerente_general';
   const isResponsibleManager = normalizedCurrentRole === 'gerente_responsable';
-  const isGcg = normalizedCurrentRole === 'gcg';
-  const isSuperAdmin = ['super_admin', 'sig'].includes(normalizedCurrentRole);
+  // SIG (Control total) conserva todas las capacidades operativas de GCG,
+  // sin depender de asignaciones individuales de indicadores o sedes.
+  const isGcg = normalizedCurrentRole === 'gcg' || isSuperAdmin;
   const isStandardUser = ['usuario', 'user', 'standard_user'].includes(normalizedCurrentRole);
   const availableUsers = [
     ...organizationPeople.map(person => ({ id: person.id, email: person.email, name: microsoftPeople.find(item => item.email === person.email?.toLowerCase())?.full_name || person.full_name, role: person.role, jobTitle: person.job_title, management: person.management, submanagement: person.submanagement, isManagementLead: person.is_management_lead, avatar: person.full_name.slice(0, 2).toUpperCase() })),
@@ -507,7 +509,7 @@ export default function App() {
         } else {
           setAuthError('');
           setAssignedRole(role);
-          setSelectedRole(['super_admin', 'sig'].includes(role) ? null : { key: role, name: ROLE_LABELS[role] });
+          setSelectedRole({ key: role, name: ROLE_LABELS[role] });
           await loadOperationalData();
         }
       }

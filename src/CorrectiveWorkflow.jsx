@@ -53,7 +53,7 @@ function FiveWhysModal({ report, analysis, workflow, canManage, onClose, onConti
       <label className="block text-sm font-medium text-slate-800">{index + 1}. ¿Por qué ocurrió esto? → {level} <span aria-hidden="true" className={`inline-block h-3 w-3 rounded-full align-middle ${color}`}><span className="sr-only">{level}</span></span>
         <textarea aria-label={`Por qué ${index + 1}: ${level}`} rows={3} required={editable && index < 2} readOnly={!editable} className={`${field} mt-2 resize-y bg-slate-50`} value={answers[index]} onChange={event => setAnswers(current => current.map((answer, position) => position === index ? event.target.value : answer))} />
       </label>
-      {index < whyLevels.length - 1 && <div aria-hidden="true" className="h-7 text-center text-4xl font-light leading-7 text-slate-400">↑</div>}
+      {index < whyLevels.length - 1 && <div aria-hidden="true" className="h-7 text-center text-4xl font-light leading-7 text-slate-400">↓</div>}
     </React.Fragment>)}
     <ErrorMessage message={operation.error} />
     <footer className="flex justify-end gap-3 border-t pt-4 mt-5"><button type="button" className={secondary} onClick={onClose}>Cerrar</button>{editable ? <button className={primary} disabled={operation.busy || !complete}>Guardar y continuar</button> : <button type="button" className={primary} onClick={onContinue}>Continuar</button>}</footer>

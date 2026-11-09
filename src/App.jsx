@@ -48,6 +48,7 @@ const toProject = (row) => ({ ...row, objectiveId: row.objective_id, ownerId: ro
 const toAction = (row) => ({ ...row, objectiveId: row.objective_id, projectId: row.project_id, dueDate: row.due_date, completedAt: row.completed_at, ownerId: row.owner_email });
 const toIndicator = (row) => ({ ...row, objectiveId: row.objective_id, ownerId: row.owner_email, objectiveWeight: Number(row.objective_weight), approvalStatus: row.approval_status, reviewFrequency: row.review_frequency, target: row.target == null ? null : Number(row.target) });
 const toReport = (row) => ({ ...row, indicatorId: row.indicator_id, assignmentId: row.site_assignment_id, date: row.registered_date, result: row.result == null ? null : Number(row.result), measurementTarget: row.measurement_target == null ? null : Number(row.measurement_target), measurementComparator: row.measurement_comparator, obs: row.observations });
+const sortByCode = (left, right) => String(left?.code || '').localeCompare(String(right?.code || ''), 'es', { numeric: true, sensitivity: 'base' });
 
 // La aplicación inicia sin datos operativos. Los usuarios registrados crean los
 // objetivos, acciones, indicadores y reportes reales desde BIOMET.
@@ -416,7 +417,7 @@ export default function App() {
     setProfiles(profilesResult.data || []);
     setOrganizationPeople(peopleResult.data || []);
     setMicrosoftPeople(directoryResult.data || []);
-    setObjectives((objectivesResult.data || []).map(toObjective));
+    setObjectives((objectivesResult.data || []).map(toObjective).sort(sortByCode));
     setProjects((projectsResult.data || []).map(row => {
       const catalog = (catalogResult.data || []).find(item => item.id === row.catalog_id);
       return toProject(catalog ? { ...row, ...catalog, id: row.id, catalog_id: catalog.id } : row);
@@ -735,7 +736,7 @@ export default function App() {
       if (!isGcg || !['Activo', 'No activo'].includes(status) || !scopedObjectives.some(item => item.id === objective.id)) throw new Error('No puedes cambiar el estatus de este objetivo.');
       const { data, error } = await supabase.from('objectives').update({ status, updated_at: new Date().toISOString() }).eq('id', objective.id).select().single();
       if (error) throw new Error('No se pudo guardar el estatus. Inténtalo nuevamente.');
-      setObjectives(items => items.map(item => item.id === objective.id ? toObjective(data) : item));
+      setObjectives(items => items.map(item => item.id === objective.id ? toObjective(data) : item).sort(sortByCode));
       notify(`Objetivo marcado como ${status.toLowerCase()}.`);
     };
     const activeObs = activeObjectives(scopedObjectives).length;
@@ -856,7 +857,7 @@ export default function App() {
         setDataError('No se pudo crear el objetivo. Inténtalo nuevamente.');
         return;
       }
-      setObjectives([toObjective(data), ...objectives]);
+      setObjectives(items => [...items, toObjective(data)].sort(sortByCode));
       notify('Objetivo estratégico creado correctamente.');
       navigateTo(isGeneralManager ? 'dashboard' : 'objectives', isGeneralManager ? 'Monitor' : 'Objetivos');
     };
@@ -894,7 +895,7 @@ export default function App() {
     const objective = objectives.find(item => item.id === selectedObjectiveId);
     const [formData, setFormData] = useState(() => objective ? { name: objective.name || '', description: objective.description || '', focus: objective.focus || '', responsibleManagement: objective.responsibleManagement || managementForOwner(objective.ownerId), validityStartYear: objective.validityStartYear || '', validityEndYear: objective.validityEndYear || '' } : null);
     if (!objective || !formData) return <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-slate-500">No se encontró el objetivo.</div>;
-    const handleSubmit = async (event) => { event.preventDefault(); const managementLead = managementLeadFor(formData.responsibleManagement); if (!managementLead?.email) { setDataError('Selecciona una gerencia responsable válida.'); return; } const { data, error } = await supabase.from('objectives').update({ name: formData.name, description: formData.description, focus: formData.focus, owner_email: managementLead.email, responsible_management: formData.responsibleManagement, target_date: `${formData.validityEndYear}-12-31`, validity_start_year: Number(formData.validityStartYear), validity_end_year: Number(formData.validityEndYear), updated_at: new Date().toISOString() }).eq('id', objective.id).select().single(); if (error) { setDataError('No se pudo actualizar el objetivo. Inténtalo nuevamente.'); return; } setObjectives(items => items.map(item => item.id === objective.id ? toObjective(data) : item)); notify('Objetivo actualizado correctamente.'); const destination = { id: 'objective-detail', name: data.name, objectiveId: objective.id, objectiveTab: selectedObjectiveTab }; setCurrentView(destination.id); setSelectedObjectiveId(destination.objectiveId); setSelectedObjectiveTab(destination.objectiveTab); setNavHistory(history => [...(history.at(-1)?.id === 'edit-objective' ? history.slice(0, -1) : history), destination]); };
+    const handleSubmit = async (event) => { event.preventDefault(); const managementLead = managementLeadFor(formData.responsibleManagement); if (!managementLead?.email) { setDataError('Selecciona una gerencia responsable válida.'); return; } const { data, error } = await supabase.from('objectives').update({ name: formData.name, description: formData.description, focus: formData.focus, owner_email: managementLead.email, responsible_management: formData.responsibleManagement, target_date: `${formData.validityEndYear}-12-31`, validity_start_year: Number(formData.validityStartYear), validity_end_year: Number(formData.validityEndYear), updated_at: new Date().toISOString() }).eq('id', objective.id).select().single(); if (error) { setDataError('No se pudo actualizar el objetivo.'); return; } setObjectives(items => items.map(item => item.id === objective.id ? toObjective(data) : item).sort(sortByCode)); notify('Objetivo actualizado correctamente.'); const destination = { id: 'objective-detail', name: data.name, objectiveId: objective.id, objectiveTab: selectedObjectiveTab }; setCurrentView(destination.id); setSelectedObjectiveId(destination.objectiveId); setSelectedObjectiveTab(destination.objectiveTab); setNavHistory(history => [...(history.at(-1)?.id === 'edit-objective' ? history.slice(0, -1) : history), destination]); };
     return <div className="mx-auto max-w-2xl fade-in"><div className="mb-6"><h1 className="text-2xl font-bold text-[#0F172A]">Modificar objetivo</h1><p className="text-slate-500">Actualiza los datos y características del objetivo.</p></div><Card className="p-6"><form onSubmit={handleSubmit} className="space-y-5"><Input label="Nombre del objetivo *" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} /><div className="flex flex-col gap-1.5"><label className="text-sm font-medium text-slate-700">Descripción</label><textarea className="min-h-[100px] rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6]" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} /></div><Select label="Foco estratégico *" required options={['Financiero', 'Cliente', 'Procesos', 'Personas/Aprendizaje']} value={formData.focus} onChange={e => setFormData({ ...formData, focus: e.target.value })} /><Select label="Gerencia responsable *" required options={managementOptions} value={formData.responsibleManagement} onChange={event => setFormData({ ...formData, responsibleManagement: event.target.value })} /><div className="grid grid-cols-1 gap-5 md:grid-cols-2"><Input label="Inicio de vigencia *" type="number" min="2020" max="2100" required value={formData.validityStartYear} onChange={e => setFormData({ ...formData, validityStartYear: e.target.value })} /><Input label="Fin de vigencia *" type="number" min="2020" max="2100" required value={formData.validityEndYear} onChange={e => setFormData({ ...formData, validityEndYear: e.target.value })} /></div><div className="flex justify-end gap-3 border-t border-slate-100 pt-6"><Button type="button" variant="ghost" onClick={() => navigateTo('objective-detail', objective.name, { objectiveId: objective.id, objectiveTab: selectedObjectiveTab })}>Cancelar</Button><Button type="submit">Guardar cambios</Button></div></form></Card></div>;
   };
 

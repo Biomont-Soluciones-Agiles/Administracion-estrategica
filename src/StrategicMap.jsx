@@ -11,6 +11,7 @@ const FOCI = [
 ];
 
 const reportTime = report => new Date(report.date || report.registered_date || report.created_at || 0).getTime();
+const sortByCode = (left, right) => String(left?.code || '').localeCompare(String(right?.code || ''), 'es', { numeric: true, sensitivity: 'base' });
 
 function currentMeasurement(objective, indicators, reports) {
   const rows = indicators.filter(indicator => String(indicator.objectiveId) === String(objective.id));
@@ -75,7 +76,7 @@ export default function StrategicMap({ objectives = [], indicators = [], reports
   return <section className="flex min-h-[calc(100vh-7rem)] flex-col" aria-label="Mapa estratégico BSC">
     <header className="mb-5"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#D71920]">BioIndicadores</p><h1 className="mt-1 text-2xl font-bold text-slate-950 md:text-3xl">Mapa estratégico BSC</h1><p className="mt-1 text-sm text-slate-500">Objetivos organizados por foco estratégico</p></header>
     <div className="relative flex-1 space-y-4 pb-4">{FOCI.map(({ key, label, Icon, panel, tile }) => {
-      const rows = objectives.filter(objective => objective.focus === key);
+      const rows = objectives.filter(objective => objective.focus === key).sort(sortByCode);
       return <section key={key} aria-label={`Foco ${label}`} className={`relative z-10 grid min-h-[150px] grid-cols-[132px_minmax(0,1fr)] gap-4 rounded-2xl border p-3 md:grid-cols-[170px_minmax(0,1fr)] md:p-4 ${panel} max-md:grid-cols-1`}>
         <div className={`flex min-h-28 flex-col items-center justify-center gap-2 rounded-xl px-3 py-4 text-center shadow-sm ${tile}`}><Icon className="h-7 w-7" /><h2 className="text-base font-bold leading-5">{label}</h2></div>
         <div className="grid min-w-0 grid-cols-1 content-center gap-3 sm:grid-cols-2 xl:grid-cols-3">{rows.map(objective => {

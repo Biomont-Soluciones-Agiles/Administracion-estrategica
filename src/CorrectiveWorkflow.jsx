@@ -69,12 +69,12 @@ function AnalysisModal({ report, analysis, indicator, objective, workflow, users
 function ActionsModal({ analysis, workflow, users=[], canManage, onClose }) { return <Modal title={"Acciones correctivas · " + analysis.code} onClose={onClose}><UnifiedActions {...{analysis,workflow,users,canManage}} /></Modal>; }
 export function AnalysisHistoryButton({ report, indicator, objective, workflow, users = [], canManage }) {
   const [step,setStep]=useState(null);const analysis=workflow.analyses.find(item=>sameId(item.report_id,report.id));
-  if(report.status!=='Fuera de meta') return null;
   if(!analysis&&!canManage) return <span className="text-slate-400">Sin análisis</span>;
   return <><button className="text-blue-700 underline font-medium" onClick={()=>setStep('whys')}>¿Por qué pasó?</button>{step==='whys'&&<FiveWhysModal {...{report,analysis,workflow,canManage}} onClose={()=>setStep(null)} onContinue={()=>setStep('details')}/>} {step==='details'&&<AnalysisModal {...{report,analysis,indicator,objective,workflow,users,canManage}} onClose={()=>setStep(null)}/>}</>;
 }
 export function ActionsHistoryButton({ report, workflow, users, canManage }) {
   const [open,setOpen]=useState(false);const analysis=workflow.analyses.find(item=>sameId(item.report_id,report.id));
+  if(report.status!=='Fuera de meta') return null;
   if(!analysis) return <span className="text-slate-400">—</span>;
   const actionIds=workflow.actions.filter(item=>sameId(item.analysis_id,analysis.id)).map(item=>item.id);
   const actionCount=workflow.tasks.filter(item=>actionIds.some(id=>sameId(id,item.action_id))).length;

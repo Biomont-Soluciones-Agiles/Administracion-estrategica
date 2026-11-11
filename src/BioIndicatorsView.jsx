@@ -91,7 +91,8 @@ export default function BioIndicatorsView({ objectives, indicators, reports, ann
   const availableIndicators = scopedIndicatorIds ? indicators.filter(indicator => scopedIndicatorIds.has(String(indicator.id))) : indicators;
   const generalManagerIds = new Set(generalManagerRows.map(row => String(row.indicator_id)));
   const visibleIndicators = featuredOnly ? availableIndicators.filter(indicator => generalManagerIds.has(String(indicator.id))) : availableIndicators;
-  const list = filterIndicators(portfolioRows(visibleIndicators, reports).map(row => ({ ...row.indicator, status: row.status })), filters);
+  const list = filterIndicators(portfolioRows(visibleIndicators, reports).map(row => ({ ...row.indicator, status: row.status })), filters)
+    .sort((left, right) => String(left.code || '').localeCompare(String(right.code || ''), 'es', { numeric: true, sensitivity: 'base' }));
   const indicator = list.find(item => String(item.id) === String(filters.indicatorId));
   const displayIndicator = indicator ? { ...indicator, ...targetForYear(indicator, annualTargets, year) } : indicator;
   const objective = objectives.find(item => item.id === indicator?.objectiveId);

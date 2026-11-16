@@ -1,6 +1,6 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { CircleDollarSign, GraduationCap, Users, X, Cog, Target, ChevronRight, ExternalLink } from 'lucide-react';
+import { CircleDollarSign, GraduationCap, Users, X, Cog, Target, ChevronRight, ExternalLink, BarChart3 } from 'lucide-react';
 import { displayUnit } from './lib/units';
 
 const FOCI = [
@@ -71,10 +71,10 @@ function ObjectiveDetail({ objective, indicators, reports, projects = [], action
   </div>, document.body);
 }
 
-export default function StrategicMap({ objectives = [], indicators = [], reports = [], projects = [], actions = [], users = [], isGeneralManager = false, onSelectIndicator, canSelectIndicator = () => true }) {
+export default function StrategicMap({ objectives = [], indicators = [], reports = [], projects = [], actions = [], users = [], isGeneralManager = false, onSelectIndicator, canSelectIndicator = () => true, onOpenIndicatorBsc }) {
   const [selected, setSelected] = React.useState(null);
   return <section className="flex min-h-[calc(100vh-7rem)] flex-col" aria-label="Mapa estratégico BSC">
-    <header className="mb-5"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#D71920]">BioIndicadores</p><h1 className="mt-1 text-2xl font-bold text-slate-950 md:text-3xl">Mapa estratégico BSC</h1><p className="mt-1 text-sm text-slate-500">Objetivos organizados por foco estratégico</p></header>
+    <header className="mb-5 flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#D71920]">BioIndicadores</p><h1 className="mt-1 text-2xl font-bold text-slate-950 md:text-3xl">Mapa estratégico BSC</h1><p className="mt-1 text-sm text-slate-500">Objetivos organizados por foco estratégico</p></div><button type="button" onClick={onOpenIndicatorBsc} className="inline-flex items-center gap-2 rounded-lg bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800"><BarChart3 className="h-4 w-4"/>BSC Indicadores</button></header>
     <div className="relative flex-1 space-y-4 pb-4">{FOCI.map(({ key, label, Icon, panel, tile }) => {
       const rows = objectives.filter(objective => objective.focus === key).sort(sortByCode);
       return <section key={key} aria-label={`Foco ${label}`} className={`relative z-10 grid min-h-[150px] grid-cols-[132px_minmax(0,1fr)] gap-4 rounded-2xl border p-3 md:grid-cols-[170px_minmax(0,1fr)] md:p-4 ${panel} max-md:grid-cols-1`}>

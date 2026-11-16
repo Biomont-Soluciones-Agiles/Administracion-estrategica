@@ -94,7 +94,7 @@ export default function BioIndicatorsView({ objectives, indicators, reports, ann
   const list = filterIndicators(portfolioRows(visibleIndicators, reports).map(row => ({ ...row.indicator, status: row.status })), filters)
     .sort((left, right) => String(left.code || '').localeCompare(String(right.code || ''), 'es', { numeric: true, sensitivity: 'base' }));
   const indicator = list.find(item => String(item.id) === String(filters.indicatorId));
-  const displayIndicator = indicator ? { ...indicator, ...targetForYear(indicator, annualTargets, year) } : indicator;
+  const displayIndicator = indicator ? { ...indicator, ...targetForYear(indicator, annualTargets, year, siteView) } : indicator;
   const objective = objectives.find(item => item.id === indicator?.objectiveId);
   const indicatorAssignments = assignments.filter(assignment => assignment.active !== false && String(assignment.indicator_id) === String(indicator?.id));
   const identities = accountIdentities(session?.user?.email, users);

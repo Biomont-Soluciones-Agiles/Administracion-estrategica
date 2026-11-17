@@ -87,6 +87,7 @@ export default function BioIndicatorsView({ objectives, indicators, reports, ann
   const setSelectionMode = onSelectionModeChange || setLocalSelectionMode;
   const [isComparisonActive, setIsComparisonActive] = useState(false);
   const [activeGroup, setActiveGroup] = useState(isGcg ? 'gcg' : isGeneralManager ? 'gg' : 'general');
+  const filteredSite = sites.find(site => String(site.id) === String(filters.siteId));
   const scopedIndicatorIds = filters.siteId ? new Set(assignments.filter(assignment => String(assignment.site_id) === String(filters.siteId) && assignment.active).map(assignment => String(assignment.indicator_id))) : null;
   const availableIndicators = scopedIndicatorIds ? indicators.filter(indicator => scopedIndicatorIds.has(String(indicator.id))) : indicators;
   const generalManagerIds = new Set(generalManagerRows.map(row => String(row.indicator_id)));
@@ -117,7 +118,7 @@ export default function BioIndicatorsView({ objectives, indicators, reports, ann
       : portfolio;
   const select = item => onChange({ ...filters, indicatorId: String(item.id) });
   return <div className="fade-in space-y-6">
-    {!indicator &&     <header className="flex flex-wrap items-start justify-between gap-4"><div><h1 className="text-3xl font-bold tracking-tight text-slate-900">{featuredOnly ? featuredTitle : 'Indicadores'}</h1><p className="text-sm text-slate-500 mt-2">{featuredOnly ? 'Indicadores priorizados para Gerencia General.' : 'Seguimiento integral del portafolio'}</p></div></header>}
+    {!indicator &&     <header className="flex flex-wrap items-start justify-between gap-4"><div><h1 className="text-3xl font-bold tracking-tight text-slate-900">{featuredOnly ? featuredTitle : 'Indicadores'}</h1><p className="text-sm text-slate-500 mt-2">{featuredOnly ? 'Indicadores priorizados para Gerencia General.' : 'Seguimiento integral del portafolio'}</p>{filteredSite && <p className="mt-3 inline-flex rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-sm font-semibold text-blue-800">Sede: {filteredSite.name}</p>}</div></header>}
     {!indicator && <PortfolioSummary rows={portfolio} />}
     {!list.length && <p className="rounded-xl bg-white border p-8 text-center text-slate-500">No hay indicadores que coincidan con estos filtros.</p>}
     {indicator ? <div className="space-y-6">

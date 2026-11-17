@@ -25,13 +25,12 @@ export default function BscIndicatorsMap({ objectives = [], indicators = [], rep
   const [year, setYear] = useState(years[0] || String(new Date().getFullYear()));
   const [siteId, setSiteId] = useState('');
   const activeSites = sites.filter(site => site.active !== false);
-  const selectedSite = activeSites.find(site => String(site.id) === String(siteId));
   const selectedSiteAssignments = new Set(assignments.filter(assignment => assignment.active !== false && (!siteId || String(assignment.site_id) === String(siteId))).map(assignment => String(assignment.id)));
   const filteredReports = reports.filter(report => parseReportPeriod(report.period)?.year === year && (!siteId || selectedSiteAssignments.has(String(report.assignmentId))));
 
   return <section className="mx-auto max-w-[1500px] space-y-4" aria-label="BSC Indicadores">
     <header className="flex flex-wrap items-end justify-between gap-4 border-b border-slate-300 pb-4">
-      <div><p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#D71920]">BioIndicadores</p><h1 className="mt-1 text-2xl font-bold text-slate-950 md:text-3xl">BSC Indicadores</h1><p className="mt-1 text-sm text-slate-500">Indicadores organizados por perspectiva estratégica</p>{selectedSite && <p className="mt-3 inline-flex rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-sm font-semibold text-blue-800">Sede: {selectedSite.name}</p>}</div>
+      <div><p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#D71920]">BioIndicadores</p><h1 className="mt-1 text-2xl font-bold text-slate-950 md:text-3xl">BSC Indicadores</h1><p className="mt-1 text-sm text-slate-500">Indicadores organizados por perspectiva estratégica</p></div>
       <div className="flex flex-wrap gap-3"><label className="text-sm font-semibold text-slate-700">Año<select className="ml-2 rounded-lg border border-slate-300 bg-white px-3 py-2 font-normal" value={year} onChange={event => setYear(event.target.value)}>{years.map(value => <option key={value} value={value}>{value}</option>)}</select></label><label className="text-sm font-semibold text-slate-700">Sede<select className="ml-2 rounded-lg border border-slate-300 bg-white px-3 py-2 font-normal" value={siteId} onChange={event => setSiteId(event.target.value)}><option value="">Todas</option>{activeSites.map(site => <option key={site.id} value={site.id}>{site.name}</option>)}</select></label></div>
     </header>
     <div className="space-y-3">{PERSPECTIVES.map(({ key, title, Icon, accent, header, surface }, index) => {

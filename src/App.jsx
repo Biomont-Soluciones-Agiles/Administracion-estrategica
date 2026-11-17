@@ -996,7 +996,8 @@ export default function App() {
                    <div className="space-y-3">
                      {objIndicators.map(ind => {
                         const latest = sortReportsByPeriod(reports.filter(r => r.indicatorId === ind.id), 'desc')[0];
-                        const displayTarget = targetForYear(ind, annualTargets, parseReportPeriod(latest?.period)?.year || String(new Date().getFullYear()));
+                        const latestAssignment = siteAssignments.find(assignment => String(assignment.id) === String(latest?.assignmentId));
+                        const displayTarget = targetForYear(ind, annualTargets, parseReportPeriod(latest?.period)?.year || String(new Date().getFullYear()), latestAssignment?.site_id);
                         return (
                           <button type="button" key={ind.id} onClick={() => { setIndicatorFilters({ search: '', objectiveId: '', responsibleId: '', siteId: '', indicatorId: String(ind.id) }); navigateTo('bio-indicators', ind.name, { indicatorId: ind.id, objectiveId: obj.id, objectiveTab: 'summary' }); }} className="flex w-full items-center justify-between rounded-lg border border-slate-100 bg-slate-50 p-3 text-left transition hover:border-blue-200 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                             <div><p className="text-sm font-medium text-slate-800">{ind.name}</p><p className="text-xs text-slate-500 mt-0.5">Meta: {displayTarget.comparator} {displayTarget.target} {displayUnit(ind.unit)} · Ponderación: {Number(ind.objectiveWeight || 0).toFixed(2)}%</p></div>

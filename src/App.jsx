@@ -633,6 +633,16 @@ export default function App() {
   const goBack = () => {
     if (currentView === 'bio-indicators' && indicatorFilters.indicatorId) {
       const currentEntry = navHistory.at(-1);
+      if (currentEntry?.returnTo === 'indicator-bsc') {
+        const bscIndex = navHistory.slice(0, -1).map(entry => entry.id).lastIndexOf('indicator-bsc');
+        if (bscIndex >= 0) {
+          restoreHistory(bscIndex);
+        } else {
+          setCurrentView('indicator-bsc');
+          setNavHistory([{ id: 'indicator-bsc', name: 'BSC Indicadores' }]);
+        }
+        return;
+      }
       if (currentEntry?.objectiveId && navHistory.length > 1) {
         restoreHistory(navHistory.length - 2);
         return;
@@ -1476,7 +1486,7 @@ export default function App() {
         <div className="app-content p-4 md:p-6 flex-1 relative z-0">
           {dataError && <div className="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-center justify-between gap-3"><span>{dataError}</span><button onClick={() => setDataError('')} className="font-semibold shrink-0">Cerrar</button></div>}
           {currentView === 'dashboard' && !hideBscForSiteProfile && <StrategicMap objectives={objectivesWithIndicatorProgress} indicators={indicators} reports={reports} projects={scopedProjects} actions={scopedTasks} users={availableUsers} isGeneralManager onSelectIndicator={openIndicatorWorkspace} onOpenIndicatorBsc={() => navigateTo('indicator-bsc', 'BSC Indicadores')} />}
-          {currentView === 'indicator-bsc' && <BscIndicatorsMap objectives={objectivesWithIndicatorProgress} indicators={indicators} reports={reports} annualTargets={annualTargets} sites={sites} assignments={siteAssignments} onSelectIndicator={indicator => { setIndicatorFilters({ search: '', objectiveId: '', responsibleId: '', siteId: '', indicatorId: String(indicator.id) }); navigateTo('bio-indicators', indicator.name, { indicatorId: indicator.id, objectiveId: indicator.objectiveId }); }} />}
+          {currentView === 'indicator-bsc' && <BscIndicatorsMap objectives={objectivesWithIndicatorProgress} indicators={indicators} reports={reports} annualTargets={annualTargets} sites={sites} assignments={siteAssignments} onSelectIndicator={indicator => { setIndicatorFilters({ search: '', objectiveId: '', responsibleId: '', siteId: '', indicatorId: String(indicator.id) }); navigateTo('bio-indicators', indicator.name, { indicatorId: indicator.id, objectiveId: indicator.objectiveId, returnTo: 'indicator-bsc' }); }} />}
           {(currentView === 'bio-indicators' || currentView === 'general-manager-indicators') && <BioIndicatorsView coreRows={coreIndicatorRows} generalManagerRows={generalManagerIndicatorRows} workflow={corrective} objectives={objectivesWithIndicatorProgress} indicators={indicators} reports={reports} annualTargets={annualTargets} users={availableUsers} sites={sites} assignments={siteAssignments} filters={indicatorFilters} onChange={changeIndicatorFilters} year={bioIndicatorYear} siteView={isGcg ? (bioIndicatorSiteView || (() => { const biomont = sites.find(site => String(site.name || '').trim().toLowerCase() === 'biomont'); return siteAssignments.some(item => item.active !== false && String(item.indicator_id) === String(indicatorFilters.indicatorId) && String(item.site_id) === String(biomont?.id)) ? String(biomont.id) : 'weighted'; })()) : ''} isGcg={isGcg} isGeneralManager={isGeneralManager} featuredOnly={currentView === 'general-manager-indicators'} featuredTitle="Indicadores para Gerencia General" session={session} onReload={loadOperationalData} onError={setDataError} onNotify={notify} selectionMode={indicatorSelectionMode} onSelectionModeChange={setIndicatorSelectionMode} onCoreSaved={ids => setCoreIndicatorRows(ids.map((indicator_id, index) => ({ indicator_id, position: index + 1 })))} onGeneralManagerSaved={ids => setGeneralManagerIndicatorRows(ids.map((indicator_id, index) => ({ indicator_id, position: index + 1 })))} />}
           {currentView === 'change-requests' && <ChangeRequests isGcg={isGcg} indicators={indicators} users={organizationPeople} onReload={loadOperationalData} onError={setDataError} />}
           {currentView === 'indicator-request-history' && <ChangeRequests isGcg={isGcg} indicators={indicators} users={organizationPeople} reports={reports} onReload={loadOperationalData} onError={setDataError} indicatorId={selectedIndicatorId} initialHistory onBack={goBack} />}

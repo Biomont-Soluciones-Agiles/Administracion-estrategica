@@ -91,10 +91,15 @@ export default function BioIndicatorsView({ objectives, indicators, reports, ann
   const detailSite = sites.find(site => String(site.id) === String(siteView));
   const scopedIndicatorIds = filters.siteId ? new Set(assignments.filter(assignment => String(assignment.site_id) === String(filters.siteId) && assignment.active).map(assignment => String(assignment.indicator_id))) : null;
   const availableIndicators = scopedIndicatorIds ? indicators.filter(indicator => scopedIndicatorIds.has(String(indicator.id))) : indicators;
+  const portfolioReports = filters.siteId ? reports.filter(report => assignments.some(assignment => String(assignment.id) === String(report.assignmentId) && String(assignment.site_id) === String(filters.siteId))) : reports;
   const generalManagerIds = new Set(generalManagerRows.map(row => String(row.indicator_id)));
   const visibleIndicators = featuredOnly ? availableIndicators.filter(indicator => generalManagerIds.has(String(indicator.id))) : availableIndicators;
-  const list = filterIndicators(portfolioRows(visibleIndicators, reports).map(row => ({ ...row.indicator, status: row.status })), filters)
-    .sort((left, right) => String(left.code || '').localeCompare(String(right.code || ''), 'es', { numeric: true, sensitivity: 'base' }));
+  const list = filterIndicators(portfolioRows(visibleIndicators, portfolioReports).map(row => ({ ...row.indicator, status: row.status })), filters)
+    .map(indicator => {
+      const latestReport = portfolioReports.filter(report => String(report.indicatorId) === String(indicator.id)).sort((left, right) => (parseReportPeriod(right.period)?.order || 0) - (parseReportPeriod(left.period)?.order || 0) || Number(right.id) - Number(left.id))[0];
+      const latestAssignment = assignments.find(assignment => String(assignment.id) === String(latestReport?.assignmentId));
+      return { ...indicator, ...targetForYear(indicator, annualTargets, year || parseReportPeriod(latestReport?.period)?.year || String(new Date().getFullYear()), filters.siteId || latestAssignment?.site_id) };
+    }).sort((left, right) => String(left.code || '').localeCompare(String(right.code || ''), 'es', { numeric: true, sensitivity: 'base' }));
   const indicator = list.find(item => String(item.id) === String(filters.indicatorId));
   const displayIndicator = indicator ? { ...indicator, ...targetForYear(indicator, annualTargets, year, siteView) } : indicator;
   const objective = objectives.find(item => item.id === indicator?.objectiveId);
@@ -108,7 +113,7 @@ export default function BioIndicatorsView({ objectives, indicators, reports, ann
   const rows = visibleReports.filter(report => (!year || parseReportPeriod(report.period)?.year === year)).sort((a, b) => (parseReportPeriod(b.period)?.order || 0) - (parseReportPeriod(a.period)?.order || 0) || Number(b.id) - Number(a.id));
   const latest = rows[0];
   const weighted = weightedIndicatorSummary(indicator, rows, year);
-  const portfolio = portfolioRows(list, reports);
+  const portfolio = portfolioRows(list, portfolioReports);
   const coreIds = new Set(coreRows.map(row => String(row.indicator_id)));
   const corePortfolio = isGcg && !featuredOnly ? portfolio.filter(row => coreIds.has(String(row.indicator.id))) : [];
   const generalManagerPortfolio = isGeneralManager && !featuredOnly ? portfolio.filter(row => generalManagerIds.has(String(row.indicator.id))) : [];

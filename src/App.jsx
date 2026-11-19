@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, BarChart, Bar, PieChart, Pie, Cell, Legend } from 'recharts';
 import biomontLogo from './assets/biomont-logo.png';
-import futurePlantLoginHero from './assets/biomont-future-plant.png';
+import futurePlantLoginHero from './assets/biomont-future-plant-login-v2.png';
 import kunturLogo from './assets/kuntur-pharma-logo.png';
 import BulkImport from './BulkImport';
 

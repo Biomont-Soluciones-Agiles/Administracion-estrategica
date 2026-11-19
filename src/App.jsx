@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, BarChart, Bar, PieChart, Pie, Cell, Legend } from 'recharts';
 import biomontLogo from './assets/biomont-logo.png';
-import strategicLoginHero from './assets/strategic-login-hero.png';
+import futurePlantLoginHero from './assets/biomont-future-plant.png';
 import kunturLogo from './assets/kuntur-pharma-logo.png';
 import BulkImport from './BulkImport';
 
@@ -1433,7 +1433,7 @@ export default function App() {
     changeIndicatorFilters({ ...indicatorFilters, indicatorId: '' });
   };
 
-  const AuthShell = ({ children }) => <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#06265a] p-5" style={{ backgroundImage: `linear-gradient(90deg, rgba(3, 31, 91, 0.94) 0%, rgba(10, 71, 157, 0.74) 52%, rgba(16, 113, 185, 0.35) 100%), url(${strategicLoginHero})`, backgroundSize: 'cover', backgroundPosition: 'center' }}><div className="absolute inset-0 bg-gradient-to-b from-blue-950/20 via-transparent to-slate-950/45" /><div className="relative w-full max-w-[1200px]">{children}</div></main>;
+  const AuthShell = ({ children }) => <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#06265a] p-5" style={{ backgroundImage: `linear-gradient(90deg, rgba(3, 31, 91, 0.94) 0%, rgba(10, 71, 157, 0.74) 52%, rgba(16, 113, 185, 0.35) 100%), url(${futurePlantLoginHero})`, backgroundSize: 'cover', backgroundPosition: 'center' }}><div className="absolute inset-0 bg-gradient-to-b from-blue-950/20 via-transparent to-slate-950/45" /><div className="relative w-full max-w-[1200px]">{children}</div></main>;
 
   if (authLoading) return <AuthShell><div className="max-w-md mx-auto bg-white border border-slate-200 rounded-2xl p-8 text-center shadow-sm"><img src={biomontLogo} alt="Biomont" className="h-16 w-auto object-contain mx-auto mb-5" /><p className="text-slate-600">Verificando tu acceso…</p></div></AuthShell>;
 
